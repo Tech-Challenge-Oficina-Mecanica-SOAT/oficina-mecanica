@@ -14,12 +14,24 @@ public class VeiculoRepository : IVeiculoRepository
         _context = context;
     }
 
-    public async Task<Veiculo?> GetByIdAsync(Guid id)
-    {
-        return await _context.Veiculos
+    public async Task<Veiculo?> GetByIdAsync(Guid id) => 
+        await _context.Veiculos
             .Include(v => v.Cliente)
             .FirstOrDefaultAsync(v => v.Id == id);
-    }
+
+
+    public async Task<IEnumerable<Veiculo>> GetAllAsync() =>
+        await _context.Veiculos
+            .Include(v => v.Cliente)
+            .ToListAsync();
+
+
+    public async Task<IEnumerable<Veiculo>> GetByClienteIdAsync(Guid clienteId) =>
+        await _context.Veiculos
+            .Include(v => v.Cliente)
+            .Where(v => v.ClienteId == clienteId)
+            .ToListAsync();
+
 
     public async Task<Veiculo?> GetByPlacaAsync(string placa)
     {
@@ -29,20 +41,6 @@ public class VeiculoRepository : IVeiculoRepository
             .FirstOrDefaultAsync(v => v.Placa == placaLimpa);
     }
 
-    public async Task<IEnumerable<Veiculo>> GetAllAsync()
-    {
-        return await _context.Veiculos
-            .Include(v => v.Cliente)
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<Veiculo>> GetByClienteIdAsync(Guid clienteId)
-    {
-        return await _context.Veiculos
-            .Include(v => v.Cliente)
-            .Where(v => v.ClienteId == clienteId)
-            .ToListAsync();
-    }
 
     public async Task<Veiculo> AddAsync(Veiculo veiculo)
     {
