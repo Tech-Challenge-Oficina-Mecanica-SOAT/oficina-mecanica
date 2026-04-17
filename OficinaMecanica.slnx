@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OficinaMecanica.API/OficinaMecanica.API.csproj" />
+    <Project Path="src/OficinaMecanica.Application/OficinaMecanica.Application.csproj" />
+    <Project Path="src/OficinaMecanica.Domain/OficinaMecanica.Domain.csproj" />
+    <Project Path="src/OficinaMecanica.Infrastructure/OficinaMecanica.Infrastructure.csproj" />
+  </Folder>
+</Solution>

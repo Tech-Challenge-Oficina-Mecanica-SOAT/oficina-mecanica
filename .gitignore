@@ -7,6 +7,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
+## Claude Code internal files
+.claude/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -52,3 +55,31 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# IDE - Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.opendb
+*.dbmdl
+*.vs/
+build/
+
+# IDE - JetBrains Rider
+.idea/
+*.sln.iml
+
+# IDE - Visual Studio Code
+.vscode/
+
+# Database files
+*.db
+*.mdf
+*.ldf
+
+# Environment files
+.env
+.env.local
+.env.*.local
