@@ -83,7 +83,7 @@ public class UsuarioServiceTests
         Assert.NotNull(usuario);
         Assert.Equal("novo@oficina.com", usuario.Email);
         Assert.NotEqual("Senha@123", usuario.SenhaHash);
-        Assert.Contains(":", usuario.SenhaHash); // formato salt:hash
+        Assert.StartsWith("$argon2id$v=19$", usuario.SenhaHash);
     }
 
     [Fact]
