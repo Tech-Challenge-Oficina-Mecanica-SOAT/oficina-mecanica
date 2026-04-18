@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OficinaMecanica.API;
+using OficinaMecanica.Application;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
@@ -50,7 +51,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(Policies.Admin,    p => p.RequireRole(Policies.Admin));
+    options.AddPolicy(Policies.Mecanico, p => p.RequireRole(Policies.Mecanico));
+    options.AddPolicy(Policies.Cliente,  p => p.RequireRole(Policies.Cliente));
+});
 
 builder.Services.AddOpenApi();
 
