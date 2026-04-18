@@ -3,5 +3,5 @@ namespace OficinaMecanica.Domain.Enums;
 public enum Perfil
 {
     Admin,
-    Cliente
+    Mecanico
 }

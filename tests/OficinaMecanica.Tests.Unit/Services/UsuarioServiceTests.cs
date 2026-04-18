@@ -47,7 +47,7 @@ public class UsuarioServiceTests
     [Fact]
     public async Task Autenticar_ComSenhaErrada_RetornaNull()
     {
-        var dto = new RegistrarUsuarioDto("user@oficina.com", "SenhaCorreta@1", Perfil.Cliente);
+        var dto = new RegistrarUsuarioDto("user@oficina.com", "SenhaCorreta@1", Perfil.Admin);
         var usuario = await _sut.RegistrarAsync(dto);
 
         _repositoryMock.Setup(r => r.ObterPorEmailAsync("user@oficina.com"))
@@ -103,7 +103,7 @@ public class UsuarioServiceTests
     [Fact]
     public async Task Registrar_ComEmailDuplicado_LancaInvalidOperationException()
     {
-        var usuarioExistente = new Usuario("dup@oficina.com", "hash", Perfil.Cliente);
+        var usuarioExistente = new Usuario("dup@oficina.com", "hash", Perfil.Admin);
         _repositoryMock.Setup(r => r.ObterPorEmailAsync("dup@oficina.com"))
             .ReturnsAsync(usuarioExistente);
 

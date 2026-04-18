@@ -78,7 +78,7 @@ public class JwtServiceTests
     [Fact]
     public void GerarToken_ContemClaimSub()
     {
-        var usuario = new Usuario("sub@oficina.com", "hash", Perfil.Cliente);
+        var usuario = new Usuario("sub@oficina.com", "hash", Perfil.Admin);
 
         var resultado = _sut.GerarToken(usuario);
         var handler = new JwtSecurityTokenHandler();
@@ -92,7 +92,7 @@ public class JwtServiceTests
     public void GerarToken_TokensDiferentesParaUsuariosDiferentes()
     {
         var u1 = new Usuario("u1@oficina.com", "hash", Perfil.Admin);
-        var u2 = new Usuario("u2@oficina.com", "hash", Perfil.Cliente);
+        var u2 = new Usuario("u2@oficina.com", "hash", Perfil.Mecanico);
 
         var t1 = _sut.GerarToken(u1).Token;
         var t2 = _sut.GerarToken(u2).Token;
