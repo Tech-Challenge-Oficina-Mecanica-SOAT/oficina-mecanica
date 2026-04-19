@@ -12,6 +12,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Cliente> Clientes { get; set; }
     public DbSet<Veiculo> Veiculos { get; set; }
+    public DbSet<Servico> Servicos { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,3 +52,4 @@ public class ApplicationDbContext : DbContext
         });
     }
 }
+
