@@ -4,6 +4,9 @@ using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Infrastructure.Repositories;
+using OficinaMecanica.Application.Services;
+using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +26,10 @@ builder.Services.AddScoped<IClienteService, ClienteService>();
 // DI - Servico
 builder.Services.AddScoped<IServicoRepository, ServicoRepository>();
 builder.Services.AddScoped<IServicoService, ServicoService>();
+
+        // Registrar Peca
+        builder.Services.AddScoped<IPecaRepository, PecaRepository>();
+        builder.Services.AddScoped<IPecaService, PecaService>();
 
 // DI - Veiculo
 builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
@@ -48,4 +55,5 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
 
