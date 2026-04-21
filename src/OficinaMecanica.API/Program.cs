@@ -17,7 +17,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configurar Banco de Dados PostgreSQL
+// Configurar Banco de Dados Postgrees
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -65,6 +65,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    
     app.MapScalarApiReference(options =>
     {
         options.WithTitle("API Oficina Mecanica - Tech Challenge FIAP SOAT");

@@ -130,14 +130,14 @@ O token expira em **5 minutos**. Faça um novo login para obter um novo token.
 
 Todas as demais rotas exigem `Authorization: Bearer {token}` com perfil `Admin`:
 
-| Método | Rota | Módulo |
-|--------|------|--------|
-| `GET/POST/PUT/DELETE` | `/clientes` | M1 |
-| `GET/POST/PUT/DELETE` | `/veiculos` | M1 |
-| `GET/POST/PUT/DELETE` | `/servicos` | M1 |
-| `GET/POST/PUT/DELETE` | `/pecas` | M1 |
-| `GET/POST/PUT/DELETE` | `/ordens-servico` | M2 |
-| `GET/POST/PUT` | `/aprovacoes` | M3 |
+| Método | Rota |
+|--------|------|
+| `GET/POST/PUT/DELETE` | `/clientes` |
+| `GET/POST/PUT/DELETE` | `/veiculos` |
+| `GET/POST/PUT/DELETE` | `/servicos` |
+| `GET/POST/PUT/DELETE` | `/pecas` |
+| `GET/POST/PUT/DELETE` | `/ordens-servico` |
+| `GET/POST/PUT` | `/aprovacoes` |
 
 ### Teste rápido do fluxo
 
