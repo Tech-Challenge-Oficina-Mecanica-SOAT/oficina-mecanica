@@ -76,3 +76,113 @@ Dicas de troubleshooting
   options.UseNpgsql(conn, o => o.EnableRetryOnFailure(...));
 
 Se precisar, eu posso adicionar um script de espera (wait-for) ou aplicar Database.Migrate() automaticamente no startup.
+
+## Autenticação
+
+A API utiliza **JWT Bearer Token** para autenticação. O fluxo é:
+
+### Endpoint de login
+
+```
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario@email.com",
+  "senha": "senha123"
+}
+```
+
+Resposta:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiracao": "2025-01-01T12:05:00Z"
+}
+```
+
+### Como usar o token
+
+Inclua o token em todas as requisições autenticadas via header:
+
+```
+Authorization: Bearer {token}
+```
+
+O token expira em **5 minutos**. Faça um novo login para obter um novo token.
+
+### Perfis de acesso
+
+| Perfil  | Descrição |
+|---------|-----------|
+| `Admin` | Acesso total a todas as rotas administrativas |
+| `Cliente` | Acesso restrito a consultas do próprio cliente |
+
+### Rotas públicas (sem autenticação)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/auth/login` | Autenticar e obter token |
+| `POST` | `/auth/registrar` | Registrar novo usuário (uso interno) |
+| `GET`  | `/publico/os/{id}/status` | Consultar status de uma OS sem autenticação |
+
+### Rotas protegidas
+
+Todas as demais rotas exigem `Authorization: Bearer {token}` com perfil `Admin`:
+
+| Método | Rota |
+|--------|------|
+| `GET/POST/PUT/DELETE` | `/clientes` |
+| `GET/POST/PUT/DELETE` | `/veiculos` |
+| `GET/POST/PUT/DELETE` | `/servicos` |
+| `GET/POST/PUT/DELETE` | `/pecas` |
+| `GET/POST/PUT/DELETE` | `/ordens-servico` |
+| `GET/POST/PUT` | `/aprovacoes` |
+
+### Teste rápido do fluxo
+
+```bash
+# 1. Login
+TOKEN=$(curl -s -X POST http://localhost:5000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@oficina.com","senha":"Admin@123"}' \
+  | jq -r '.token')
+
+# 2. Rota protegida com token
+curl -H "Authorization: Bearer $TOKEN" http://localhost:5000/clientes
+
+# 3. Rota pública sem token
+curl http://localhost:5000/publico/os/1/status
+```
+
+## Como rodar o scan de qualidade (SonarQube)
+
+### Pré-requisitos
+
+```bash
+# Instalar o scanner globalmente (apenas uma vez)
+dotnet tool install --global dotnet-sonarscanner
+```
+
+### Executar o scan
+
+Substitua `TOKEN` e `URL` conforme o ambiente (padrão local: `http://localhost:9000`):
+
+```bash
+dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.login="TOKEN"
+dotnet build
+dotnet sonarscanner end /d:sonar.login="TOKEN"
+```
+
+### Cobertura de testes com o scan
+
+```bash
+dotnet sonarscanner begin /k:"mecanica-api" \
+  /d:sonar.host.url="http://localhost:9000" \
+  /d:sonar.login="TOKEN" \
+  /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+
+dotnet build
+dotnet test --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+dotnet sonarscanner end /d:sonar.login="TOKEN"
+```
