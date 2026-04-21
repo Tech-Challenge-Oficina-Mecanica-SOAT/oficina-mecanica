@@ -5,13 +5,18 @@ namespace OficinaMecanica.Domain.Entities;
 public class Veiculo
 {
     public Guid Id { get; private set; }
-    public Guid ClienteId { get; private set; }
+    
     public string Placa { get; private set; }
     public string Marca { get; private set; }
     public string Modelo { get; private set; }
     public int Ano { get; private set; }
     public DateTime CriadoEm { get; private set; }
-    public Cliente? Cliente { get; private set; }
+
+
+    // FK
+    public Guid ClienteId { get; private set; }
+    public Cliente Cliente { get; private set; }
+    public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
 
     public Veiculo(Guid clienteId, string placa, string marca, string modelo, int ano)
     {
