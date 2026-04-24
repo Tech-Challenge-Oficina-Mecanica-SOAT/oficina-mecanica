@@ -25,14 +25,7 @@ public class ServicoService : IServicoService
     public async Task<IEnumerable<ServicoDto>> GetByNomeAsync(string nome)
     {
         var servicos = await _servicoRepository.GetByNomeAsync(nome);
-        
-        return servicos.Select(s => new ServicoDto
-        {
-            Id = s.Id,
-            Nome = s.Nome,
-            Descricao = s.Descricao,
-            Preco = s.Preco
-        });
+        return servicos.Select(MapToDto);
     }
 
     public async Task<IEnumerable<ServicoDto>> GetAllAsync()
@@ -52,7 +45,7 @@ public class ServicoService : IServicoService
         if (await _servicoRepository.ExistsByNomeAsync(createDto.Nome))
             throw new InvalidOperationException("Serviço com este nome já cadastrado");
 
-        var servico = new Servico(createDto.Nome, createDto.Descricao, createDto.Preco);
+        var servico = new Servico(createDto.Nome, createDto.Descricao, createDto.Valor);
         var created = await _servicoRepository.AddAsync(servico);
         
         return MapToDto(created);
@@ -64,7 +57,7 @@ public class ServicoService : IServicoService
         if (servico == null)
             throw new KeyNotFoundException("Serviço não encontrado");
 
-        servico.Atualizar(updateDto.Nome, updateDto.Descricao, updateDto.Preco);
+        servico.Atualizar(updateDto.Nome, updateDto.Descricao, updateDto.Valor);
         await _servicoRepository.UpdateAsync(servico);
         
         return MapToDto(servico);
@@ -102,9 +95,9 @@ public class ServicoService : IServicoService
             Id = servico.Id,
             Nome = servico.Nome,
             Descricao = servico.Descricao,
-            Preco = servico.Preco,
-            Ativo = servico.Ativo,
-            CriadoEm = servico.CriadoEm
+            Valor = servico.Valor,
+            CriadoEm = servico.CriadoEm,
+            Ativo = servico.Ativo
         };
     }
 }

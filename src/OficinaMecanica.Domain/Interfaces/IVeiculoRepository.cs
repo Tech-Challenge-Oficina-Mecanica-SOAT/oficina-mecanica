@@ -9,8 +9,9 @@ public interface IVeiculoRepository
     Task<IEnumerable<Veiculo>> GetAllAsync();
     Task<IEnumerable<Veiculo>> GetByClienteIdAsync(Guid clienteId);
     Task<Veiculo> AddAsync(Veiculo veiculo);
-    Task UpdateAsync(Veiculo veiculo);
+    Task<Veiculo> UpdateAsync(Veiculo veiculo);
     Task DeleteAsync(Guid id);
     Task<bool> ExistsByPlacaAsync(string placa);
-    Task<bool> ExistsByPlacaForOtherClienteAsync(string placa, Guid clienteId, Guid? veiculoId = null);
+    Task<bool> ExistsByPlacaForOtherVeiculoAsync(string placa, Guid veiculoId);
+    Task<bool> ClienteExistsAsync(Guid clienteId);
 }

@@ -1,4 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using OficinaMecanica.API;
+using OficinaMecanica.Application;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
@@ -7,6 +12,7 @@ using OficinaMecanica.Infrastructure.Repositories;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Infrastructure.Repositories;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,9 +20,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configurar Banco de Dados SQL Server
+// Configurar Banco de Dados Postgrees
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // DI - Cliente
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
@@ -28,32 +34,76 @@ builder.Services.AddScoped<IServicoRepository, ServicoRepository>();
 builder.Services.AddScoped<IServicoService, ServicoService>();
 
         // Registrar Peca
-        builder.Services.AddScoped<IPecaRepository, PecaRepository>();
+        builder.Services.AddScoped<IPecaInsumoRepository, PecaInsumoRepository>();
         builder.Services.AddScoped<IPecaService, PecaService>();
 
 // DI - Veiculo
 builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
 builder.Services.AddScoped<IVeiculoService, VeiculoService>();
 
+// DI - SeguranÃ§a
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+// DI - PÃºblico
+builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
+
+// AutenticaÃ§Ã£o JWT
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(Policies.Admin,    p => p.RequireRole(Policies.Admin));
+    options.AddPolicy(Policies.Mecanico, p => p.RequireRole(Policies.Mecanico));
+    options.AddPolicy(Policies.Cliente,  p => p.RequireRole(Policies.Cliente));
+});
+
+builder.Services.AddOpenApi();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("API Oficina Mecanica - Tech Challenge FIAP SOAT");
+    });
+
+    app.UseScalar(options =>
+    {
+        options.Title = "Oficina API";
+        options.Theme = OficinaMecanica.API.ScalarTheme.Light;
+        options.DefaultHttpClient = new ScalarHttpClientOptions
+        {
+            BaseUrl = "http://localhost:5000"
+        };
+    });
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-// Criar banco de dados automaticamente
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.EnsureCreated();
-}
-
 app.Run();
 
+
+
+public partial class Program { }
 

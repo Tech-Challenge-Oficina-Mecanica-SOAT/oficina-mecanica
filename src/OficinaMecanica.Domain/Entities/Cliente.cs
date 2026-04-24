@@ -13,6 +13,10 @@ public class Cliente
     public DateTime CriadoEm { get; private set; }
     public bool Ativo { get; private set; }
 
+    // Relacionamento
+    public ICollection<Veiculo> Veiculos { get; set; } = new List<Veiculo>();
+    public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
+
     public Cliente(string nome, string documento, string telefone, string email)
     {
         if (string.IsNullOrWhiteSpace(nome))

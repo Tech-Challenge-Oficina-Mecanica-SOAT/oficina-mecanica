@@ -23,16 +23,17 @@ public class VeiculoRepository : IVeiculoRepository
 
     public async Task<Veiculo?> GetByPlacaAsync(string placa)
     {
-        var placaLimpa = new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpper();
+        var placaNormalizada = NormalizarPlaca(placa);
         return await _context.Veiculos
             .Include(v => v.Cliente)
-            .FirstOrDefaultAsync(v => v.Placa == placaLimpa);
+            .FirstOrDefaultAsync(v => v.Placa == placaNormalizada);
     }
 
     public async Task<IEnumerable<Veiculo>> GetAllAsync()
     {
         return await _context.Veiculos
             .Include(v => v.Cliente)
+            .OrderBy(v => v.Placa)
             .ToListAsync();
     }
 
@@ -51,10 +52,11 @@ public class VeiculoRepository : IVeiculoRepository
         return veiculo;
     }
 
-    public async Task UpdateAsync(Veiculo veiculo)
+    public async Task<Veiculo> UpdateAsync(Veiculo veiculo)
     {
         _context.Entry(veiculo).State = EntityState.Modified;
         await _context.SaveChangesAsync();
+        return veiculo;
     }
 
     public async Task DeleteAsync(Guid id)
@@ -69,19 +71,23 @@ public class VeiculoRepository : IVeiculoRepository
 
     public async Task<bool> ExistsByPlacaAsync(string placa)
     {
-        var placaLimpa = new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpper();
-        return await _context.Veiculos.AnyAsync(v => v.Placa == placaLimpa);
+        var placaNormalizada = NormalizarPlaca(placa);
+        return await _context.Veiculos.AnyAsync(v => v.Placa == placaNormalizada);
     }
 
-    public async Task<bool> ExistsByPlacaForOtherClienteAsync(string placa, Guid clienteId, Guid? veiculoId = null)
+    public async Task<bool> ExistsByPlacaForOtherVeiculoAsync(string placa, Guid veiculoId)
     {
-        var placaLimpa = new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpper();
-        
-        var query = _context.Veiculos.Where(v => v.Placa == placaLimpa && v.ClienteId != clienteId);
-        
-        if (veiculoId.HasValue)
-            query = query.Where(v => v.Id != veiculoId.Value);
-            
-        return await query.AnyAsync();
+        var placaNormalizada = NormalizarPlaca(placa);
+        return await _context.Veiculos.AnyAsync(v => v.Placa == placaNormalizada && v.Id != veiculoId);
+    }
+
+    public async Task<bool> ClienteExistsAsync(Guid clienteId)
+    {
+        return await _context.Clientes.AnyAsync(c => c.Id == clienteId);
+    }
+
+    private static string NormalizarPlaca(string placa)
+    {
+        return new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpper();
     }
 }

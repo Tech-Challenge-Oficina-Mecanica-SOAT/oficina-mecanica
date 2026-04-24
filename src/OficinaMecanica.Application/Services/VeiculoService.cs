@@ -21,19 +21,7 @@ public class VeiculoService : IVeiculoService
         var veiculo = await _veiculoRepository.GetByIdAsync(id);
         if (veiculo == null) return null;
         
-        var cliente = await _clienteRepository.GetByIdAsync(veiculo.ClienteId);
-        
-        return new VeiculoDto
-        {
-            Id = veiculo.Id,
-            ClienteId = veiculo.ClienteId,
-            ClienteNome = cliente?.Nome ?? string.Empty,
-            Placa = veiculo.Placa,
-            Marca = veiculo.Marca,
-            Modelo = veiculo.Modelo,
-            Ano = veiculo.Ano,
-            CriadoEm = veiculo.CriadoEm
-        };
+        return MapToDto(veiculo);
     }
 
     public async Task<VeiculoDto?> GetByPlacaAsync(string placa)
@@ -41,121 +29,85 @@ public class VeiculoService : IVeiculoService
         var veiculo = await _veiculoRepository.GetByPlacaAsync(placa);
         if (veiculo == null) return null;
         
-        var cliente = await _clienteRepository.GetByIdAsync(veiculo.ClienteId);
-        
-        return new VeiculoDto
-        {
-            Id = veiculo.Id,
-            ClienteId = veiculo.ClienteId,
-            ClienteNome = cliente?.Nome ?? string.Empty,
-            Placa = veiculo.Placa,
-            Marca = veiculo.Marca,
-            Modelo = veiculo.Modelo,
-            Ano = veiculo.Ano,
-            CriadoEm = veiculo.CriadoEm
-        };
+        return MapToDto(veiculo);
     }
 
     public async Task<IEnumerable<VeiculoDto>> GetAllAsync()
     {
         var veiculos = await _veiculoRepository.GetAllAsync();
-        var result = new List<VeiculoDto>();
-        
-        foreach (var veiculo in veiculos)
-        {
-            var cliente = await _clienteRepository.GetByIdAsync(veiculo.ClienteId);
-            result.Add(new VeiculoDto
-            {
-                Id = veiculo.Id,
-                ClienteId = veiculo.ClienteId,
-                ClienteNome = cliente?.Nome ?? string.Empty,
-                Placa = veiculo.Placa,
-                Marca = veiculo.Marca,
-                Modelo = veiculo.Modelo,
-                Ano = veiculo.Ano,
-                CriadoEm = veiculo.CriadoEm
-            });
-        }
-        
-        return result;
+        return veiculos.Select(MapToDto);
     }
 
     public async Task<IEnumerable<VeiculoDto>> GetByClienteIdAsync(Guid clienteId)
     {
         var veiculos = await _veiculoRepository.GetByClienteIdAsync(clienteId);
-        var cliente = await _clienteRepository.GetByIdAsync(clienteId);
-        var clienteNome = cliente?.Nome ?? string.Empty;
-        
-        return veiculos.Select(veiculo => new VeiculoDto
-        {
-            Id = veiculo.Id,
-            ClienteId = veiculo.ClienteId,
-            ClienteNome = clienteNome,
-            Placa = veiculo.Placa,
-            Marca = veiculo.Marca,
-            Modelo = veiculo.Modelo,
-            Ano = veiculo.Ano,
-            CriadoEm = veiculo.CriadoEm
-        });
+        return veiculos.Select(MapToDto);
     }
 
     public async Task<VeiculoDto> CreateAsync(CreateVeiculoDto createDto)
     {
-        // Verificar se o cliente existe
+        // Validar se o cliente existe
         var cliente = await _clienteRepository.GetByIdAsync(createDto.ClienteId);
         if (cliente == null)
-            throw new KeyNotFoundException("Cliente não encontrado");
+            throw new KeyNotFoundException($"Cliente com ID {createDto.ClienteId} não encontrado");
             
-        // Verificar se a placa já existe
+        // Validar se a placa já existe
         if (await _veiculoRepository.ExistsByPlacaAsync(createDto.Placa))
-            throw new InvalidOperationException("Veículo com esta placa já cadastrado");
+            throw new InvalidOperationException($"Veículo com placa {createDto.Placa} já cadastrado");
         
         var veiculo = new Veiculo(createDto.ClienteId, createDto.Placa, createDto.Marca, createDto.Modelo, createDto.Ano);
         var created = await _veiculoRepository.AddAsync(veiculo);
         
-        return new VeiculoDto
-        {
-            Id = created.Id,
-            ClienteId = created.ClienteId,
-            ClienteNome = cliente.Nome,
-            Placa = created.Placa,
-            Marca = created.Marca,
-            Modelo = created.Modelo,
-            Ano = created.Ano,
-            CriadoEm = created.CriadoEm
-        };
+        return MapToDto(created);
     }
 
     public async Task<VeiculoDto> UpdateAsync(Guid id, UpdateVeiculoDto updateDto)
     {
         var veiculo = await _veiculoRepository.GetByIdAsync(id);
         if (veiculo == null)
-            throw new KeyNotFoundException("Veículo não encontrado");
+            throw new KeyNotFoundException($"Veículo com ID {id} não encontrado");
             
-        // Verificar se a placa já existe para outro veículo
-        if (await _veiculoRepository.ExistsByPlacaForOtherClienteAsync(updateDto.Placa, veiculo.ClienteId, id))
-            throw new InvalidOperationException("Veículo com esta placa já cadastrado");
+        // Validar se o cliente existe (se foi informado um novo cliente)
+        if (updateDto.ClienteId.HasValue && updateDto.ClienteId.Value != Guid.Empty)
+        {
+            var cliente = await _clienteRepository.GetByIdAsync(updateDto.ClienteId.Value);
+            if (cliente == null)
+                throw new KeyNotFoundException($"Cliente com ID {updateDto.ClienteId} não encontrado");
+        }
             
-        veiculo.Atualizar(updateDto.Placa, updateDto.Marca, updateDto.Modelo, updateDto.Ano);
-        await _veiculoRepository.UpdateAsync(veiculo);
+        // Validar se a placa já existe em outro veículo
+        if (await _veiculoRepository.ExistsByPlacaForOtherVeiculoAsync(updateDto.Placa, id))
+            throw new InvalidOperationException($"Veículo com placa {updateDto.Placa} já cadastrado em outro veículo");
         
-        var cliente = await _clienteRepository.GetByIdAsync(veiculo.ClienteId);
+        veiculo.Atualizar(
+            updateDto.ClienteId,
+            updateDto.Placa,
+            updateDto.Marca,
+            updateDto.Modelo,
+            updateDto.Ano
+        );
         
+        var updated = await _veiculoRepository.UpdateAsync(veiculo);
+        return MapToDto(updated);
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        await _veiculoRepository.DeleteAsync(id);
+    }
+
+    private static VeiculoDto MapToDto(Veiculo veiculo)
+    {
         return new VeiculoDto
         {
             Id = veiculo.Id,
             ClienteId = veiculo.ClienteId,
-            ClienteNome = cliente?.Nome ?? string.Empty,
+            ClienteNome = veiculo.Cliente?.Nome ?? string.Empty,
             Placa = veiculo.Placa,
             Marca = veiculo.Marca,
             Modelo = veiculo.Modelo,
             Ano = veiculo.Ano,
             CriadoEm = veiculo.CriadoEm
         };
-    }
-
-    public async Task DeleteAsync(Guid id)
-    {
-        await _veiculoRepository.DeleteAsync(id);
     }
 }

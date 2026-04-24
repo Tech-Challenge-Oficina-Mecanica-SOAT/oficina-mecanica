@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Interfaces;
 
@@ -6,6 +7,7 @@ namespace OficinaMecanica.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
 public class VeiculosController : ControllerBase
 {
     private readonly IVeiculoService _veiculoService;

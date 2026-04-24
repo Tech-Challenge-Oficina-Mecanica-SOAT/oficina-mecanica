@@ -14,22 +14,19 @@ public class ClienteRepository : IClienteRepository
         _context = context;
     }
 
-    public async Task<Cliente?> GetByIdAsync(Guid id)
-    {
-        return await _context.Clientes.FindAsync(id);
-    }
+    public async Task<Cliente?> GetByIdAsync(Guid id) =>
+        await _context.Clientes.FindAsync(id);
+
+    public async Task<IEnumerable<Cliente>> GetAllAsync() =>
+          await _context.Clientes.ToListAsync();
+
 
     public async Task<Cliente?> GetByDocumentoAsync(string documento)
     {
         // Limpar o documento antes de buscar
         var docLimpo = new string(documento.Where(c => char.IsLetterOrDigit(c)).ToArray()).ToUpper();
         return await _context.Clientes.FirstOrDefaultAsync(c => c.Documento == docLimpo);
-    }
-
-    public async Task<IEnumerable<Cliente>> GetAllAsync()
-    {
-        return await _context.Clientes.ToListAsync();
-    }
+    }    
 
     public async Task<Cliente> AddAsync(Cliente cliente)
     {
