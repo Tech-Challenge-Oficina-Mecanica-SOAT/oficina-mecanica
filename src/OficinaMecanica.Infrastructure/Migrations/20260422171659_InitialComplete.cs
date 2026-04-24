@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace OficinaMecanica.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddClienteIdToUsuario : Migration
+    public partial class InitialComplete : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,12 +16,12 @@ namespace OficinaMecanica.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Nome = table.Column<string>(type: "text", nullable: false),
-                    Documento = table.Column<string>(type: "text", nullable: false),
-                    Telefone = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
+                    Nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Documento = table.Column<string>(type: "character varying(14)", maxLength: 14, nullable: false),
+                    Telefone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     CriadoEm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Ativo = table.Column<bool>(type: "boolean", nullable: false)
+                    Ativo = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {
@@ -33,9 +33,12 @@ namespace OficinaMecanica.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Nome = table.Column<string>(type: "text", nullable: false),
-                    Preco = table.Column<decimal>(type: "numeric", nullable: false),
-                    Quantidade = table.Column<int>(type: "integer", nullable: false)
+                    Nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Preco = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Quantidade = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    CriadoEm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Ativo = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -47,8 +50,11 @@ namespace OficinaMecanica.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Descricao = table.Column<string>(type: "text", nullable: false),
-                    Valor = table.Column<decimal>(type: "numeric", nullable: false)
+                    Nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Valor = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CriadoEm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Ativo = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -76,9 +82,9 @@ namespace OficinaMecanica.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Placa = table.Column<string>(type: "text", nullable: false),
-                    Marca = table.Column<string>(type: "text", nullable: false),
-                    Modelo = table.Column<string>(type: "text", nullable: false),
+                    Placa = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: false),
+                    Marca = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Modelo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Ano = table.Column<int>(type: "integer", nullable: false),
                     CriadoEm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ClienteId = table.Column<Guid>(type: "uuid", nullable: false)
@@ -173,6 +179,12 @@ namespace OficinaMecanica.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Clientes_Documento",
+                table: "Clientes",
+                column: "Documento",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OrdensServico_ClienteId",
                 table: "OrdensServico",
                 column: "ClienteId");
@@ -193,9 +205,21 @@ namespace OficinaMecanica.Infrastructure.Migrations
                 column: "ServicoId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PecasInsumos_Codigo",
+                table: "PecasInsumos",
+                column: "Codigo",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Veiculos_ClienteId",
                 table: "Veiculos",
                 column: "ClienteId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Veiculos_Placa",
+                table: "Veiculos",
+                column: "Placa",
+                unique: true);
         }
 
         /// <inheritdoc />

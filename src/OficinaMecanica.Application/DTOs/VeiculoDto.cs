@@ -23,6 +23,7 @@ public class CreateVeiculoDto
 
 public class UpdateVeiculoDto
 {
+    public Guid? ClienteId { get; set; }
     public string Placa { get; set; } = string.Empty;
     public string Marca { get; set; } = string.Empty;
     public string Modelo { get; set; } = string.Empty;

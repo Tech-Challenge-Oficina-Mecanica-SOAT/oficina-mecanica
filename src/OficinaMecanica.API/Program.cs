@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +8,9 @@ using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
 using OficinaMecanica.Infrastructure.Data;
+using OficinaMecanica.Infrastructure.Repositories;
+using OficinaMecanica.Application.Services;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Infrastructure.Repositories;
 using Scalar.AspNetCore;
 
@@ -25,19 +28,28 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 
+
+// DI - Servico
+builder.Services.AddScoped<IServicoRepository, ServicoRepository>();
+builder.Services.AddScoped<IServicoService, ServicoService>();
+
+        // Registrar Peca
+        builder.Services.AddScoped<IPecaInsumoRepository, PecaInsumoRepository>();
+        builder.Services.AddScoped<IPecaService, PecaService>();
+
 // DI - Veiculo
 builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
 builder.Services.AddScoped<IVeiculoService, VeiculoService>();
 
-// DI - Segurança
+// DI - SeguranÃ§a
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// DI - Público
+// DI - PÃºblico
 builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 
-// Autenticação JWT
+// AutenticaÃ§Ã£o JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -91,4 +103,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.Run();
 
+
+
 public partial class Program { }
+

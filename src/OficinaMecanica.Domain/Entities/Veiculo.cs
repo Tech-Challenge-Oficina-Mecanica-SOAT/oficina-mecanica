@@ -5,18 +5,15 @@ namespace OficinaMecanica.Domain.Entities;
 public class Veiculo
 {
     public Guid Id { get; private set; }
-    
     public string Placa { get; private set; }
     public string Marca { get; private set; }
     public string Modelo { get; private set; }
     public int Ano { get; private set; }
     public DateTime CriadoEm { get; private set; }
-
-
-    // FK
     public Guid ClienteId { get; private set; }
-    public Cliente Cliente { get; private set; }
+    public Cliente? Cliente { get; private set; }
     public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
+    private Veiculo() { }
 
     public Veiculo(Guid clienteId, string placa, string marca, string modelo, int ano)
     {
@@ -37,14 +34,14 @@ public class Veiculo
         
         Id = Guid.NewGuid();
         ClienteId = clienteId;
-        Placa = LimparPlaca(placa).ToUpper();
+        Placa = NormalizarPlaca(placa);
         Marca = marca;
         Modelo = modelo;
         Ano = ano;
         CriadoEm = DateTime.UtcNow;
     }
-    
-    public void Atualizar(string placa, string marca, string modelo, int ano)
+
+    public void Atualizar(Guid? clienteId, string placa, string marca, string modelo, int ano)
     {
         if (!ValidarPlaca(placa))
             throw new ArgumentException("Placa inválida. Formato: ABC1234 ou ABC1D23");
@@ -58,16 +55,18 @@ public class Veiculo
         if (ano < 1900 || ano > DateTime.Now.Year + 1)
             throw new ArgumentException("Ano inválido");
             
-        Placa = LimparPlaca(placa).ToUpper();
+        if (clienteId.HasValue && clienteId.Value != Guid.Empty)
+            ClienteId = clienteId.Value;
+            
+        Placa = NormalizarPlaca(placa);
         Marca = marca;
         Modelo = modelo;
         Ano = ano;
     }
     
-    private static string LimparPlaca(string placa)
+    private static string NormalizarPlaca(string placa)
     {
-        // Remove espaços, traços e outros caracteres especiais
-        return new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray());
+        return new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpper();
     }
     
     private static bool ValidarPlaca(string placa)
@@ -75,7 +74,7 @@ public class Veiculo
         if (string.IsNullOrWhiteSpace(placa))
             return false;
             
-        var placaLimpa = LimparPlaca(placa).ToUpper();
+        var placaLimpa = NormalizarPlaca(placa);
         
         // Formato antigo: ABC1234
         var padraoAntigo = @"^[A-Z]{3}[0-9]{4}$";
