@@ -157,32 +157,48 @@ curl http://localhost:5000/publico/os/1/status
 
 ## Como rodar o scan de qualidade (SonarQube)
 
-### Pré-requisitos
+### 1. Subir o SonarQube
+
+O SonarQube está incluído no `docker-compose.yaml`. Para subí-lo:
 
 ```bash
-# Instalar o scanner globalmente (apenas uma vez)
+docker compose up -d sonarqube
+```
+
+Aguarde ~1 minuto e acesse `http://localhost:9000`. Login padrão: **admin / admin** (será solicitada troca na primeira vez).
+
+### 2. Criar o projeto e gerar o token
+
+1. Em `http://localhost:9000`, crie um projeto com a chave `mecanica-api`
+2. Vá em **My Account → Security → Generate Token** e copie o token gerado
+
+### 3. Instalar o scanner (apenas uma vez)
+
+```bash
 dotnet tool install --global dotnet-sonarscanner
 ```
 
-### Executar o scan
+### 4. Executar o scan
 
-Substitua `TOKEN` e `URL` conforme o ambiente (padrão local: `http://localhost:9000`):
+Na raiz do repositório, substituindo `SEU_TOKEN`:
 
 ```bash
-dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.login="TOKEN"
-dotnet build
-dotnet sonarscanner end /d:sonar.login="TOKEN"
+dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN"
+dotnet build OficinaMecanica.slnx
+dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
-### Cobertura de testes com o scan
+### 5. Executar com cobertura de testes
 
 ```bash
 dotnet sonarscanner begin /k:"mecanica-api" \
   /d:sonar.host.url="http://localhost:9000" \
-  /d:sonar.login="TOKEN" \
+  /d:sonar.token="SEU_TOKEN" \
   /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
-dotnet build
+dotnet build OficinaMecanica.slnx
 dotnet test --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-dotnet sonarscanner end /d:sonar.login="TOKEN"
+dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
+
+Resultados em: `http://localhost:9000/dashboard?id=mecanica-api`
