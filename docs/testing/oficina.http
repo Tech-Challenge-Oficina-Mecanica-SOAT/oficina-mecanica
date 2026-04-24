@@ -1,0 +1,302 @@
+### Variáveis de ambiente
+### Use a extensão "REST Client" (VS Code) ou Rider para executar.
+### O resultado de cada request fica armazenado e pode ser referenciado por
+### `{{nome.response.body.$.campo}}` nas chamadas seguintes.
+
+@baseUrl = http://localhost:5000
+@email = admin@oficina.com
+@senha = Senha@123
+
+###############################################################################
+# 1. AUTENTICAÇÃO
+###############################################################################
+
+### 1.1 - Registrar um usuário Admin (público)
+# @name registrar
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "{{senha}}",
+  "perfil": 0
+}
+
+### 1.2 - Login (gera o JWT)
+# @name login
+POST {{baseUrl}}/Auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "{{senha}}"
+}
+
+### Captura o token retornado (use em todas as requisições autenticadas)
+@token = {{login.response.body.token}}
+
+###############################################################################
+# 2. CLIENTES (Admin)
+###############################################################################
+
+### 2.1 - Criar cliente
+# @name criarCliente
+POST {{baseUrl}}/api/Clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "documento": "12345678901",
+  "telefone": "11999998888",
+  "email": "joao@email.com"
+}
+
+@clienteId = {{criarCliente.response.body.id}}
+
+### 2.2 - Listar todos os clientes
+GET {{baseUrl}}/api/Clientes
+Authorization: Bearer {{token}}
+
+### 2.3 - Buscar cliente por ID
+GET {{baseUrl}}/api/Clientes/{{clienteId}}
+Authorization: Bearer {{token}}
+
+### 2.4 - Buscar cliente por documento
+GET {{baseUrl}}/api/Clientes/documento/12345678901
+Authorization: Bearer {{token}}
+
+### 2.5 - Atualizar cliente
+PUT {{baseUrl}}/api/Clientes/{{clienteId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva Junior",
+  "telefone": "11988887777",
+  "email": "joao.novo@email.com"
+}
+
+### 2.6 - Desativar cliente
+PATCH {{baseUrl}}/api/Clientes/{{clienteId}}/desativar
+Authorization: Bearer {{token}}
+
+### 2.7 - Ativar cliente
+PATCH {{baseUrl}}/api/Clientes/{{clienteId}}/ativar
+Authorization: Bearer {{token}}
+
+###############################################################################
+# 3. VEÍCULOS (Admin)
+###############################################################################
+
+### 3.1 - Criar veículo (precisa de clienteId existente)
+# @name criarVeiculo
+POST {{baseUrl}}/api/Veiculos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clienteId": "{{clienteId}}",
+  "placa": "ABC1D23",
+  "marca": "Volkswagen",
+  "modelo": "Gol",
+  "ano": 2020
+}
+
+@veiculoId = {{criarVeiculo.response.body.id}}
+
+### 3.2 - Listar todos
+GET {{baseUrl}}/api/Veiculos
+Authorization: Bearer {{token}}
+
+### 3.3 - Buscar por placa
+GET {{baseUrl}}/api/Veiculos/placa/ABC1D23
+Authorization: Bearer {{token}}
+
+### 3.4 - Listar veículos de um cliente
+GET {{baseUrl}}/api/Veiculos/cliente/{{clienteId}}
+Authorization: Bearer {{token}}
+
+### 3.5 - Atualizar veículo
+PUT {{baseUrl}}/api/Veiculos/{{veiculoId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "placa": "ABC1D23",
+  "marca": "Volkswagen",
+  "modelo": "Gol G6",
+  "ano": 2021
+}
+
+###############################################################################
+# 4. SERVIÇOS (catálogo)
+###############################################################################
+
+### 4.1 - Criar serviço
+# @name criarServico
+POST {{baseUrl}}/api/Servicos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Troca de óleo",
+  "descricao": "Troca de óleo do motor + filtro",
+  "valor": 150.00
+}
+
+@servicoId = {{criarServico.response.body.id}}
+
+### 4.2 - Listar serviços ativos
+GET {{baseUrl}}/api/Servicos/ativos
+
+### 4.3 - Atualizar serviço
+PUT {{baseUrl}}/api/Servicos/{{servicoId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Troca de óleo premium",
+  "descricao": "Troca de óleo sintético + filtro",
+  "valor": 220.00
+}
+
+### 4.4 - Desativar serviço
+PATCH {{baseUrl}}/api/Servicos/{{servicoId}}/desativar
+Authorization: Bearer {{token}}
+
+###############################################################################
+# 5. PEÇAS / ESTOQUE
+###############################################################################
+
+### 5.1 - Criar peça
+# @name criarPeca
+POST {{baseUrl}}/api/Pecas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Filtro de óleo",
+  "codigo": "FO-001",
+  "precoUnitario": 45.90,
+  "estoque": 50,
+  "descricao": "Filtro de óleo motor 1.0 a 2.0"
+}
+
+@pecaId = {{criarPeca.response.body.id}}
+
+### 5.2 - Listar peças com estoque baixo (<= 10)
+GET {{baseUrl}}/api/Pecas/estoque-baixo?limite=10
+
+### 5.3 - Consultar estoque atual de uma peça
+GET {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+
+### 5.4 - Incrementar estoque
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 20,
+  "tipoOperacao": "incrementar"
+}
+
+### 5.5 - Decrementar estoque (saída por uso em OS)
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 5,
+  "tipoOperacao": "decrementar"
+}
+
+###############################################################################
+# 6. PAINEL PÚBLICO (sem autenticação)
+###############################################################################
+
+### 6.1 - Status público de uma OS por ID
+### Substitua o GUID abaixo pelo Id de uma OS existente no banco.
+GET {{baseUrl}}/Publico/os/00000000-0000-0000-0000-000000000000/status
+
+###############################################################################
+# 7. CAMINHOS TRISTES (erros esperados, úteis para validar o tratamento)
+###############################################################################
+
+### 7.1 - Login com senha errada → 401
+POST {{baseUrl}}/Auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "senha-errada"
+}
+
+### 7.2 - Registrar e-mail duplicado → 409
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "{{senha}}",
+  "perfil": 0
+}
+
+### 7.3 - Acessar endpoint protegido sem token → 401
+GET {{baseUrl}}/api/Clientes
+
+### 7.4 - Acessar com token inválido → 401
+GET {{baseUrl}}/api/Clientes
+Authorization: Bearer token-invalido.123.456
+
+### 7.5 - Buscar cliente inexistente → 404
+GET {{baseUrl}}/api/Clientes/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### 7.6 - Criar cliente com documento duplicado → 400
+POST {{baseUrl}}/api/Clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Outro João",
+  "documento": "12345678901",
+  "telefone": "11000000000",
+  "email": "outro@email.com"
+}
+
+### 7.7 - Criar veículo para cliente inexistente → 404
+POST {{baseUrl}}/api/Veiculos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clienteId": "00000000-0000-0000-0000-000000000000",
+  "placa": "ZZZ9Z99",
+  "marca": "Fiat",
+  "modelo": "Uno",
+  "ano": 2010
+}
+
+### 7.8 - Decrementar estoque além do saldo disponível → 400
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 99999,
+  "tipoOperacao": "decrementar"
+}
+
+### 7.9 - tipoOperacao inválido → 400
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 1,
+  "tipoOperacao": "zerar"
+}
+
+### 7.10 - OS pública inexistente → 404
+GET {{baseUrl}}/Publico/os/00000000-0000-0000-0000-000000000000/status
