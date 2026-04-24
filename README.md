@@ -26,7 +26,7 @@ Rodando com Docker (recomendado)
    docker logs -f oficina_postgres
    docker logs -f oficina_api
 
-A API estará acessível em http://localhost:5000/ e a UI Scalar em http://localhost:5000/scalar (se habilitada). O Dockerfile expõe a porta 5000.
+A API estará acessível em http://localhost:5165/ e a documentação interativa (Scalar) em http://localhost:5165/scalar. O Dockerfile expõe a porta 5000.
 
 Conectar ao banco (psql)
 
