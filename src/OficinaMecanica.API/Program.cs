@@ -9,9 +9,6 @@ using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Infrastructure.Repositories;
-using OficinaMecanica.Application.Services;
-using OficinaMecanica.Application.Interfaces;
-using OficinaMecanica.Infrastructure.Repositories;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,28 +25,27 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 
-
 // DI - Servico
 builder.Services.AddScoped<IServicoRepository, ServicoRepository>();
 builder.Services.AddScoped<IServicoService, ServicoService>();
 
-        // Registrar Peca
-        builder.Services.AddScoped<IPecaInsumoRepository, PecaInsumoRepository>();
-        builder.Services.AddScoped<IPecaService, PecaService>();
+// Registrar Peca
+builder.Services.AddScoped<IPecaInsumoRepository, PecaInsumoRepository>();
+builder.Services.AddScoped<IPecaService, PecaService>();
 
 // DI - Veiculo
 builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
 builder.Services.AddScoped<IVeiculoService, VeiculoService>();
 
-// DI - SeguranÃ§a
+// DI - Segurança
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// DI - PÃºblico
+// DI - Público
 builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 
-// AutenticaÃ§Ã£o JWT
+// Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -95,6 +91,13 @@ if (app.Environment.IsDevelopment())
             BaseUrl = "http://localhost:5000"
         };
     });
+    
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Oficina Mecanica API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
 app.UseHttpsRedirection();
@@ -103,7 +106,4 @@ app.UseAuthorization();
 app.MapControllers();
 app.Run();
 
-
-
 public partial class Program { }
-
