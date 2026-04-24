@@ -47,7 +47,7 @@ Content-Type: application/json
 
 {
   "nome": "João da Silva",
-  "documento": "12345678901",
+  "documento": "52998224725",
   "telefone": "11999998888",
   "email": "joao@email.com"
 }
@@ -63,7 +63,7 @@ GET {{baseUrl}}/api/Clientes/{{clienteId}}
 Authorization: Bearer {{token}}
 
 ### 2.4 - Buscar cliente por documento
-GET {{baseUrl}}/api/Clientes/documento/12345678901
+GET {{baseUrl}}/api/Clientes/documento/52998224725
 Authorization: Bearer {{token}}
 
 ### 2.5 - Atualizar cliente
@@ -260,7 +260,7 @@ Content-Type: application/json
 
 {
   "nome": "Outro João",
-  "documento": "12345678901",
+  "documento": "52998224725",
   "telefone": "11000000000",
   "email": "outro@email.com"
 }

@@ -120,14 +120,18 @@ namespace OficinaMecanica.API.Controllers
                 
                 await _pecaService.UpdateEstoqueAsync(id, updateEstoqueDto);
                 var novoEstoque = await _pecaService.GetEstoqueAsync(id);
-                
-                return Ok(new { 
-                    success = true, 
+
+                return Ok(new {
+                    success = true,
                     message = $"Estoque {(updateEstoqueDto.TipoOperacao == "incrementar" ? "incrementado" : "decrementado")} com sucesso",
-                    novoEstoque 
+                    novoEstoque
                 });
             }
             catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
             }

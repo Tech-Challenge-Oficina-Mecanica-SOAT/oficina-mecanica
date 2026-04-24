@@ -28,7 +28,7 @@ CRUD de clientes + ativação/desativação. **Todos os endpoints exigem perfil 
 ```json
 {
   "nome": "João da Silva",
-  "documento": "12345678901",
+  "documento": "52998224725",
   "telefone": "11999998888",
   "email": "joao@email.com"
 }
@@ -39,7 +39,7 @@ CRUD de clientes + ativação/desativação. **Todos os endpoints exigem perfil 
 ### 2. Consultar
 - `GET /api/Clientes` → `200 OK` com a lista.
 - `GET /api/Clientes/{id}` → `200 OK` com o cliente criado.
-- `GET /api/Clientes/documento/12345678901` → `200 OK`.
+- `GET /api/Clientes/documento/52998224725` → `200 OK`.
 
 ### 3. Atualizar: `PUT /api/Clientes/{id}`
 
@@ -65,6 +65,7 @@ CRUD de clientes + ativação/desativação. **Todos os endpoints exigem perfil 
 |---------|-----------|-------------------|
 | Sem token | `GET /api/Clientes` sem `Authorization` | `401 Unauthorized` |
 | Documento duplicado | `POST /api/Clientes` repetindo `documento` | `400 Bad Request` |
+| CPF inválido | `POST /api/Clientes` com `"documento": "12345678901"` | `400 Bad Request` |
 | Buscar por id inexistente | `GET /api/Clientes/00000000-0000-0000-0000-000000000000` | `404 Not Found` |
 | Atualizar id inexistente | `PUT /api/Clientes/{guid-aleatório}` | `404 Not Found` |
 | Deletar id inexistente | `DELETE /api/Clientes/{guid-aleatório}` | `404 Not Found` |

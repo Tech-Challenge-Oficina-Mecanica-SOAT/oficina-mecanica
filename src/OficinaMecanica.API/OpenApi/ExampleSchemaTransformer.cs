@@ -1,84 +1,84 @@
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.OpenApi;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using OficinaMecanica.Application.DTOs;
 
 namespace OficinaMecanica.API.OpenApi;
 
 internal sealed class ExampleSchemaTransformer : IOpenApiSchemaTransformer
 {
-    private static readonly Dictionary<Type, IOpenApiAny> Examples = new()
+    private static readonly Dictionary<Type, Func<JsonNode>> Examples = new()
     {
-        [typeof(LoginDto)] = new OpenApiObject
+        [typeof(LoginDto)] = () => new JsonObject
         {
-            ["email"] = new OpenApiString("admin@oficina.com"),
-            ["senha"] = new OpenApiString("Senha@123"),
+            ["email"] = "admin@oficina.com",
+            ["senha"] = "Senha@123",
         },
-        [typeof(RegistrarUsuarioDto)] = new OpenApiObject
+        [typeof(RegistrarUsuarioDto)] = () => new JsonObject
         {
-            ["email"] = new OpenApiString("admin@oficina.com"),
-            ["senha"] = new OpenApiString("Senha@123"),
-            ["perfil"] = new OpenApiInteger(0),
+            ["email"] = "admin@oficina.com",
+            ["senha"] = "Senha@123",
+            ["perfil"] = 0,
         },
-        [typeof(CreateClienteDto)] = new OpenApiObject
+        [typeof(CreateClienteDto)] = () => new JsonObject
         {
-            ["nome"] = new OpenApiString("João da Silva"),
-            ["documento"] = new OpenApiString("12345678901"),
-            ["telefone"] = new OpenApiString("11999998888"),
-            ["email"] = new OpenApiString("joao@email.com"),
+            ["nome"] = "João da Silva",
+            ["documento"] = "52998224725",
+            ["telefone"] = "11999998888",
+            ["email"] = "joao@email.com",
         },
-        [typeof(UpdateClienteDto)] = new OpenApiObject
+        [typeof(UpdateClienteDto)] = () => new JsonObject
         {
-            ["nome"] = new OpenApiString("João da Silva"),
-            ["telefone"] = new OpenApiString("11988887777"),
-            ["email"] = new OpenApiString("joao.novo@email.com"),
+            ["nome"] = "João da Silva",
+            ["telefone"] = "11988887777",
+            ["email"] = "joao.novo@email.com",
         },
-        [typeof(CreateVeiculoDto)] = new OpenApiObject
+        [typeof(CreateVeiculoDto)] = () => new JsonObject
         {
-            ["clienteId"] = new OpenApiString("00000000-0000-0000-0000-000000000000"),
-            ["placa"] = new OpenApiString("ABC1D23"),
-            ["marca"] = new OpenApiString("Volkswagen"),
-            ["modelo"] = new OpenApiString("Gol"),
-            ["ano"] = new OpenApiInteger(2020),
+            ["clienteId"] = "00000000-0000-0000-0000-000000000000",
+            ["placa"] = "ABC1D23",
+            ["marca"] = "Volkswagen",
+            ["modelo"] = "Gol",
+            ["ano"] = 2020,
         },
-        [typeof(UpdateVeiculoDto)] = new OpenApiObject
+        [typeof(UpdateVeiculoDto)] = () => new JsonObject
         {
-            ["placa"] = new OpenApiString("ABC1D23"),
-            ["marca"] = new OpenApiString("Volkswagen"),
-            ["modelo"] = new OpenApiString("Gol G6"),
-            ["ano"] = new OpenApiInteger(2021),
+            ["placa"] = "ABC1D23",
+            ["marca"] = "Volkswagen",
+            ["modelo"] = "Gol G6",
+            ["ano"] = 2021,
         },
-        [typeof(CreateServicoDto)] = new OpenApiObject
+        [typeof(CreateServicoDto)] = () => new JsonObject
         {
-            ["nome"] = new OpenApiString("Troca de óleo"),
-            ["descricao"] = new OpenApiString("Troca de óleo do motor + filtro"),
-            ["valor"] = new OpenApiDouble(150.00),
+            ["nome"] = "Troca de óleo",
+            ["descricao"] = "Troca de óleo do motor + filtro",
+            ["valor"] = 150.00m,
         },
-        [typeof(UpdateServicoDto)] = new OpenApiObject
+        [typeof(UpdateServicoDto)] = () => new JsonObject
         {
-            ["nome"] = new OpenApiString("Troca de óleo premium"),
-            ["descricao"] = new OpenApiString("Troca de óleo sintético + filtro"),
-            ["valor"] = new OpenApiDouble(220.00),
+            ["nome"] = "Troca de óleo premium",
+            ["descricao"] = "Troca de óleo sintético + filtro",
+            ["valor"] = 220.00m,
         },
-        [typeof(CreatePecaDto)] = new OpenApiObject
+        [typeof(CreatePecaDto)] = () => new JsonObject
         {
-            ["nome"] = new OpenApiString("Filtro de óleo"),
-            ["codigo"] = new OpenApiString("FO-001"),
-            ["precoUnitario"] = new OpenApiDouble(45.90),
-            ["estoque"] = new OpenApiInteger(50),
-            ["descricao"] = new OpenApiString("Filtro de óleo motor 1.0 a 2.0"),
+            ["nome"] = "Filtro de óleo",
+            ["codigo"] = "FO-001",
+            ["precoUnitario"] = 45.90m,
+            ["estoque"] = 50,
+            ["descricao"] = "Filtro de óleo motor 1.0 a 2.0",
         },
-        [typeof(UpdatePecaDto)] = new OpenApiObject
+        [typeof(UpdatePecaDto)] = () => new JsonObject
         {
-            ["nome"] = new OpenApiString("Filtro de óleo premium"),
-            ["precoUnitario"] = new OpenApiDouble(59.90),
-            ["estoque"] = new OpenApiInteger(75),
-            ["descricao"] = new OpenApiString("Filtro de óleo de alta performance"),
+            ["nome"] = "Filtro de óleo premium",
+            ["precoUnitario"] = 59.90m,
+            ["estoque"] = 75,
+            ["descricao"] = "Filtro de óleo de alta performance",
         },
-        [typeof(UpdateEstoqueDto)] = new OpenApiObject
+        [typeof(UpdateEstoqueDto)] = () => new JsonObject
         {
-            ["quantidade"] = new OpenApiInteger(10),
-            ["tipoOperacao"] = new OpenApiString("incrementar"),
+            ["quantidade"] = 10,
+            ["tipoOperacao"] = "incrementar",
         },
     };
 
@@ -87,9 +87,9 @@ internal sealed class ExampleSchemaTransformer : IOpenApiSchemaTransformer
         OpenApiSchemaTransformerContext context,
         CancellationToken cancellationToken)
     {
-        if (Examples.TryGetValue(context.JsonTypeInfo.Type, out var example))
+        if (Examples.TryGetValue(context.JsonTypeInfo.Type, out var factory))
         {
-            schema.Example = example;
+            schema.Example = factory();
         }
 
         return Task.CompletedTask;
