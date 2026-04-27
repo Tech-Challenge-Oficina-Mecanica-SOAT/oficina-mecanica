@@ -15,6 +15,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Servico> Servicos { get; set; }
     public DbSet<OrdemServicoPeca> OrdensServicoPecas { get; set; }
     public DbSet<OrdemServicoServico> OrdensServicoServicos { get; set; }
+    public DbSet<OrdemServicoItem> OrdensServicoItens { get; set; }  // novo
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +83,31 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Codigo).IsUnique();
             entity.Property(e => e.Preco).HasPrecision(18, 2);
             entity.Property(e => e.Quantidade).HasDefaultValue(0);
+        });
+
+        // novo: OSItem
+        modelBuilder.Entity<OrdemServicoItem>(entity =>
+        {
+            entity.ToTable("OrdensServicoItens");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Descricao).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Quantidade).IsRequired();
+            entity.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
+            entity.Property(e => e.Tipo).IsRequired();
+            entity.Ignore(e => e.Subtotal); // propriedade calculada
+
+            entity.HasOne(e => e.OrdemServico)
+                .WithMany(os => os.Itens)
+                .HasForeignKey(e => e.OrdemServicoId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // novo: Total em OrdemServico
+        modelBuilder.Entity<OrdemServico>(entity =>
+        {
+            entity.Property(e => e.Total)
+                .HasPrecision(18, 2)
+                .HasDefaultValue(0);
         });
     }
 }

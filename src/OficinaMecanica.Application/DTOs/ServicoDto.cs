@@ -1,25 +1,28 @@
-﻿namespace OficinaMecanica.Application.DTOs;
+﻿using System;
 
-public class ServicoDto
+namespace OficinaMecanica.Application.DTOs
 {
-    public Guid Id { get; set; }
-    public string Nome { get; set; } = string.Empty;
-    public string Descricao { get; set; } = string.Empty;
-    public decimal Valor { get; set; }
-    public bool Ativo { get; set; }
-    public DateTime CriadoEm { get; set; }
-}
+    public class ServicoDto
+    {
+        public Guid Id { get; set; }
+        public string Nome { get; set; } = string.Empty;
+        public string Descricao { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
+        public bool Ativo { get; set; }
+        public DateTime CriadoEm { get; set; }
+    }
 
-public class CreateServicoDto
-{
-    public string Nome { get; set; } = string.Empty;
-    public string Descricao { get; set; } = string.Empty;
-    public decimal Valor { get; set; }
-}
+    public class CreateServicoDto
+    {
+        public string Nome { get; set; } = string.Empty;
+        public string Descricao { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
+    }
 
-public class UpdateServicoDto
-{
-    public string Nome { get; set; } = string.Empty;
-    public string Descricao { get; set; } = string.Empty;
-    public decimal Valor { get; set; }
+    public class UpdateServicoDto
+    {
+        public string Nome { get; set; } = string.Empty;
+        public string Descricao { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
+    }
 }
