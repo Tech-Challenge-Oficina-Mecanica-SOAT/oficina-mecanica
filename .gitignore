@@ -85,3 +85,7 @@ build/
 .env.*.local
 
 */plans/
+
+# Test results and coverage
+TestResults/
+**/coverage.*.xml

@@ -1,36 +1,105 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace OficinaMecanica.Domain.Entities;
 
-namespace OficinaMecanica.Domain.Entities
+public enum EnumStatusOS
 {
-    public enum EnumStatusOS
+    Recebida = 1,
+    EmDiagnostico = 2,
+    AguardandoAprovacao = 3,
+    EmExecucao = 4,
+    Finalizada = 5,
+    Entregue = 6,
+    Rejeitada = 7
+}
+
+public class OrdemServico
+{
+    public Guid Id { get; private set; }
+    public DateTime DataAbertura { get; private set; }
+    public DateTime? DataFechamento { get; private set; }
+    public EnumStatusOS StatusOS { get; private set; }
+    public string Observacoes { get; private set; } = string.Empty;
+
+    public Guid ClienteId { get; private set; }
+    public Cliente Cliente { get; private set; } = null!;
+    public Guid VeiculoId { get; private set; }
+    public Veiculo Veiculo { get; private set; } = null!;
+
+    public ICollection<OrdemServicoPeca> Pecas { get; set; } = new List<OrdemServicoPeca>();
+    public ICollection<OrdemServicoServico> Servicos { get; set; } = new List<OrdemServicoServico>();
+    public ICollection<HistoricoStatusOS> Historico { get; private set; } = new List<HistoricoStatusOS>();
+
+    private OrdemServico() { }
+
+    public OrdemServico(Guid clienteId, Guid veiculoId, string observacoes)
     {
-        Recebida = 1,
-        EmDiagnostico = 2,
-        AguardandoAprovacao = 3,
-        EmExecucao = 4,
-        Finalizada = 5,
-        Entregue = 6
+        if (clienteId == Guid.Empty)
+            throw new ArgumentException("Cliente é obrigatório.");
+        if (veiculoId == Guid.Empty)
+            throw new ArgumentException("Veiculo é obrigatório.");
+
+        Id = Guid.NewGuid();
+        ClienteId = clienteId;
+        VeiculoId = veiculoId;
+        Observacoes = observacoes ?? string.Empty;
+        DataAbertura = DateTime.UtcNow;
+        StatusOS = EnumStatusOS.Recebida;
+
+        RegistrarHistorico(null, EnumStatusOS.Recebida, "sistema", "Criação inicial");
     }
 
+    public void IniciarDiagnostico(string alteradoPor)
+        => Transitar(EnumStatusOS.Recebida, EnumStatusOS.EmDiagnostico, alteradoPor, "Diagnóstico iniciado");
 
-    public class OrdemServico
+    public void EnviarParaAprovacao(string alteradoPor)
+        => Transitar(EnumStatusOS.EmDiagnostico, EnumStatusOS.AguardandoAprovacao, alteradoPor, "Orçamento enviado, aguardando aprovação do cliente");
+
+    public void Aprovar(string alteradoPor)
+        => Transitar(EnumStatusOS.AguardandoAprovacao, EnumStatusOS.EmExecucao, alteradoPor, "Orçamento aprovado");
+
+    public void Rejeitar(string alteradoPor, string motivo)
     {
-        public Guid Id { get; set; }
-        public DateTime DataAbertura { get; set; }
-        public DateTime? DataFechamento { get; set; }
-        public EnumStatusOS StatusOS { get; set; } = EnumStatusOS.EmDiagnostico;
-        public string Observacoes { get; set; } = string.Empty;
+        if (string.IsNullOrWhiteSpace(motivo))
+            throw new ArgumentException("Informe o motivo da rejeição.");
+        Transitar(EnumStatusOS.AguardandoAprovacao, EnumStatusOS.Rejeitada, alteradoPor, $"Orçamento rejeitado: {motivo}");
+    }
 
-        // FK
-        public Guid ClienteId { get; set; }
-        public Cliente Cliente { get; set; } = null!;
-        public Guid VeiculoId { get; set; }
-        public Veiculo Veiculo { get; set; } = null!;
+    public void Finalizar(string alteradoPor)
+        => Transitar(EnumStatusOS.EmExecucao, EnumStatusOS.Finalizada, alteradoPor, "Execução finalizada");
 
-        // Relacionamentos
-        public ICollection<OrdemServicoPeca> Pecas { get; set; } = new List<OrdemServicoPeca>();
-        public ICollection<OrdemServicoServico> Servicos { get; set; } = new List<OrdemServicoServico>();
+    public void Entregar(string alteradoPor)
+    {
+        Transitar(EnumStatusOS.Finalizada, EnumStatusOS.Entregue, alteradoPor, "Veículo entregue ao cliente");
+        DataFechamento = DateTime.UtcNow;
+    }
+
+    public void ForcarStatus(EnumStatusOS novoStatus, string alteradoPor, string motivo)
+    {
+        if (string.IsNullOrWhiteSpace(motivo))
+            throw new ArgumentException("Informe o motivo do override.");
+        if (novoStatus == StatusOS)
+            throw new ArgumentException("Novo status é igual ao atual.");
+
+        var anterior = StatusOS;
+        StatusOS = novoStatus;
+        if (novoStatus == EnumStatusOS.Entregue)
+            DataFechamento = DateTime.UtcNow;
+
+        RegistrarHistorico(anterior, novoStatus, alteradoPor, $"Override administrativo: {motivo}");
+    }
+
+    private void Transitar(EnumStatusOS esperadoAtual, EnumStatusOS novo, string alteradoPor, string motivo)
+    {
+        if (StatusOS != esperadoAtual)
+            throw new InvalidOperationException(
+                $"Transição inválida: status atual é {StatusOS}, esperado {esperadoAtual} para ir a {novo}.");
+
+        var anterior = StatusOS;
+        StatusOS = novo;
+        RegistrarHistorico(anterior, novo, alteradoPor, motivo);
+    }
+
+    private void RegistrarHistorico(EnumStatusOS? anterior, EnumStatusOS novo, string alteradoPor, string motivo)
+    {
+        Historico.Add(new HistoricoStatusOS(Id, anterior, novo, alteradoPor, motivo));
     }
 }

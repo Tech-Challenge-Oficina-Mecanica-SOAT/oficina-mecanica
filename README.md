@@ -202,3 +202,15 @@ dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
 Resultados em: `http://localhost:9000/dashboard?id=mecanica-api`
+
+## Cobertura de Testes
+
+**Como gerar relatório de cobertura:**
+
+```bash
+dotnet test --collect:"XPlat Code Coverage" --results-directory ./TestResults
+dotnet tool install -g dotnet-reportgenerator-globaltool
+reportgenerator -reports:"./TestResults/**/coverage.cobertura.xml" -targetdir:"./TestResults/CoverageReport" -reporttypes:Html
+```
+
+Abra `TestResults/CoverageReport/index.html` no navegador.

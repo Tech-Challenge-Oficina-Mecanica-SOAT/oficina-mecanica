@@ -45,6 +45,11 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 // DI - Público
 builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 
+// DI - M3: Status e Histórico
+builder.Services.AddScoped<IHistoricoStatusOSRepository, HistoricoStatusOSRepository>();
+builder.Services.AddScoped<IOrdemServicoStatusService, OrdemServicoStatusService>();
+builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
+
 // Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

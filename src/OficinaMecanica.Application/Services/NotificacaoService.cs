@@ -17,4 +17,13 @@ public class NotificacaoService : INotificacaoService
 
         return Task.CompletedTask;
     }
+
+    public Task EnviarConclusaoAsync(Guid osId, string emailCliente)
+    {
+        _logger.LogInformation(
+            "Notificacao de conclusao enviada. OS: {OsId}, Cliente: {Email}",
+            osId, emailCliente);
+
+        return Task.CompletedTask;
+    }
 }
