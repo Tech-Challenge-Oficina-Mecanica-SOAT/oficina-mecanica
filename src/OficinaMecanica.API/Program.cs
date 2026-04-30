@@ -83,25 +83,12 @@ builder.Services.AddOpenApi(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    
-    app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("API Oficina Mecanica - Tech Challenge FIAP SOAT");
-    });
+app.MapOpenApi();
 
-    app.UseScalar(options =>
-    {
-        options.Title = "Oficina API";
-        options.Theme = OficinaMecanica.API.ScalarTheme.Light;
-        options.DefaultHttpClient = new ScalarHttpClientOptions
-        {
-            BaseUrl = "http://localhost:5000"
-        };
-    });
-}
+app.MapScalarApiReference(options =>
+{
+    options.WithTitle("API Oficina Mecanica - Tech Challenge FIAP SOAT");
+});
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
