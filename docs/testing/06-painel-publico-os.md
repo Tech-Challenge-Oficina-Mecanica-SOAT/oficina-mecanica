@@ -10,21 +10,7 @@ Endpoint **anônimo** para o cliente final acompanhar o status da Ordem de Servi
 
 ## Pré-condição
 
-Existir uma OS persistida. A API hoje **não expõe endpoint de criação de OS**, então para testar é preciso inserir uma OS direto no banco. Exemplo via `psql`:
-
-```bash
-docker exec -it oficina_postgres psql -U postgres -d OficinaDB
-```
-
-```sql
-INSERT INTO "OrdensServico" ("Id", "VeiculoId", "StatusOS", "DataAbertura")
-VALUES ('11111111-1111-1111-1111-111111111111',
-        '<id de um veículo existente>',
-        1,                               -- 1 = EmExecucao (consulte o enum StatusOS)
-        NOW());
-```
-
-> Nomes de tabelas/colunas podem variar conforme a migration. Se diferir, rode `\dt` para listar as tabelas e `\d "OrdensServico"` para ver as colunas.
+Existir uma OS persistida. Crie uma via API seguindo o guia [07-ordens-servico.md](./07-ordens-servico.md) e guarde o `id` retornado.
 
 ---
 
@@ -53,7 +39,7 @@ VALUES ('11111111-1111-1111-1111-111111111111',
 
 ## Cenário de teste sugerido
 
-1. Insira a OS no banco com `StatusOS = 0` (Aberta).
-2. Chame o endpoint → status `Aberta`.
-3. Atualize no banco para `StatusOS = 1` (EmExecucao) → chame de novo → status atualizado.
+1. Crie uma OS via `POST /api/ordens-servico` (ver [07](./07-ordens-servico.md)) → status inicial `Recebida`.
+2. Chame o endpoint público → status `Recebida`.
+3. Avance o status via `PATCH /api/ordens-servico/{id}/iniciar-diagnostico` (ver [08](./08-status-os.md)) → chame de novo → status `EmDiagnostico`.
 4. Chame com GUID aleatório → `404`.

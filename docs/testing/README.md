@@ -17,7 +17,7 @@ A documentação interativa do projeto é gerada via **Scalar** (em `/scalar`). 
 3. **Registre um Admin** no endpoint `POST /Auth/registrar`. O body já vem pré-preenchido com um exemplo válido. Clique em *Send*.
 4. **Faça login** no endpoint `POST /Auth/login`, mesmo body. Copie o `token` da resposta.
 5. **Autentique-se na UI:** botão *Authentication* (canto superior direito do Scalar) → escolha **Bearer** → cole o token.
-6. **Execute o fluxo completo** seguindo os arquivos numerados (`01` ao `06`) deste diretório.
+6. **Execute o fluxo completo** seguindo os arquivos numerados (`01` ao `08`) deste diretório.
 
 Alternativa para quem prefere terminal/IDE: abra [`oficina.http`](./oficina.http) no VS Code (extensão *REST Client*) ou Rider. Ele já encadeia as variáveis (token, clienteId, etc.) entre as requisições. Basta clicar em "Send Request" de cima para baixo.
 
@@ -32,12 +32,14 @@ Alternativa para quem prefere terminal/IDE: abra [`oficina.http`](./oficina.http
 
 | # | Caso de uso | Perfil exigido | Documento |
 |---|-------------|---------------|-----------|
-| 1 | Autenticação (registrar Admin + login) | Anônimo | [01-autenticacao.md](./01-autenticacao.md) |
+| 1 | Autenticação (registrar usuários + login) | Anônimo | [01-autenticacao.md](./01-autenticacao.md) |
 | 2 | Gerenciar clientes | Admin | [02-gerenciar-clientes.md](./02-gerenciar-clientes.md) |
 | 3 | Gerenciar veículos | Admin | [03-gerenciar-veiculos.md](./03-gerenciar-veiculos.md) |
-| 4 | Catálogo de serviços | Aberto | [04-catalogo-servicos.md](./04-catalogo-servicos.md) |
-| 5 | Controle de peças e estoque | Aberto | [05-controle-pecas-estoque.md](./05-controle-pecas-estoque.md) |
+| 4 | Catálogo de serviços | Admin | [04-catalogo-servicos.md](./04-catalogo-servicos.md) |
+| 5 | Controle de peças e estoque | Admin | [05-controle-pecas-estoque.md](./05-controle-pecas-estoque.md) |
 | 6 | Painel público de OS | Anônimo | [06-painel-publico-os.md](./06-painel-publico-os.md) |
+| 7 | Ordens de serviço (criar, itens, orçamento) | Admin | [07-ordens-servico.md](./07-ordens-servico.md) |
+| 8 | Ciclo de vida e status da OS | Admin / Mecânico / Cliente | [08-status-os.md](./08-status-os.md) |
 
 ## Convenção neste guia
 
@@ -48,9 +50,11 @@ Cada arquivo tem duas seções principais:
 
 ## Fluxo recomendado para uma demo ponta a ponta
 
-1. `01`: registrar Admin e logar.
-2. `02`: criar cliente, atualizar, desativar/ativar.
+1. `01`: registrar Admin, Mecânico e Cliente; fazer login como Admin.
+2. `02`: criar cliente.
 3. `03`: cadastrar veículo associado ao cliente.
-4. `04`: cadastrar/atualizar serviço.
-5. `05`: cadastrar peça e movimentar estoque (incrementar e decrementar).
-6. `06`: consultar status público de uma OS pelo Id.
+4. `04`: cadastrar serviço (ex.: troca de óleo).
+5. `05`: cadastrar peça e movimentar estoque.
+6. `07`: abrir OS, adicionar serviço e peça como itens, consultar o total (orçamento).
+7. `08`: avançar o ciclo de vida da OS até a entrega (diagnóstico → aprovação → execução → finalização → entrega).
+8. `06`: consultar o status público da OS pelo Id (sem token).
