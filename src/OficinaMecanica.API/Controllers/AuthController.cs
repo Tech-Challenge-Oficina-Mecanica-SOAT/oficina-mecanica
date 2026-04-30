@@ -8,6 +8,7 @@ namespace OficinaMecanica.API.Controllers;
 [ApiController]
 [Route("[controller]")]
 [AllowAnonymous]
+[Produces("application/json")]
 public class AuthController : ControllerBase
 {
     private readonly IUsuarioService _usuarioService;
@@ -19,7 +20,15 @@ public class AuthController : ControllerBase
         _jwtService = jwtService;
     }
 
+    /// <summary>
+    /// Autentica um usuário e retorna um token JWT
+    /// </summary>
+    /// <remarks>
+    /// O token retornado deve ser enviado no header `Authorization: Bearer {token}` em todas as rotas protegidas.
+    /// </remarks>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(TokenDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var usuario = await _usuarioService.AutenticarAsync(dto.Email, dto.Senha);
@@ -30,7 +39,16 @@ public class AuthController : ControllerBase
         return Ok(token);
     }
 
+    /// <summary>
+    /// Registra um novo usuário no sistema
+    /// </summary>
+    /// <remarks>
+    /// Perfis disponíveis: `0 = Admin`, `1 = Mecanico`, `2 = Cliente`.
+    /// O e-mail deve ser único — tentativas de duplicata retornam `409 Conflict`.
+    /// </remarks>
     [HttpPost("registrar")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Registrar([FromBody] RegistrarUsuarioDto dto)
     {
         try

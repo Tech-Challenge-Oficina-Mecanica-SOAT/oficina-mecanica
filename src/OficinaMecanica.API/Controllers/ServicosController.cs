@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Interfaces;
 
@@ -7,6 +8,7 @@ namespace OficinaMecanica.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize(Roles = "Admin")]
 public class ServicosController : ControllerBase
 {
     private readonly IServicoService _servicoService;
@@ -17,7 +19,7 @@ public class ServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Obtém todos os serviços
+    /// Lista todos os serviços do catálogo (ativos e inativos)
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<ServicoDto>), StatusCodes.Status200OK)]
@@ -28,7 +30,7 @@ public class ServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Obtém apenas serviços ativos
+    /// Lista apenas os serviços ativos disponíveis para inclusão em ordens de serviço
     /// </summary>
     [HttpGet("ativos")]
     [ProducesResponseType(typeof(IEnumerable<ServicoDto>), StatusCodes.Status200OK)]
@@ -53,25 +55,29 @@ public class ServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Obtém um serviço por nome
+    /// Busca serviços pelo nome (busca parcial)
     /// </summary>
     [HttpGet("nome/{nome}")]
-    [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ServicoDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByNome(string nome)
     {
         var servicos = await _servicoService.GetByNomeAsync(nome);
         var lista = servicos as IEnumerable<ServicoDto>;
-        
+
         if (lista == null || !lista.Any())
             return NotFound();
-            
+
         return Ok(lista);
     }
 
     /// <summary>
-    /// Cria um novo serviço
+    /// Cadastra um novo serviço no catálogo da oficina
     /// </summary>
+    /// <remarks>
+    /// O `valor` deve ser maior que zero. O serviço é criado como ativo por padrão e fica
+    /// disponível imediatamente para ser adicionado a ordens de serviço.
+    /// </remarks>
     [HttpPost]
     [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -93,12 +99,12 @@ public class ServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Atualiza um serviço existente
+    /// Atualiza os dados de um serviço existente
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServicoDto updateDto)
     {
         try
@@ -117,7 +123,7 @@ public class ServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Remove um serviço
+    /// Remove permanentemente um serviço do catálogo
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -136,7 +142,7 @@ public class ServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Ativa um serviço
+    /// Reativa um serviço previamente desativado, tornando-o disponível para novas OS
     /// </summary>
     [HttpPatch("{id:guid}/ativar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -155,7 +161,7 @@ public class ServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Desativa um serviço
+    /// Desativa um serviço sem removê-lo, impedindo sua inclusão em novas ordens de serviço
     /// </summary>
     [HttpPatch("{id:guid}/desativar")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
