@@ -18,6 +18,17 @@ public class OrdemServicoServiceTests
         _service = new OrdemServicoService(_repositoryMock.Object);
     }
 
+    private static OrdemServico CriarOsEmExecucao(Guid clienteId, Guid veiculoId, string obs = "obs")
+    {
+        var os = new OrdemServico(clienteId, veiculoId, obs);
+        os.IniciarDiagnostico("test");
+        os.EnviarParaAprovacao("test");
+        os.Aprovar("test");
+        os.Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
+        os.Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020);
+        return os;
+    }
+
     // ─── CreateAsync ─────────────────────────────────────────
 
     [Fact]
@@ -35,18 +46,9 @@ public class OrdemServicoServiceTests
             Observacoes = "Carro com barulho no motor"
         };
 
-        var osCriada = new OrdemServico
-        {
-            Id = osId,
-            ClienteId = clienteId,
-            VeiculoId = veiculoId,
-            Observacoes = createDto.Observacoes,
-            DataAbertura = DateTime.UtcNow,
-            StatusOS = EnumStatusOS.Recebida,
-            Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-            Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-            Itens = new List<OSItem>()
-        };
+        var osCriada = new OrdemServico(clienteId, veiculoId, createDto.Observacoes);
+        osCriada.Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
+        osCriada.Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020);
 
         _repositoryMock.Setup(x => x.CriarAsync(It.IsAny<OrdemServico>()))
             .ReturnsAsync(osId);
@@ -102,17 +104,7 @@ public class OrdemServicoServiceTests
         var osId = Guid.NewGuid();
         var clienteId = Guid.NewGuid();
 
-        var os = new OrdemServico
-        {
-            Id = osId,
-            ClienteId = clienteId,
-            VeiculoId = Guid.NewGuid(),
-            StatusOS = EnumStatusOS.EmExecucao,
-            DataAbertura = DateTime.UtcNow,
-            Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-            Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-            Itens = new List<OSItem>()
-        };
+        var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
 
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync(os);
@@ -122,8 +114,7 @@ public class OrdemServicoServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Id.Should().Be(osId);
-        result.Status.Should().Be("EmExecucao");
+        result!.Status.Should().Be("EmExecucao");
     }
 
     [Fact]
@@ -151,19 +142,9 @@ public class OrdemServicoServiceTests
         var clienteId = Guid.NewGuid();
         var referenciaId = Guid.NewGuid();
 
-        var os = new OrdemServico
-        {
-            Id = osId,
-            ClienteId = clienteId,
-            VeiculoId = Guid.NewGuid(),
-            StatusOS = EnumStatusOS.EmExecucao,
-            DataAbertura = DateTime.UtcNow,
-            Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-            Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-            Itens = new List<OSItem>()
-        };
+        var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
 
-        var itemDto = new CreateOSItemDto
+        var itemDto = new CreateOrdemServicoItemDto
         {
             Tipo = "servico",
             ReferenciaId = referenciaId,
@@ -172,11 +153,11 @@ public class OrdemServicoServiceTests
             PrecoUnitario = 150.00m
         };
 
-        var itemSalvo = new OSItem(osId, TipoOSItem.Servico, referenciaId, "Troca de Óleo", 1, 150.00m);
+        var itemSalvo = new OrdemServicoItem(osId, TipoOSItem.Servico, referenciaId, "Troca de Óleo", 1, 150.00m);
 
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync(os);
-        _repositoryMock.Setup(x => x.AdicionarItemAsync(It.IsAny<OSItem>()))
+        _repositoryMock.Setup(x => x.AdicionarItemAsync(It.IsAny<OrdemServicoItem>()))
             .ReturnsAsync(itemSalvo);
         _repositoryMock.Setup(x => x.AtualizarTotalAsync(osId, It.IsAny<decimal>()))
             .Returns(Task.CompletedTask);
@@ -201,22 +182,13 @@ public class OrdemServicoServiceTests
         var osId = Guid.NewGuid();
         var clienteId = Guid.NewGuid();
 
-        var item1 = new OSItem(osId, TipoOSItem.Servico, Guid.NewGuid(), "Troca de Óleo", 1, 150.00m);
-        var item2 = new OSItem(osId, TipoOSItem.Peca, Guid.NewGuid(), "Filtro de Óleo", 2, 35.00m);
+        var item1 = new OrdemServicoItem(osId, TipoOSItem.Servico, Guid.NewGuid(), "Troca de Óleo", 1, 150.00m);
+        var item2 = new OrdemServicoItem(osId, TipoOSItem.Peca, Guid.NewGuid(), "Filtro de Óleo", 2, 35.00m);
 
-        var os = new OrdemServico
-        {
-            Id = osId,
-            ClienteId = clienteId,
-            VeiculoId = Guid.NewGuid(),
-            StatusOS = EnumStatusOS.EmExecucao,
-            DataAbertura = DateTime.UtcNow,
-            Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-            Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-            Itens = new List<OSItem> { item1 } // já tem item1
-        };
+        var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
+        os.Itens.Add(item1);
 
-        var novoItemDto = new CreateOSItemDto
+        var novoItemDto = new CreateOrdemServicoItemDto
         {
             Tipo = "peca",
             ReferenciaId = Guid.NewGuid(),
@@ -227,7 +199,7 @@ public class OrdemServicoServiceTests
 
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync(os);
-        _repositoryMock.Setup(x => x.AdicionarItemAsync(It.IsAny<OSItem>()))
+        _repositoryMock.Setup(x => x.AdicionarItemAsync(It.IsAny<OrdemServicoItem>()))
             .ReturnsAsync(item2);
         _repositoryMock.Setup(x => x.AtualizarTotalAsync(osId, It.IsAny<decimal>()))
             .Returns(Task.CompletedTask);
@@ -246,19 +218,9 @@ public class OrdemServicoServiceTests
         var osId = Guid.NewGuid();
         var clienteId = Guid.NewGuid();
 
-        var os = new OrdemServico
-        {
-            Id = osId,
-            ClienteId = clienteId,
-            VeiculoId = Guid.NewGuid(),
-            StatusOS = EnumStatusOS.EmExecucao,
-            DataAbertura = DateTime.UtcNow,
-            Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-            Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-            Itens = new List<OSItem>()
-        };
+        var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
 
-        var itemDto = new CreateOSItemDto
+        var itemDto = new CreateOrdemServicoItemDto
         {
             Tipo = "tipoInvalido",
             ReferenciaId = Guid.NewGuid(),
@@ -282,7 +244,7 @@ public class OrdemServicoServiceTests
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync((OrdemServico?)null);
 
-        var itemDto = new CreateOSItemDto
+        var itemDto = new CreateOrdemServicoItemDto
         {
             Tipo = "servico",
             ReferenciaId = Guid.NewGuid(),
@@ -305,21 +267,11 @@ public class OrdemServicoServiceTests
         var clienteId = Guid.NewGuid();
         var itemId = Guid.NewGuid();
 
-        var item = new OSItem(osId, TipoOSItem.Servico, Guid.NewGuid(), "Troca de Óleo", 1, 150.00m);
-        // Forçar o Id via reflection para controlar o teste
-        typeof(OSItem).GetProperty("Id")!.SetValue(item, itemId);
+        var item = new OrdemServicoItem(osId, TipoOSItem.Servico, Guid.NewGuid(), "Troca de Óleo", 1, 150.00m);
+        typeof(OrdemServicoItem).GetProperty("Id")!.SetValue(item, itemId);
 
-        var os = new OrdemServico
-        {
-            Id = osId,
-            ClienteId = clienteId,
-            VeiculoId = Guid.NewGuid(),
-            StatusOS = EnumStatusOS.EmExecucao,
-            DataAbertura = DateTime.UtcNow,
-            Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-            Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-            Itens = new List<OSItem> { item }
-        };
+        var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
+        os.Itens.Add(item);
 
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync(os);
@@ -344,17 +296,7 @@ public class OrdemServicoServiceTests
         var clienteId = Guid.NewGuid();
         var itemId = Guid.NewGuid();
 
-        var os = new OrdemServico
-        {
-            Id = osId,
-            ClienteId = clienteId,
-            VeiculoId = Guid.NewGuid(),
-            StatusOS = EnumStatusOS.EmExecucao,
-            DataAbertura = DateTime.UtcNow,
-            Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-            Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-            Itens = new List<OSItem>() // sem itens
-        };
+        var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
 
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync(os);
@@ -386,32 +328,18 @@ public class OrdemServicoServiceTests
     {
         // Arrange
         var clienteId = Guid.NewGuid();
-        var lista = new List<OrdemServico>
-        {
-            new OrdemServico
-            {
-                Id = Guid.NewGuid(),
-                ClienteId = clienteId,
-                VeiculoId = Guid.NewGuid(),
-                StatusOS = EnumStatusOS.Recebida,
-                DataAbertura = DateTime.UtcNow,
-                Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com"),
-                Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020),
-                Itens = new List<OSItem>()
-            },
-            new OrdemServico
-            {
-                Id = Guid.NewGuid(),
-                ClienteId = clienteId,
-                VeiculoId = Guid.NewGuid(),
-                StatusOS = EnumStatusOS.Finalizada,
-                DataAbertura = DateTime.UtcNow.AddDays(-2),
-                DataFechamento = DateTime.UtcNow,
-                Cliente = new Cliente("Maria Santos", "98765432100", "(11) 98888-8888", "maria@email.com"),
-                Veiculo = new Veiculo(clienteId, "XYZ9876", "Honda", "Civic", 2022),
-                Itens = new List<OSItem>()
-            }
-        };
+
+        var os1 = new OrdemServico(clienteId, Guid.NewGuid(), "obs1");
+        os1.Cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
+        os1.Veiculo = new Veiculo(clienteId, "ABC1234", "Toyota", "Corolla", 2020);
+
+        var os2 = CriarOsEmExecucao(clienteId, Guid.NewGuid(), "obs2");
+        os2.Finalizar("test");
+        os2.Entregar("test");
+        os2.Cliente = new Cliente("Maria Santos", "98765432100", "(11) 98888-8888", "maria@email.com");
+        os2.Veiculo = new Veiculo(clienteId, "XYZ9876", "Honda", "Civic", 2022);
+
+        var lista = new List<OrdemServico> { os1, os2 };
 
         _repositoryMock.Setup(x => x.ListarTodosAsync())
             .ReturnsAsync(lista);

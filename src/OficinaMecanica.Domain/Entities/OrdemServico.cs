@@ -21,9 +21,9 @@ public class OrdemServico
     public decimal Total { get; set; }
 
     public Guid ClienteId { get; private set; }
-    public Cliente Cliente { get; private set; } = null!;
+    public Cliente Cliente { get; set; } = null!;
     public Guid VeiculoId { get; private set; }
-    public Veiculo Veiculo { get; private set; } = null!;
+    public Veiculo Veiculo { get; set; } = null!;
 
     public ICollection<OrdemServicoPeca> Pecas { get; set; } = new List<OrdemServicoPeca>();
     public ICollection<OrdemServicoServico> Servicos { get; set; } = new List<OrdemServicoServico>();
