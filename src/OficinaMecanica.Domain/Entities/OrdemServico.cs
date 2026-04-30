@@ -18,6 +18,7 @@ public class OrdemServico
     public DateTime? DataFechamento { get; private set; }
     public EnumStatusOS StatusOS { get; private set; }
     public string Observacoes { get; private set; } = string.Empty;
+    public decimal Total { get; set; }
 
     public Guid ClienteId { get; private set; }
     public Cliente Cliente { get; private set; } = null!;
@@ -26,6 +27,7 @@ public class OrdemServico
 
     public ICollection<OrdemServicoPeca> Pecas { get; set; } = new List<OrdemServicoPeca>();
     public ICollection<OrdemServicoServico> Servicos { get; set; } = new List<OrdemServicoServico>();
+    public ICollection<OrdemServicoItem> Itens { get; set; } = new List<OrdemServicoItem>();
     public ICollection<HistoricoStatusOS> Historico { get; private set; } = new List<HistoricoStatusOS>();
 
     private OrdemServico() { }
@@ -85,6 +87,11 @@ public class OrdemServico
             DataFechamento = DateTime.UtcNow;
 
         RegistrarHistorico(anterior, novoStatus, alteradoPor, $"Override administrativo: {motivo}");
+    }
+
+    public void RecalcularTotal()
+    {
+        Total = Itens.Sum(i => i.Subtotal);
     }
 
     private void Transitar(EnumStatusOS esperadoAtual, EnumStatusOS novo, string alteradoPor, string motivo)
