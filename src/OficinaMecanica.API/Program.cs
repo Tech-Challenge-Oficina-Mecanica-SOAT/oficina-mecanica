@@ -46,6 +46,11 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 builder.Services.AddScoped<IOrdemServicoService, OrdemServicoService>();
 
+// DI - M3: Status e Histórico
+builder.Services.AddScoped<IHistoricoStatusOSRepository, HistoricoStatusOSRepository>();
+builder.Services.AddScoped<IOrdemServicoStatusService, OrdemServicoStatusService>();
+builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
+
 // Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -105,6 +110,14 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    if (context.Database.IsRelational())
+        context.Database.Migrate();
+}
+
 app.Run();
 
 public partial class Program { }

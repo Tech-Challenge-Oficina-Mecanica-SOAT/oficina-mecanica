@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using OficinaMecanica.Domain.Entities;
 
 namespace OficinaMecanica.Infrastructure.Data;
@@ -15,7 +15,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<Servico> Servicos { get; set; }
     public DbSet<OrdemServicoPeca> OrdensServicoPecas { get; set; }
     public DbSet<OrdemServicoServico> OrdensServicoServicos { get; set; }
-    public DbSet<OrdemServicoItem> OrdensServicoItens { get; set; }  // novo
+    public DbSet<HistoricoStatusOS> HistoricosStatusOS { get; set; }
+    public DbSet<OrdemServicoItem> OrdensServicoItens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -85,7 +86,33 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Quantidade).HasDefaultValue(0);
         });
 
-        // novo: OSItem
+        modelBuilder.Entity<OrdemServico>(entity =>
+        {
+            entity.ToTable("OrdensServico");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.StatusOS).IsRequired();
+            entity.Property(e => e.DataAbertura).IsRequired();
+            entity.Property(e => e.Observacoes).HasMaxLength(2000);
+            entity.Property(e => e.Total).HasPrecision(18, 2).HasDefaultValue(0);
+
+            entity.HasMany(e => e.Historico)
+                  .WithOne(h => h.OrdemServico)
+                  .HasForeignKey(h => h.OrdemServicoId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<HistoricoStatusOS>(entity =>
+        {
+            entity.ToTable("HistoricoStatusOS");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OrdemServicoId).IsRequired();
+            entity.Property(e => e.StatusNovo).IsRequired();
+            entity.Property(e => e.AlteradoEm).IsRequired();
+            entity.Property(e => e.AlteradoPor).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Motivo).HasMaxLength(500);
+            entity.HasIndex(e => new { e.OrdemServicoId, e.AlteradoEm });
+        });
+
         modelBuilder.Entity<OrdemServicoItem>(entity =>
         {
             entity.ToTable("OrdensServicoItens");
@@ -94,20 +121,12 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Quantidade).IsRequired();
             entity.Property(e => e.PrecoUnitario).HasPrecision(18, 2);
             entity.Property(e => e.Tipo).IsRequired();
-            entity.Ignore(e => e.Subtotal); // propriedade calculada
+            entity.Ignore(e => e.Subtotal);
 
             entity.HasOne(e => e.OrdemServico)
                 .WithMany(os => os.Itens)
                 .HasForeignKey(e => e.OrdemServicoId)
                 .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // novo: Total em OrdemServico
-        modelBuilder.Entity<OrdemServico>(entity =>
-        {
-            entity.Property(e => e.Total)
-                .HasPrecision(18, 2)
-                .HasDefaultValue(0);
         });
     }
 }

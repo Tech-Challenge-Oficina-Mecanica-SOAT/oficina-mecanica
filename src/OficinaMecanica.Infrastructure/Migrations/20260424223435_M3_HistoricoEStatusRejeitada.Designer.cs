@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OficinaMecanica.Infrastructure.Data;
@@ -11,9 +12,11 @@ using OficinaMecanica.Infrastructure.Data;
 namespace OficinaMecanica.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260424223435_M3_HistoricoEStatusRejeitada")]
+    partial class M3_HistoricoEStatusRejeitada
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -122,12 +125,6 @@ namespace OficinaMecanica.Infrastructure.Migrations
                     b.Property<int>("StatusOS")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("Total")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasDefaultValue(0m);
-
                     b.Property<Guid>("VeiculoId")
                         .HasColumnType("uuid");
 
@@ -138,40 +135,6 @@ namespace OficinaMecanica.Infrastructure.Migrations
                     b.HasIndex("VeiculoId");
 
                     b.ToTable("OrdensServico", (string)null);
-                });
-
-            modelBuilder.Entity("OficinaMecanica.Domain.Entities.OrdemServicoItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("OrdemServicoId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("PrecoUnitario")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<int>("Quantidade")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ReferenciaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Tipo")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrdemServicoId");
-
-                    b.ToTable("OrdensServicoItens", (string)null);
                 });
 
             modelBuilder.Entity("OficinaMecanica.Domain.Entities.OrdemServicoPeca", b =>
@@ -375,17 +338,6 @@ namespace OficinaMecanica.Infrastructure.Migrations
                     b.Navigation("Veiculo");
                 });
 
-            modelBuilder.Entity("OficinaMecanica.Domain.Entities.OrdemServicoItem", b =>
-                {
-                    b.HasOne("OficinaMecanica.Domain.Entities.OrdemServico", "OrdemServico")
-                        .WithMany("Itens")
-                        .HasForeignKey("OrdemServicoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("OrdemServico");
-                });
-
             modelBuilder.Entity("OficinaMecanica.Domain.Entities.OrdemServicoPeca", b =>
                 {
                     b.HasOne("OficinaMecanica.Domain.Entities.OrdemServico", "OrdemServico")
@@ -445,8 +397,6 @@ namespace OficinaMecanica.Infrastructure.Migrations
             modelBuilder.Entity("OficinaMecanica.Domain.Entities.OrdemServico", b =>
                 {
                     b.Navigation("Historico");
-
-                    b.Navigation("Itens");
 
                     b.Navigation("Pecas");
 

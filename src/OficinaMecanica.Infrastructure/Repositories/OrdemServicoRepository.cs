@@ -12,7 +12,15 @@ public class OrdemServicoRepository : IOrdemServicoRepository
     public OrdemServicoRepository(ApplicationDbContext context) => _context = context;
 
     public async Task<OrdemServico?> ObterPorIdAsync(Guid id) =>
-        await _context.OrdensServico.FindAsync(id);
+        await _context.OrdensServico
+            .Include(o => o.Cliente)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+    public async Task<OrdemServico?> ObterPorIdComHistoricoAsync(Guid id) =>
+        await _context.OrdensServico
+            .Include(o => o.Cliente)
+            .Include(o => o.Historico)
+            .FirstOrDefaultAsync(o => o.Id == id);
 
     public async Task<OrdemServico?> ObterPorIdComItensAsync(Guid id) =>
         await _context.OrdensServico
@@ -75,5 +83,17 @@ public class OrdemServicoRepository : IOrdemServicoRepository
             .Average(os => (os.DataFechamento!.Value - os.DataAbertura).TotalHours);
 
         return Math.Round(mediaHoras, 2);
+    }
+
+    public async Task UpdateAsync(OrdemServico ordemServico)
+    {
+        foreach (var historico in ordemServico.Historico)
+        {
+            var historicoEntry = _context.Entry(historico);
+            if (historicoEntry.State == EntityState.Detached)
+                _context.HistoricosStatusOS.Add(historico);
+        }
+
+        await _context.SaveChangesAsync();
     }
 }

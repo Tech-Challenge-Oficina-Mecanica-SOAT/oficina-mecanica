@@ -5,4 +5,8 @@
     <Project Path="src/OficinaMecanica.Domain/OficinaMecanica.Domain.csproj" />
     <Project Path="src/OficinaMecanica.Infrastructure/OficinaMecanica.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OficinaMecanica.Tests.Integration/OficinaMecanica.Tests.Integration.csproj" />
+    <Project Path="tests/OficinaMecanica.Tests.Unit/OficinaMecanica.Tests.Unit.csproj" />
+  </Folder>
 </Solution>

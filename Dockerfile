@@ -20,7 +20,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Cria usuário não-root
-RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup || true
+RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 USER appuser
 
 COPY --from=build /app/publish ./

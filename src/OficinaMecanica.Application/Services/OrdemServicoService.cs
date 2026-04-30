@@ -22,15 +22,7 @@ public class OrdemServicoService : IOrdemServicoService
         if (createDto.VeiculoId == Guid.Empty)
             throw new ArgumentException("VeiculoId é obrigatório!");
 
-        var os = new OrdemServico
-        {
-            Id = Guid.NewGuid(),
-            ClienteId = createDto.ClienteId,
-            VeiculoId = createDto.VeiculoId,
-            Observacoes = createDto.Observacoes,
-            DataAbertura = DateTime.UtcNow,
-            StatusOS = EnumStatusOS.Recebida
-        };
+        var os = new OrdemServico(createDto.ClienteId, createDto.VeiculoId, createDto.Observacoes);
 
         var id = await _repository.CriarAsync(os);
         var criada = await _repository.ObterPorIdComItensAsync(id);
