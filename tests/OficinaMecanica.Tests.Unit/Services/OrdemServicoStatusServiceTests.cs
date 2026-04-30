@@ -11,7 +11,6 @@ namespace OficinaMecanica.Tests.Unit.Services;
 public class OrdemServicoStatusServiceTests
 {
     private readonly Mock<IOrdemServicoRepository> _osRepo = new();
-    private readonly Mock<IHistoricoStatusOSRepository> _historicoRepo = new();
     private readonly Mock<INotificacaoService> _notificacao = new();
     private readonly Mock<ILogger<OrdemServicoStatusService>> _logger = new();
     private readonly OrdemServicoStatusService _service;
@@ -20,7 +19,6 @@ public class OrdemServicoStatusServiceTests
     {
         _service = new OrdemServicoStatusService(
             _osRepo.Object,
-            _historicoRepo.Object,
             _notificacao.Object,
             _logger.Object);
     }
@@ -128,6 +126,19 @@ public class OrdemServicoStatusServiceTests
     }
 
     [Fact]
+    public async Task NotificarConclusaoAsync_QuandoStatusInvalido_NaoEnviaEmail()
+    {
+        var os = OSRecebida(); // em Recebida, não pode Finalizar
+        _osRepo.Setup(r => r.ObterPorIdAsync(os.Id)).ReturnsAsync(os);
+
+        Func<Task> act = () => _service.NotificarConclusaoAsync(os.Id, "mec");
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _notificacao.Verify(n => n.EnviarConclusaoAsync(It.IsAny<Guid>(), It.IsAny<string>()), Times.Never);
+        _osRepo.Verify(r => r.UpdateAsync(It.IsAny<OrdemServico>()), Times.Never);
+    }
+
+    [Fact]
     public async Task EntregarAsync_FluxoCompleto_PreencheDataFechamento()
     {
         var os = await CriarOSEmExecucaoAsync();
@@ -154,17 +165,11 @@ public class OrdemServicoStatusServiceTests
     [Fact]
     public async Task ObterHistoricoAsync_RetornaListaMapeada()
     {
-        var osId = Guid.NewGuid();
         var os = OSRecebida();
-        _osRepo.Setup(r => r.ObterPorIdAsync(osId)).ReturnsAsync(os);
-        var historicos = new List<HistoricoStatusOS>
-        {
-            new(osId, null, EnumStatusOS.Recebida, "sistema", "ini"),
-            new(osId, EnumStatusOS.Recebida, EnumStatusOS.EmDiagnostico, "mec", "diag")
-        };
-        _historicoRepo.Setup(r => r.ObterPorOSIdAsync(osId)).ReturnsAsync(historicos);
+        os.IniciarDiagnostico("mec");
+        _osRepo.Setup(r => r.ObterPorIdComHistoricoAsync(os.Id)).ReturnsAsync(os);
 
-        var result = (await _service.ObterHistoricoAsync(osId)).ToList();
+        var result = (await _service.ObterHistoricoAsync(os.Id)).ToList();
 
         result.Should().HaveCount(2);
         result[0].StatusAnterior.Should().BeNull();

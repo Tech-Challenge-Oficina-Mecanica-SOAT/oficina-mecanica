@@ -9,18 +9,15 @@ namespace OficinaMecanica.Application.Services;
 public class OrdemServicoStatusService : IOrdemServicoStatusService
 {
     private readonly IOrdemServicoRepository _osRepository;
-    private readonly IHistoricoStatusOSRepository _historicoRepository;
     private readonly INotificacaoService _notificacaoService;
     private readonly ILogger<OrdemServicoStatusService> _logger;
 
     public OrdemServicoStatusService(
         IOrdemServicoRepository osRepository,
-        IHistoricoStatusOSRepository historicoRepository,
         INotificacaoService notificacaoService,
         ILogger<OrdemServicoStatusService> logger)
     {
         _osRepository = osRepository;
-        _historicoRepository = historicoRepository;
         _notificacaoService = notificacaoService;
         _logger = logger;
     }
@@ -42,6 +39,8 @@ public class OrdemServicoStatusService : IOrdemServicoStatusService
         var os = await _osRepository.ObterPorIdAsync(osId)
             ?? throw new KeyNotFoundException($"Ordem de serviço {osId} não encontrada.");
 
+        os.Finalizar(alteradoPor);
+
         try
         {
             var email = os.Cliente?.Email ?? string.Empty;
@@ -54,7 +53,6 @@ public class OrdemServicoStatusService : IOrdemServicoStatusService
                 osId);
         }
 
-        os.Finalizar(alteradoPor);
         await _osRepository.UpdateAsync(os);
     }
 
@@ -66,11 +64,10 @@ public class OrdemServicoStatusService : IOrdemServicoStatusService
 
     public async Task<IEnumerable<HistoricoStatusOSDto>> ObterHistoricoAsync(Guid osId)
     {
-        var os = await _osRepository.ObterPorIdAsync(osId)
+        var os = await _osRepository.ObterPorIdComHistoricoAsync(osId)
             ?? throw new KeyNotFoundException($"Ordem de serviço {osId} não encontrada.");
 
-        var historicos = await _historicoRepository.ObterPorOSIdAsync(osId);
-        return historicos.Select(MapToDto);
+        return os.Historico.OrderBy(h => h.AlteradoEm).Select(MapToDto);
     }
 
     private async Task AplicarTransicaoAsync(Guid osId, Action<OrdemServico> aplicar)
