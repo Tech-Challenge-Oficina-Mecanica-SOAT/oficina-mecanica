@@ -54,6 +54,7 @@ CodeCoverage/
 # NUnit
 *.VisualState.xml
 TestResult.xml
+TestResults/
 nunit-*.xml
 
 # IDE - Visual Studio
@@ -85,7 +86,3 @@ build/
 .env.*.local
 
 */plans/
-
-# Test results and coverage
-TestResults/
-**/coverage.*.xml
