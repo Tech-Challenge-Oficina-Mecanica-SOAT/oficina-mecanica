@@ -8,7 +8,7 @@ namespace OficinaMecanica.API.Controllers;
 [ApiController]
 [Route("api/ordens-servico")]
 [Produces("application/json")]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class OrdemServicosController : ControllerBase
 {
     private readonly IOrdemServicoService _service;
