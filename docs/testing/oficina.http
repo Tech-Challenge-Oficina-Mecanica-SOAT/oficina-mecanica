@@ -4,14 +4,14 @@
 ### `{{nome.response.body.$.campo}}` nas chamadas seguintes.
 
 @baseUrl = http://localhost:5000
-@email = admin@oficina.com
-@senha = Senha@123
+@email    = admin@oficina.com
+@senha    = Senha@123
 
 ###############################################################################
 # 1. AUTENTICAÇÃO
 ###############################################################################
 
-### 1.1 - Registrar um usuário Admin (público)
+### 1.1 - Registrar usuário Admin (público)
 # @name registrar
 POST {{baseUrl}}/Auth/registrar
 Content-Type: application/json
@@ -22,7 +22,27 @@ Content-Type: application/json
   "perfil": 0
 }
 
-### 1.2 - Login (gera o JWT)
+### 1.2 - Registrar usuário Mecânico
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "mecanico@oficina.com",
+  "senha": "{{senha}}",
+  "perfil": 1
+}
+
+### 1.3 - Registrar usuário Cliente
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "cliente@email.com",
+  "senha": "{{senha}}",
+  "perfil": 2
+}
+
+### 1.4 - Login como Admin (gera o JWT)
 # @name login
 POST {{baseUrl}}/Auth/login
 Content-Type: application/json
@@ -32,7 +52,7 @@ Content-Type: application/json
   "senha": "{{senha}}"
 }
 
-### Captura o token retornado (use em todas as requisições autenticadas)
+### Captura o token retornado — usado em todas as requisições autenticadas
 @token = {{login.response.body.token}}
 
 ###############################################################################
@@ -62,11 +82,11 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/api/Clientes/{{clienteId}}
 Authorization: Bearer {{token}}
 
-### 2.4 - Buscar cliente por documento
+### 2.4 - Buscar cliente por documento (CPF)
 GET {{baseUrl}}/api/Clientes/documento/52998224725
 Authorization: Bearer {{token}}
 
-### 2.5 - Atualizar cliente
+### 2.5 - Atualizar dados do cliente
 PUT {{baseUrl}}/api/Clientes/{{clienteId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -81,7 +101,7 @@ Content-Type: application/json
 PATCH {{baseUrl}}/api/Clientes/{{clienteId}}/desativar
 Authorization: Bearer {{token}}
 
-### 2.7 - Ativar cliente
+### 2.7 - Reativar cliente
 PATCH {{baseUrl}}/api/Clientes/{{clienteId}}/ativar
 Authorization: Bearer {{token}}
 
@@ -89,7 +109,7 @@ Authorization: Bearer {{token}}
 # 3. VEÍCULOS (Admin)
 ###############################################################################
 
-### 3.1 - Criar veículo (precisa de clienteId existente)
+### 3.1 - Criar veículo associado ao cliente
 # @name criarVeiculo
 POST {{baseUrl}}/api/Veiculos
 Authorization: Bearer {{token}}
@@ -105,7 +125,7 @@ Content-Type: application/json
 
 @veiculoId = {{criarVeiculo.response.body.id}}
 
-### 3.2 - Listar todos
+### 3.2 - Listar todos os veículos
 GET {{baseUrl}}/api/Veiculos
 Authorization: Bearer {{token}}
 
@@ -130,7 +150,7 @@ Content-Type: application/json
 }
 
 ###############################################################################
-# 4. SERVIÇOS (catálogo)
+# 4. SERVIÇOS — catálogo (Admin)
 ###############################################################################
 
 ### 4.1 - Criar serviço
@@ -149,6 +169,7 @@ Content-Type: application/json
 
 ### 4.2 - Listar serviços ativos
 GET {{baseUrl}}/api/Servicos/ativos
+Authorization: Bearer {{token}}
 
 ### 4.3 - Atualizar serviço
 PUT {{baseUrl}}/api/Servicos/{{servicoId}}
@@ -165,8 +186,12 @@ Content-Type: application/json
 PATCH {{baseUrl}}/api/Servicos/{{servicoId}}/desativar
 Authorization: Bearer {{token}}
 
+### 4.5 - Reativar serviço
+PATCH {{baseUrl}}/api/Servicos/{{servicoId}}/ativar
+Authorization: Bearer {{token}}
+
 ###############################################################################
-# 5. PEÇAS / ESTOQUE
+# 5. PEÇAS / ESTOQUE (Admin)
 ###############################################################################
 
 ### 5.1 - Criar peça
@@ -185,13 +210,15 @@ Content-Type: application/json
 
 @pecaId = {{criarPeca.response.body.id}}
 
-### 5.2 - Listar peças com estoque baixo (<= 10)
-GET {{baseUrl}}/api/Pecas/estoque-baixo?limite=10
-
-### 5.3 - Consultar estoque atual de uma peça
+### 5.2 - Consultar estoque atual
 GET {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
 
-### 5.4 - Incrementar estoque
+### 5.3 - Listar peças com estoque baixo (<= 10)
+GET {{baseUrl}}/api/Pecas/estoque-baixo?limite=10
+Authorization: Bearer {{token}}
+
+### 5.4 - Entrada de estoque (incrementar)
 PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -201,7 +228,7 @@ Content-Type: application/json
   "tipoOperacao": "incrementar"
 }
 
-### 5.5 - Decrementar estoque (saída por uso em OS)
+### 5.5 - Saída de estoque (decrementar / uso em OS)
 PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -212,18 +239,132 @@ Content-Type: application/json
 }
 
 ###############################################################################
-# 6. PAINEL PÚBLICO (sem autenticação)
+# 6. ORDENS DE SERVIÇO (Admin)
 ###############################################################################
 
-### 6.1 - Status público de uma OS por ID
-### Substitua o GUID abaixo pelo Id de uma OS existente no banco.
-GET {{baseUrl}}/Publico/os/00000000-0000-0000-0000-000000000000/status
+### 6.1 - Abrir nova OS
+# @name criarOS
+POST {{baseUrl}}/api/ordens-servico
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clienteId": "{{clienteId}}",
+  "veiculoId": "{{veiculoId}}",
+  "observacoes": "Barulho ao frear no lado esquerdo"
+}
+
+@osId = {{criarOS.response.body.id}}
+
+### 6.2 - Listar todas as OS (resumo)
+GET {{baseUrl}}/api/ordens-servico
+Authorization: Bearer {{token}}
+
+### 6.3 - Detalhe da OS com itens e total
+GET {{baseUrl}}/api/ordens-servico/{{osId}}
+Authorization: Bearer {{token}}
+
+### 6.4 - Adicionar serviço à OS
+# @name adicionarServico
+POST {{baseUrl}}/api/ordens-servico/{{osId}}/itens
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tipo": "servico",
+  "referenciaId": "{{servicoId}}",
+  "descricao": "Troca de pastilha de freio",
+  "quantidade": 1,
+  "precoUnitario": 150.00
+}
+
+@itemServicoId = {{adicionarServico.response.body.id}}
+
+### 6.5 - Adicionar peça à OS
+# @name adicionarPeca
+POST {{baseUrl}}/api/ordens-servico/{{osId}}/itens
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tipo": "peca",
+  "referenciaId": "{{pecaId}}",
+  "descricao": "Pastilha de freio dianteira",
+  "quantidade": 2,
+  "precoUnitario": 89.90
+}
+
+@itemPecaId = {{adicionarPeca.response.body.id}}
+
+### 6.6 - Consultar OS com orçamento consolidado (total atualizado)
+GET {{baseUrl}}/api/ordens-servico/{{osId}}
+Authorization: Bearer {{token}}
+
+### 6.7 - Remover item da OS
+DELETE {{baseUrl}}/api/ordens-servico/{{osId}}/itens/{{itemServicoId}}
+Authorization: Bearer {{token}}
+
+### 6.8 - Tempo médio de execução das OS finalizadas (em horas)
+GET {{baseUrl}}/api/ordens-servico/tempo-medio-execucao
+Authorization: Bearer {{token}}
 
 ###############################################################################
-# 7. CAMINHOS TRISTES (erros esperados, úteis para validar o tratamento)
+# 7. STATUS DA OS — ciclo de vida (ver 08-status-os.md)
 ###############################################################################
 
-### 7.1 - Login com senha errada → 401
+### 7.1 - Iniciar diagnóstico (Admin ou Mecânico) → Recebida → EmDiagnostico
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/iniciar-diagnostico
+Authorization: Bearer {{token}}
+
+### 7.2 - Avançar para AguardandoAprovacao via ForcarStatus (Admin)
+###        (não existe endpoint dedicado para esta transição)
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "novoStatus": 3,
+  "motivo": "Diagnóstico concluído, orçamento enviado ao cliente"
+}
+
+### 7.3a - Aprovar orçamento (Admin ou Cliente) → AguardandoAprovacao → EmExecucao
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/aprovar
+Authorization: Bearer {{token}}
+
+### 7.3b - Rejeitar orçamento (Admin ou Cliente) → AguardandoAprovacao → Rejeitada
+###         Execute 7.3b OU 7.3a, nunca os dois
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/rejeitar
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "motivo": "Valor fora do orçamento do cliente"
+}
+
+### 7.4 - Notificar conclusão do serviço (Admin ou Mecânico) → EmExecucao → Finalizada
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/notificar-conclusao
+Authorization: Bearer {{token}}
+
+### 7.5 - Registrar entrega do veículo (Admin) → Finalizada → Entregue
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/entregar
+Authorization: Bearer {{token}}
+
+### 7.6 - Consultar histórico completo de transições da OS
+GET {{baseUrl}}/api/ordens-servico/{{osId}}/historico
+Authorization: Bearer {{token}}
+
+###############################################################################
+# 8. PAINEL PÚBLICO (sem autenticação)
+###############################################################################
+
+### 8.1 - Consultar status público da OS pelo ID (não requer token)
+GET {{baseUrl}}/Publico/os/{{osId}}/status
+
+###############################################################################
+# 9. CAMINHOS TRISTES — erros esperados
+###############################################################################
+
+### 9.1 - Login com senha incorreta → 401
 POST {{baseUrl}}/Auth/login
 Content-Type: application/json
 
@@ -232,7 +373,7 @@ Content-Type: application/json
   "senha": "senha-errada"
 }
 
-### 7.2 - Registrar e-mail duplicado → 409
+### 9.2 - Registrar e-mail duplicado → 409
 POST {{baseUrl}}/Auth/registrar
 Content-Type: application/json
 
@@ -242,18 +383,18 @@ Content-Type: application/json
   "perfil": 0
 }
 
-### 7.3 - Acessar endpoint protegido sem token → 401
+### 9.3 - Acessar endpoint protegido sem token → 401
 GET {{baseUrl}}/api/Clientes
 
-### 7.4 - Acessar com token inválido → 401
+### 9.4 - Token inválido → 401
 GET {{baseUrl}}/api/Clientes
 Authorization: Bearer token-invalido.123.456
 
-### 7.5 - Buscar cliente inexistente → 404
+### 9.5 - Cliente inexistente → 404
 GET {{baseUrl}}/api/Clientes/00000000-0000-0000-0000-000000000000
 Authorization: Bearer {{token}}
 
-### 7.6 - Criar cliente com documento duplicado → 400
+### 9.6 - Documento duplicado → 400
 POST {{baseUrl}}/api/Clientes
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -265,7 +406,7 @@ Content-Type: application/json
   "email": "outro@email.com"
 }
 
-### 7.7 - Criar veículo para cliente inexistente → 404
+### 9.7 - Veículo para cliente inexistente → 404
 POST {{baseUrl}}/api/Veiculos
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -278,7 +419,7 @@ Content-Type: application/json
   "ano": 2010
 }
 
-### 7.8 - Decrementar estoque além do saldo disponível → 400
+### 9.8 - Decrementar estoque além do saldo → 400
 PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -288,7 +429,7 @@ Content-Type: application/json
   "tipoOperacao": "decrementar"
 }
 
-### 7.9 - tipoOperacao inválido → 400
+### 9.9 - tipoOperacao inválido → 400
 PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -298,5 +439,9 @@ Content-Type: application/json
   "tipoOperacao": "zerar"
 }
 
-### 7.10 - OS pública inexistente → 404
+### 9.10 - Transição inválida de status (aprovar OS ainda Recebida) → 400
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/aprovar
+Authorization: Bearer {{token}}
+
+### 9.11 - Status público de OS inexistente → 404
 GET {{baseUrl}}/Publico/os/00000000-0000-0000-0000-000000000000/status
