@@ -16,12 +16,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>    
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.17.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.18.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.14.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.*" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.18.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.17.0" />
   </ItemGroup>
 
   <ItemGroup>

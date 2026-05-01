@@ -1,97 +1,87 @@
-README - Como rodar a aplicação
+# Oficina Mecânica — API
 
-Visão geral
+API REST desenvolvida em **ASP.NET Core (.NET 10)** como Tech Challenge da pós-graduação FIAP SOAT.  
+Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviços, peças, ordens de serviço e autenticação por perfil.
 
-Este repositório contém uma API ASP.NET (.NET 10) com EF Core e um serviço PostgreSQL via docker-compose. O arquivo docker-compose usado está em: src/OficinaMecanica.API/docker-compose.yaml. Há também um Dockerfile multi-stage em src/OficinaMecanica.API/Dockerfile.
+---
 
-Pré-requisitos
+## Índice
 
-- .NET 10 SDK
-- Docker e Docker Compose
-- (Opcional) psql ou cliente GUI (DBeaver/pgAdmin)
+- [Pré-requisitos](#pré-requisitos)
+- [Como executar](#como-executar)
+- [Documentação interativa (Scalar)](#documentação-interativa-scalar)
+- [Autenticação](#autenticação)
+- [Roteiros de teste](#roteiros-de-teste)
+- [Cobertura de testes](#cobertura-de-testes)
+- [Relatório de vulnerabilidades](#relatório-de-vulnerabilidades)
+- [Scan de qualidade (SonarQube)](#scan-de-qualidade-sonarqube)
+- [EF Core / Migrations](#ef-core--migrations)
+- [Troubleshooting](#troubleshooting)
 
-Rodando com Docker (recomendado)
+---
 
-1) Subir Postgres + API (build automático):
+## Pré-requisitos
 
-   docker compose -f src/OficinaMecanica.API/docker-compose.yaml up -d --build
+| Ferramenta | Versão mínima |
+|---|---|
+| .NET SDK | 10.0 |
+| Docker | 24+ |
+| Docker Compose | 2.x |
 
-2) Verificar status dos containers:
+---
 
-   docker compose -f src/OficinaMecanica.API/docker-compose.yaml ps
-   docker inspect --format '{{.State.Health.Status}}' oficina_postgres
+## Como executar
 
-3) Ver logs:
+### Com Docker (recomendado)
 
-   docker logs -f oficina_postgres
-   docker logs -f oficina_api
+```bash
+# 1. Subir PostgreSQL + API (build automático)
+docker compose up -d --build
 
-A API estará acessível em http://localhost:5165/ e a documentação interativa (Scalar) em http://localhost:5165/scalar. O Dockerfile expõe a porta 5000.
+# 2. Verificar status
+docker compose ps
 
-Para roteiros de teste passo a passo (autenticação JWT, CRUDs, estoque, painel público) e um arquivo `.http` ponta a ponta, veja [`docs/testing/`](./docs/testing/README.md).
+# 3. Acompanhar logs
+docker logs -f oficina_api
+docker logs -f oficina_postgres
+```
 
-Conectar ao banco (psql)
+A API estará disponível em **`http://localhost:5000`**.
 
-- Abrir shell psql dentro do container:
+### Localmente (sem Docker)
 
-  docker exec -it oficina_postgres psql -U postgres -d OficinaDB
+```bash
+# Requer PostgreSQL rodando localmente com as credenciais do appsettings.json
+dotnet run --project src/OficinaMecanica.API
+```
 
-- Comandos úteis:
-  - Listar tabelas: \dt
-  - Ver migrations aplicadas: SELECT * FROM "__EFMigrationsHistory";
+---
 
-EF Core / Migrations (local ou em CI)
+## Documentação interativa (Scalar)
 
-1) Instalar o EF CLI (se necessário):
+Com a API no ar, acesse:
 
-   # Global
-   dotnet tool install --global dotnet-ef
+```
+http://localhost:5000/scalar
+```
 
-   # Ou local (repo)
-   dotnet new tool-manifest --force
-   dotnet tool install dotnet-ef
+Todas as rotas estão documentadas com descrição, parâmetros, exemplos de resposta e os perfis de acesso exigidos.
 
-2) Adicionar pacote Design no projeto Infrastructure (se ainda não):
-
-   dotnet add src/OficinaMecanica.Infrastructure package Microsoft.EntityFrameworkCore.Design
-
-3) Gerar migration (recomendado especificar projects):
-
-   dotnet ef migrations add InitialCreate --project src/OficinaMecanica.Infrastructure --startup-project src/OficinaMecanica.API --output-dir Migrations
-
-4) Aplicar migrations (criar tabelas):
-
-   dotnet ef database update --project src/OficinaMecanica.Infrastructure --startup-project src/OficinaMecanica.API
-
-Observações importantes
-
-- A connection string usada pela API via Docker Compose é passada por variável de ambiente: ConnectionStrings__DefaultConnection (ex.: Host=postgres;Port=5432;Database=OficinaDB;Username=postgres;Password=SuaSenha).
-- Em container, use o hostname do serviço (postgres) em vez de localhost.
-- Não deixe senhas em texto em produção; use secrets/variáveis de ambiente ou secret manager.
-- Recomenda-se usar Database.Migrate() ou aplicar migrations via pipeline em vez de EnsureCreated() em produção.
-- Se o comando `dotnet ef` não for encontrado, confirme que o diretório de ferramentas do dotnet está no PATH (ex.: %USERPROFILE%\.dotnet\tools no Windows).
-
-Dicas de troubleshooting
-
-- Se a API não conectar ao DB, verifique se o container Postgres está STARTED e HEALTHY antes de iniciar a API.
-- Para evitar falhas de startup por dependência, adicione retry na configuração do DbContext:
-  options.UseNpgsql(conn, o => o.EnableRetryOnFailure(...));
-
-Se precisar, eu posso adicionar um script de espera (wait-for) ou aplicar Database.Migrate() automaticamente no startup.
+---
 
 ## Autenticação
 
-A API utiliza **JWT Bearer Token** para autenticação. O fluxo é:
+A API usa **JWT Bearer Token**. O token é obtido via login e deve ser enviado no header de todas as rotas protegidas.
 
 ### Endpoint de login
 
-```
-POST /auth/login
+```http
+POST /Auth/login
 Content-Type: application/json
 
 {
-  "email": "usuario@email.com",
-  "senha": "senha123"
+  "email": "admin@oficina.com",
+  "senha": "Senha@123"
 }
 ```
 
@@ -99,80 +89,125 @@ Resposta:
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiracao": "2025-01-01T12:05:00Z"
+  "expiracao": "2026-01-01T12:05:00Z"
 }
 ```
 
-### Como usar o token
-
-Inclua o token em todas as requisições autenticadas via header:
-
+Inclua o token em todas as requisições:
 ```
 Authorization: Bearer {token}
 ```
 
-O token expira em **5 minutos**. Faça um novo login para obter um novo token.
+> O token expira em **5 minutos**. Faça um novo login para renová-lo.
 
 ### Perfis de acesso
 
-| Perfil  | Descrição |
-|---------|-----------|
-| `Admin` | Acesso total a todas as rotas administrativas |
-| `Cliente` | Acesso restrito a consultas do próprio cliente |
+| Perfil | Valor | Acesso |
+|---|---|---|
+| `Admin` | `0` | Todas as rotas administrativas |
+| `Mecanico` | `1` | Iniciar diagnóstico e notificar conclusão de OS |
+| `Cliente` | `2` | Aprovar/rejeitar orçamento e consultar status da OS |
 
-### Rotas públicas (sem autenticação)
+### Rotas públicas (sem token)
 
 | Método | Rota | Descrição |
-|--------|------|-----------|
-| `POST` | `/auth/login` | Autenticar e obter token |
-| `POST` | `/auth/registrar` | Registrar novo usuário (uso interno) |
-| `GET`  | `/publico/os/{id}/status` | Consultar status de uma OS sem autenticação |
+|---|---|---|
+| `POST` | `/Auth/login` | Obter token JWT |
+| `POST` | `/Auth/registrar` | Registrar usuário |
+| `GET` | `/Publico/os/{id}/status` | Consultar status de uma OS sem autenticação |
 
 ### Rotas protegidas
 
-Todas as demais rotas exigem `Authorization: Bearer {token}` com perfil `Admin`:
+Todas as demais rotas exigem `Authorization: Bearer {token}` com o perfil indicado:
 
-| Método | Rota |
-|--------|------|
-| `GET/POST/PUT/DELETE` | `/clientes` |
-| `GET/POST/PUT/DELETE` | `/veiculos` |
-| `GET/POST/PUT/DELETE` | `/servicos` |
-| `GET/POST/PUT/DELETE` | `/pecas` |
-| `GET/POST/PUT/DELETE` | `/ordens-servico` |
-| `GET/POST/PUT` | `/aprovacoes` |
+| Recurso | Perfil exigido |
+|---|---|
+| Clientes, Veículos, Serviços, Peças | `Admin` |
+| Ordens de serviço (CRUD e itens) | `Admin` |
+| Iniciar diagnóstico / Notificar conclusão | `Admin` ou `Mecanico` |
+| Aprovar / Rejeitar orçamento | `Admin` ou `Cliente` |
+| Registrar entrega / Forçar status | `Admin` |
+| Histórico de status | `Admin`, `Mecanico` ou `Cliente` |
 
-### Teste rápido do fluxo
+---
+
+## Roteiros de teste
+
+Guias passo a passo por funcionalidade e um arquivo `.http` para uso no VS Code (extensão REST Client) estão em [`docs/testing/`](./docs/testing/README.md).
+
+---
+
+## Cobertura de testes
+
+O projeto possui **116 testes** (99 unitários + 17 de integração) cobrindo services, entidades de domínio e controllers.
+
+### Gerar o relatório
 
 ```bash
-# 1. Login
-TOKEN=$(curl -s -X POST http://localhost:5000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@oficina.com","senha":"Admin@123"}' \
-  | jq -r '.token')
+# 1. Instalar o gerador de relatório (apenas uma vez)
+dotnet tool install -g dotnet-reportgenerator-globaltool
 
-# 2. Rota protegida com token
-curl -H "Authorization: Bearer $TOKEN" http://localhost:5000/clientes
+# 2. Executar os testes coletando cobertura
+dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage-results
 
-# 3. Rota pública sem token
-curl http://localhost:5000/publico/os/1/status
+# 3. Gerar o relatório HTML
+reportgenerator \
+  -reports:"coverage-results/**/coverage.cobertura.xml" \
+  -targetdir:"coverage-report" \
+  -reporttypes:"MHtml;TextSummary"
 ```
 
-## Como rodar o scan de qualidade (SonarQube)
+### Visualizar o relatório
+
+Abra **`coverage-report/Summary.mht`** no **Edge ou Chrome** (Firefox não suporta `.mht`).  
+O arquivo `coverage-report/Summary.txt` contém o resumo em texto puro.
+
+### Resultado atual
+
+| Camada | Cobertura de linhas |
+|---|---|
+| Application (services + DTOs) | **86%** |
+| Domain (entidades) | **74%** |
+| API (controllers) | **12%** — controllers sem testes de integração próprios |
+| Infrastructure (repositories) | **9%** — testados via integração com InMemory |
+| **Total** | **32%** |
+
+> Os repositories de Infrastructure têm 0% de cobertura direta porque os testes de integração usam `InMemory` e exercitam o comportamento via services, não instanciando os repositories diretamente.
+
+---
+
+## Relatório de vulnerabilidades
+
+A análise de segurança está documentada em **[`relatorio-vulnerabilidades.md`](./relatorio-vulnerabilidades.md)**, na raiz do repositório.
+
+O relatório cobre:
+
+- **10 achados** classificados por severidade (2 críticos, 3 altos, 4 médios, 1 baixo)
+- Mapeamento contra **OWASP Top 10**
+- Controles de segurança já implementados (hash timing-safe, JWT validado, EF Core parametrizado, usuário não-root no container)
+- Instruções de correção para cada vulnerabilidade pendente
+
+### Reproduzir a análise com SonarQube
+
+O SonarQube está incluso no `docker-compose.yaml`. Veja a seção [Scan de qualidade (SonarQube)](#scan-de-qualidade-sonarqube) abaixo para executar um novo scan.
+
+---
+
+## Scan de qualidade (SonarQube)
 
 ### 1. Subir o SonarQube
-
-O SonarQube está incluído no `docker-compose.yaml`. Para subí-lo:
 
 ```bash
 docker compose up -d sonarqube
 ```
 
-Aguarde ~1 minuto e acesse `http://localhost:9000`. Login padrão: **admin / admin** (será solicitada troca na primeira vez).
+Aguarde ~1 minuto e acesse `http://localhost:9000`.  
+Login padrão: **admin / admin** (será solicitada troca na primeira vez).
 
-### 2. Criar o projeto e gerar o token
+### 2. Criar projeto e token
 
 1. Em `http://localhost:9000`, crie um projeto com a chave `mecanica-api`
-2. Vá em **My Account → Security → Generate Token** e copie o token gerado
+2. Vá em **My Account → Security → Generate Token** e copie o token
 
 ### 3. Instalar o scanner (apenas uma vez)
 
@@ -182,25 +217,95 @@ dotnet tool install --global dotnet-sonarscanner
 
 ### 4. Executar o scan
 
-Na raiz do repositório, substituindo `SEU_TOKEN`:
-
 ```bash
-dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN"
+dotnet sonarscanner begin \
+  /k:"mecanica-api" \
+  /d:sonar.host.url="http://localhost:9000" \
+  /d:sonar.token="SEU_TOKEN" \
+  /d:sonar.exclusions="**/Migrations/**,**/obj/**"
+
 dotnet build OficinaMecanica.slnx
+
 dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
-### 5. Executar com cobertura de testes
+Resultados disponíveis em: `http://localhost:9000/dashboard?id=mecanica-api`
+
+### 5. Scan com cobertura integrada
 
 ```bash
-dotnet sonarscanner begin /k:"mecanica-api" \
+dotnet sonarscanner begin \
+  /k:"mecanica-api" \
   /d:sonar.host.url="http://localhost:9000" \
   /d:sonar.token="SEU_TOKEN" \
+  /d:sonar.exclusions="**/Migrations/**,**/obj/**" \
   /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
 dotnet build OficinaMecanica.slnx
-dotnet test --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+dotnet test --collect:"XPlat Code Coverage" \
+  -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
 dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
-Resultados em: `http://localhost:9000/dashboard?id=mecanica-api`
+---
+
+## EF Core / Migrations
+
+As migrations são aplicadas automaticamente no startup da API (`Database.Migrate()`).  
+Para gerenciar manualmente:
+
+```bash
+# Instalar o EF CLI (apenas uma vez)
+dotnet tool install --global dotnet-ef
+
+# Criar nova migration
+dotnet ef migrations add NomeDaMigration \
+  --project src/OficinaMecanica.Infrastructure \
+  --startup-project src/OficinaMecanica.API \
+  --output-dir Migrations
+
+# Aplicar migrations manualmente
+dotnet ef database update \
+  --project src/OficinaMecanica.Infrastructure \
+  --startup-project src/OficinaMecanica.API
+```
+
+### Conectar ao banco via psql
+
+```bash
+docker exec -it oficina_postgres psql -U postgres -d OficinaDB
+
+# Comandos úteis dentro do psql
+\dt                                          -- listar tabelas
+SELECT * FROM "__EFMigrationsHistory";       -- migrations aplicadas
+```
+
+---
+
+## Troubleshooting
+
+**API não conecta ao banco**  
+Verifique se o container PostgreSQL está `healthy` antes de a API iniciar:
+```bash
+docker inspect --format '{{.State.Health.Status}}' oficina_postgres
+```
+
+**`dotnet ef` não encontrado**  
+Confirme que o diretório de ferramentas do .NET está no PATH:
+- Windows: `%USERPROFILE%\.dotnet\tools`
+- Linux/macOS: `~/.dotnet/tools`
+
+**`reportgenerator` não encontrado**  
+Mesmo problema de PATH. Reinicie o terminal após instalar ou use o caminho completo.
+
+**Porta já em uso**  
+A API usa a porta `5000`. Verifique e encerre processos conflitantes:
+```bash
+# Windows
+netstat -ano | findstr :5000
+
+# Linux/macOS
+lsof -i :5000
+```

@@ -86,3 +86,7 @@ build/
 .env.*.local
 
 */plans/
+
+# Coverage
+coverage-results/
+coverage-report/
