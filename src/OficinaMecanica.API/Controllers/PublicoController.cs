@@ -7,6 +7,7 @@ namespace OficinaMecanica.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Produces("application/json")]
 [AllowAnonymous]
 public class PublicoController : ControllerBase
 {
@@ -15,7 +16,16 @@ public class PublicoController : ControllerBase
     public PublicoController(IOrdemServicoRepository osRepository) =>
         _osRepository = osRepository;
 
+    /// <summary>
+    /// Consulta o status atual de uma OS sem necessidade de autenticação
+    /// </summary>
+    /// <remarks>
+    /// Endpoint público destinado ao cliente final. Retorna apenas `osId`, `status` e `atualizadoEm` —
+    /// nenhum dado pessoal ou financeiro é exposto. Ideal para integração com portais e apps de rastreamento.
+    /// </remarks>
     [HttpGet("os/{id:guid}/status")]
+    [ProducesResponseType(typeof(PainelStatusOSDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetStatusOS(Guid id)
     {
         var os = await _osRepository.ObterPorIdAsync(id);
