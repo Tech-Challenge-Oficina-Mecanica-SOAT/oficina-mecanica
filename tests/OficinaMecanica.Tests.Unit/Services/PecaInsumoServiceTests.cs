@@ -26,6 +26,7 @@ public class PecaInsumoServiceTests
         {
             Nome = "Filtro de Óleo",
             Codigo = "FO-123",
+            Descricao = "Filtro de óleo para motor",
             PrecoUnitario = 45.90m,
             Estoque = 10
         };
@@ -42,6 +43,7 @@ public class PecaInsumoServiceTests
         result.Should().NotBeNull();
         result.Nome.Should().Be("Filtro de Óleo");
         result.Codigo.Should().Be("FO-123");
+        result.Descricao.Should().Be("Filtro de óleo para motor");
         result.PrecoUnitario.Should().Be(45.90m);
         result.Estoque.Should().Be(10);
     }
@@ -54,6 +56,7 @@ public class PecaInsumoServiceTests
         {
             Nome = "Peça Teste",
             Codigo = "PT-001",
+            Descricao = "Descrição da peça",
             PrecoUnitario = 100.00m,
             Estoque = -5
         };
@@ -70,6 +73,7 @@ public class PecaInsumoServiceTests
         {
             Nome = "Filtro de Óleo",
             Codigo = "FO-123",
+            Descricao = "Filtro de óleo para motor",
             PrecoUnitario = 45.90m,
             Estoque = 10
         };
@@ -87,8 +91,8 @@ public class PecaInsumoServiceTests
         // Arrange
         var pecas = new List<PecaInsumo>
         {
-            new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 10),
-            new PecaInsumo("Filtro de Ar", "FA-456", 35.90m, 15)
+            new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10),
+            new PecaInsumo("Filtro de Ar", "FA-456", "Descrição do filtro de ar", 35.90m, 15)
         };
 
         _pecaRepositoryMock.Setup(x => x.GetByNomeAsync("filtro"))
@@ -107,7 +111,7 @@ public class PecaInsumoServiceTests
     {
         // Arrange
         var pecaId = Guid.NewGuid();
-        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 10);
+        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10);
 
         _pecaRepositoryMock.Setup(x => x.GetByIdAsync(pecaId))
             .ReturnsAsync(peca);
@@ -118,6 +122,7 @@ public class PecaInsumoServiceTests
         // Assert
         result.Should().NotBeNull();
         result.Nome.Should().Be("Filtro de Óleo");
+        result.Descricao.Should().Be("Descrição do filtro");
     }
 
     [Fact]
@@ -126,8 +131,8 @@ public class PecaInsumoServiceTests
         // Arrange
         var pecas = new List<PecaInsumo>
         {
-            new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 10),
-            new PecaInsumo("Pastilha de Freio", "PF-789", 89.90m, 20)
+            new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10),
+            new PecaInsumo("Pastilha de Freio", "PF-789", "Descrição da pastilha", 89.90m, 20)
         };
 
         _pecaRepositoryMock.Setup(x => x.GetAllAsync())
@@ -145,10 +150,11 @@ public class PecaInsumoServiceTests
     {
         // Arrange
         var pecaId = Guid.NewGuid();
-        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 10);
+        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição original", 45.90m, 10);
         var updateDto = new UpdatePecaDto
         {
             Nome = "Filtro de Óleo Premium",
+            Descricao = "Descrição atualizada",
             PrecoUnitario = 55.90m,
             Estoque = 20
         };
@@ -164,6 +170,7 @@ public class PecaInsumoServiceTests
         // Assert
         result.Should().NotBeNull();
         result.Nome.Should().Be("Filtro de Óleo Premium");
+        result.Descricao.Should().Be("Descrição atualizada");
         result.PrecoUnitario.Should().Be(55.90m);
         result.Estoque.Should().Be(20);
     }
@@ -173,7 +180,7 @@ public class PecaInsumoServiceTests
     {
         // Arrange
         var pecaId = Guid.NewGuid();
-        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 10);
+        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10);
 
         _pecaRepositoryMock.Setup(x => x.GetByIdAsync(pecaId))
             .ReturnsAsync(peca);
@@ -192,7 +199,7 @@ public class PecaInsumoServiceTests
     {
         // Arrange
         var pecaId = Guid.NewGuid();
-        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 10);
+        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10);
         var updateEstoqueDto = new UpdateEstoqueDto
         {
             Quantidade = 5,
@@ -216,7 +223,7 @@ public class PecaInsumoServiceTests
     {
         // Arrange
         var pecaId = Guid.NewGuid();
-        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 10);
+        var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10);
         var updateEstoqueDto = new UpdateEstoqueDto
         {
             Quantidade = 3,
@@ -256,8 +263,8 @@ public class PecaInsumoServiceTests
         // Arrange
         var pecas = new List<PecaInsumo>
         {
-            new PecaInsumo("Filtro de Óleo", "FO-123", 45.90m, 3),
-            new PecaInsumo("Pastilha de Freio", "PF-789", 89.90m, 5)
+            new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 3),
+            new PecaInsumo("Pastilha de Freio", "PF-789", "Descrição da pastilha", 89.90m, 5)
         };
 
         _pecaRepositoryMock.Setup(x => x.GetByEstoqueBaixoAsync(10))

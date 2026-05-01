@@ -6,8 +6,9 @@ namespace OficinaMecanica.Domain.Entities
     public class PecaInsumo
     {
         public Guid Id { get; private set; }
-        public string Nome { get; private set; } = string.Empty;
-        public string Codigo { get; private set; } = string.Empty;
+        public string Nome { get; private set; } = null!;
+        public string Codigo { get; private set; } = null!;
+        public string Descricao { get; private set; } = null!;
         public decimal Preco { get; private set; }
         public int Quantidade { get; private set; }
         public DateTime CriadoEm { get; private set; }
@@ -17,7 +18,7 @@ namespace OficinaMecanica.Domain.Entities
 
         private PecaInsumo() { }
 
-        public PecaInsumo(string nome, string codigo, decimal preco, int quantidade)
+        public PecaInsumo(string nome, string codigo, string descricao, decimal preco, int quantidade)
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new ArgumentException("Nome é obrigatório");
@@ -31,13 +32,14 @@ namespace OficinaMecanica.Domain.Entities
             Id = Guid.NewGuid();
             Nome = nome;
             Codigo = codigo ?? string.Empty;
+            Descricao = descricao ?? string.Empty;
             Preco = preco;
             Quantidade = quantidade;
             CriadoEm = DateTime.UtcNow;
             Ativo = true;
         }
 
-        public void Atualizar(string nome, decimal preco, int quantidade)
+        public void Atualizar(string nome, string descricao, decimal preco, int quantidade)
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new ArgumentException("Nome é obrigatório");
@@ -49,6 +51,7 @@ namespace OficinaMecanica.Domain.Entities
                 throw new ArgumentException("Quantidade não pode ser negativa");
             
             Nome = nome;
+            Descricao = descricao ?? string.Empty;
             Preco = preco;
             Quantidade = quantidade;
         }
