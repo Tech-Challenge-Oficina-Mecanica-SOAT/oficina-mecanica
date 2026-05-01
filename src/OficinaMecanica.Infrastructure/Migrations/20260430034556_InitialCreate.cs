@@ -35,6 +35,7 @@ namespace OficinaMecanica.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Descricao = table.Column<string>(type: "text", nullable: false),
                     Preco = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Quantidade = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     CriadoEm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -108,7 +109,7 @@ namespace OficinaMecanica.Infrastructure.Migrations
                     DataAbertura = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DataFechamento = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     StatusOS = table.Column<int>(type: "integer", nullable: false),
-                    Observacoes = table.Column<string>(type: "text", nullable: false),
+                    Observacoes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
                     Total = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
                     ClienteId = table.Column<Guid>(type: "uuid", nullable: false),
                     VeiculoId = table.Column<Guid>(type: "uuid", nullable: false)
@@ -202,11 +203,39 @@ namespace OficinaMecanica.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "HistoricoStatusOS",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OrdemServicoId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StatusAnterior = table.Column<int>(type: "integer", nullable: true),
+                    StatusNovo = table.Column<int>(type: "integer", nullable: false),
+                    AlteradoEm = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    AlteradoPor = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_HistoricoStatusOS", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_HistoricoStatusOS_OrdensServico_OrdemServicoId",
+                        column: x => x.OrdemServicoId,
+                        principalTable: "OrdensServico",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Clientes_Documento",
                 table: "Clientes",
                 column: "Documento",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_HistoricoStatusOS_OrdemServicoId_AlteradoEm",
+                table: "HistoricoStatusOS",
+                columns: new[] { "OrdemServicoId", "AlteradoEm" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrdensServico_ClienteId",
@@ -254,6 +283,9 @@ namespace OficinaMecanica.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "HistoricoStatusOS");
+
             migrationBuilder.DropTable(
                 name: "OrdensServicoItens");
 
