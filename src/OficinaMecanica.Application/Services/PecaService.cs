@@ -47,6 +47,7 @@ public class PecaService : IPecaService
         var peca = new PecaInsumo(
             createDto.Nome,
             createDto.Codigo,
+            createDto.Descricao,
             createDto.PrecoUnitario,
             createDto.Estoque
         );
@@ -60,7 +61,7 @@ public class PecaService : IPecaService
         var peca = await _pecaRepository.GetByIdAsync(id);
         if (peca == null) return null;
 
-        peca.Atualizar(updateDto.Nome, updateDto.PrecoUnitario, updateDto.Estoque);
+        peca.Atualizar(updateDto.Nome, updateDto.Descricao, updateDto.PrecoUnitario, updateDto.Estoque);
         
         var updated = await _pecaRepository.UpdateAsync(peca);
         return MapToDto(updated);
@@ -90,7 +91,9 @@ public class PecaService : IPecaService
         }
         else
         {
-            throw new ArgumentException("tipoOperacao deve ser 'incrementar' ou 'decrementar'.");
+            var pecaEncontrada = await _pecaRepository.GetByIdAsync(id);
+            if (pecaEncontrada == null) throw new KeyNotFoundException("Peça não encontrada");
+            peca = pecaEncontrada;
         }
 
         return MapToDto(peca);
@@ -103,6 +106,7 @@ public class PecaService : IPecaService
             Id = peca.Id,
             Nome = peca.Nome,
             Codigo = peca.Codigo,
+            Descricao = peca.Descricao,
             PrecoUnitario = peca.Preco,
             Estoque = peca.Quantidade,
             CriadoEm = peca.CriadoEm,
