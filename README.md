@@ -148,13 +148,10 @@ O projeto possui **116 testes** (99 unitários + 17 de integração) cobrindo se
 dotnet tool install -g dotnet-reportgenerator-globaltool
 
 # 2. Executar os testes coletando cobertura
-dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage-results
+dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage-results --settings coverlet.runsettings
 
-# 3. Gerar o relatório HTML
-reportgenerator \
-  -reports:"coverage-results/**/coverage.cobertura.xml" \
-  -targetdir:"coverage-report" \
-  -reporttypes:"MHtml;TextSummary"
+# 3. Gerar o relatório
+reportgenerator -reports:"coverage-results/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"MHtml;TextSummary" -classfilters:"-Microsoft.AspNetCore.OpenApi.Generated;-System.Runtime.CompilerServices"
 ```
 
 ### Visualizar o relatório
@@ -166,11 +163,13 @@ O arquivo `coverage-report/Summary.txt` contém o resumo em texto puro.
 
 | Camada | Cobertura de linhas |
 |---|---|
-| Application (services + DTOs) | **86%** |
-| Domain (entidades) | **74%** |
-| API (controllers) | **12%** — controllers sem testes de integração próprios |
-| Infrastructure (repositories) | **9%** — testados via integração com InMemory |
-| **Total** | **32%** |
+| Application (services + DTOs) | **86.5%** |
+| Domain (entidades) | **74.2%** |
+| API (controllers) | **25.7%** |
+| Infrastructure (repositories) | **8.6%** — testados via integração com InMemory |
+| **Total (linhas)** | **57.2%** |
+| **Total (branches)** | **47.8%** |
+| **Total (métodos)** | **66.5%** |
 
 > Os repositories de Infrastructure têm 0% de cobertura direta porque os testes de integração usam `InMemory` e exercitam o comportamento via services, não instanciando os repositories diretamente.
 

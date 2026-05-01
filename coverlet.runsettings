@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Exclude>[*]Microsoft.AspNetCore.OpenApi.Generated,[*]System.Runtime.CompilerServices,[OficinaMecanica.API]OficinaMecanica.API.OpenApi.*,[OficinaMecanica.API]OficinaMecanica.API.Scalar*,[OficinaMecanica.Infrastructure]OficinaMecanica.Infrastructure.DesignTimeDbContextFactory,[OficinaMecanica.Infrastructure]OficinaMecanica.Infrastructure.Migrations.*,[OficinaMecanica.Infrastructure]OficinaMecanica.Infrastructure.Data.ApplicationDbContext,[OficinaMecanica.Infrastructure]OficinaMecanica.Infrastructure.Data.ApplicationDbContextModelSnapshot,[OficinaMecanica.Infrastructure]OficinaMecanica.Infrastructure.Data.DesignTimeDbContextFactory</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
