@@ -2,7 +2,7 @@
 
 **Data da análise:** 2026-05-01  
 **Ferramenta:** SonarQube Community Build 26.4.0.121862  
-**Versão analisada:** branch `feat/documentacao-para-testes` (mergeada em `main`)  
+**Versão analisada:** branch `main`  
 **Quality Gate:** ✅ **Passed**  
 **Dashboard:** `http://localhost:9000/dashboard?id=mecanica-api`
 
