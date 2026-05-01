@@ -91,9 +91,7 @@ public class PecaService : IPecaService
         }
         else
         {
-            var pecaEncontrada = await _pecaRepository.GetByIdAsync(id);
-            if (pecaEncontrada == null) throw new KeyNotFoundException("Peça não encontrada");
-            peca = pecaEncontrada;
+            throw new ArgumentException($"tipoOperacao inválido: '{updateEstoqueDto.TipoOperacao}'. Use 'incrementar' ou 'decrementar'.");
         }
 
         return MapToDto(peca);
