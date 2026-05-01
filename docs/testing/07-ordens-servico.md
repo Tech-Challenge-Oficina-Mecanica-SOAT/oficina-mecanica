@@ -2,7 +2,7 @@
 
 Criação e gestão de OS: abertura, adição/remoção de itens (serviços e peças) e consulta do orçamento consolidado.
 
-**Todos os endpoints exigem autenticação.** A maioria requer perfil `Admin`.
+**Todos os endpoints exigem autenticação com perfil `Admin`.**
 
 ## Pré-condições
 
@@ -122,6 +122,7 @@ Criação e gestão de OS: abertura, adição/remoção de itens (serviços e pe
 | Remover item inexistente | `DELETE /api/ordens-servico/{id}/itens/{guid-aleatório}` | `404 Not Found` |
 | `tipo` inválido | `POST .../itens` com `"tipo": "outros"` | `400 Bad Request` |
 | Sem token | qualquer endpoint | `401 Unauthorized` |
+| Token sem role Admin (Mecanico/Cliente) | qualquer endpoint | `403 Forbidden` |
 
 ## Próximo passo
 
