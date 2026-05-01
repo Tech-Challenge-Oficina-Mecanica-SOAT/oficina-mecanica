@@ -217,35 +217,31 @@ dotnet tool install --global dotnet-sonarscanner
 
 ### 4. Executar o scan
 
-```bash
-dotnet sonarscanner begin \
-  /k:"mecanica-api" \
-  /d:sonar.host.url="http://localhost:9000" \
-  /d:sonar.token="SEU_TOKEN" \
-  /d:sonar.exclusions="**/Migrations/**,**/obj/**"
+> **Git Bash no Windows:** os argumentos `/k:` e `/d:` são convertidos incorretamente pelo MSYS. Use **PowerShell** ou **CMD**, ou prefixe o comando com `MSYS_NO_PATHCONV=1`.
 
+**PowerShell / CMD:**
+```powershell
+dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN" /d:sonar.exclusions="**/Migrations/**,**/obj/**"
 dotnet build OficinaMecanica.slnx
-
 dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
+```
+
+**Git Bash:**
+```bash
+MSYS_NO_PATHCONV=1 dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN" /d:sonar.exclusions="**/Migrations/**,**/obj/**"
+dotnet build OficinaMecanica.slnx
+MSYS_NO_PATHCONV=1 dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
 Resultados disponíveis em: `http://localhost:9000/dashboard?id=mecanica-api`
 
 ### 5. Scan com cobertura integrada
 
-```bash
-dotnet sonarscanner begin \
-  /k:"mecanica-api" \
-  /d:sonar.host.url="http://localhost:9000" \
-  /d:sonar.token="SEU_TOKEN" \
-  /d:sonar.exclusions="**/Migrations/**,**/obj/**" \
-  /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
-
+**PowerShell / CMD:**
+```powershell
+dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN" /d:sonar.exclusions="**/Migrations/**,**/obj/**" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 dotnet build OficinaMecanica.slnx
-
-dotnet test --collect:"XPlat Code Coverage" \
-  -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-
+dotnet test --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 

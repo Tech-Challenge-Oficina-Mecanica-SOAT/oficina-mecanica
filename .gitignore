@@ -90,3 +90,4 @@ build/
 # Coverage
 coverage-results/
 coverage-report/
+.sonarqube/

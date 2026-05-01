@@ -1,203 +1,162 @@
 # Relatório de Vulnerabilidades — Oficina Mecânica API
 
-**Data da análise:** 2026-04-30
-**Ferramenta:** SonarQube Community + revisão manual de código
-**Versão analisada:** branch `feat/documentacao-para-testes`
-**Status:** Relatório completo (todas as rotas implementadas)
+**Data da análise:** 2026-05-01  
+**Ferramenta:** SonarQube Community Build 26.4.0.121862  
+**Versão analisada:** branch `feat/documentacao-para-testes` (mergeada em `main`)  
+**Quality Gate:** ✅ **Passed**  
+**Dashboard:** `http://localhost:9000/dashboard?id=mecanica-api`
 
 ---
 
-## Resumo
+## Resumo — Dashboard SonarQube
 
-| Severidade | Quantidade | Corrigidas | Pendentes |
-|------------|-----------|------------|-----------|
-| Crítica    | 2         | 0          | 2         |
-| Alta       | 3         | 1          | 2         |
-| Média      | 4         | 2          | 2         |
-| Baixa      | 1         | 0          | 1         |
-| **Total**  | **10**    | **3**      | **7**     |
+| Dimensão | Issues | Rating |
+|---|---|---|
+| Security (Vulnerabilidades) | 2 | C |
+| Reliability | 2 | C |
+| Maintainability | 21 | A |
+| Security Hotspots | 4 | E |
+| Coverage | 0,0% | — |
+| Duplications | 0,0% | — |
 
----
-
-## Vulnerabilidades Críticas
-
-### C1 — Segredos hardcoded em `appsettings.json`
-
-- **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linhas 10, 14, 20
-- **OWASP:** A02 Cryptographic Failures
-- **Risco:** Qualquer pessoa com acesso ao repositório obtém a senha do banco, a chave de assinatura JWT e a chave HMAC de senhas — suficiente para forjar tokens e acessar dados.
-- **Evidência:**
-  ```json
-  "DefaultConnection": "Host=localhost;...;Password=SuaSenha;..."
-  "SecretKey": "mecanica-jwt-secret-key-minimo-32-chars!!"
-  "PasswordKey": "K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF"
-  ```
-- **Status:** ❌ Não corrigido
-- **Correção:** Mover todos os segredos para variáveis de ambiente (`ASPNETCORE_` ou `.env`). Em produção, usar gerenciador de segredos (Azure Key Vault, AWS Secrets Manager).
+> **Nota sobre Coverage:** o scan foi executado sem integração com os relatórios de cobertura. Para incluir cobertura, veja a seção "Scan com cobertura integrada" no README.
 
 ---
 
-### C2 — Senha do PostgreSQL hardcoded no `docker-compose.yaml`
+## Vulnerabilidades (type = VULNERABILITY)
 
-- **Arquivo:** `docker-compose.yaml`, linhas 12 e 35
-- **OWASP:** A02 Cryptographic Failures
-- **Risco:** A senha do banco está versionada em texto claro em dois lugares do compose, replicando o problema de C1 na infraestrutura.
-- **Evidência:**
-  ```yaml
-  POSTGRES_PASSWORD: SuaSenha
-  ConnectionStrings__DefaultConnection: ...Password=SuaSenha
-  ```
-- **Status:** ❌ Não corrigido
-- **Correção:** Substituir por variáveis de ambiente via arquivo `.env` (não versionado) e referenciar com `${POSTGRES_PASSWORD}`.
+### V1 — Credencial hardcoded na connection string
 
----
-
-## Vulnerabilidades Altas
-
-### A1 — Perfil `Admin` como padrão no cadastro de usuário
-
-- **Arquivo:** `src/OficinaMecanica.Application/DTOs/RegistrarUsuarioDto.cs`, linha 5
-- **OWASP:** A01 Broken Access Control
-- **Risco:** O endpoint `POST /Auth/registrar` é público (`[AllowAnonymous]`). Qualquer cliente pode registrar-se como Admin omitindo o campo `perfil`, pois o padrão do DTO é `Perfil.Admin`.
-- **Evidência:**
-  ```csharp
-  public record RegistrarUsuarioDto(string Email, string Senha, Perfil Perfil = Perfil.Admin);
-  ```
-- **Status:** ❌ Não corrigido
-- **Correção:** Alterar o default para `Perfil.Cliente`. Promoção a Admin deve exigir autenticação prévia de outro Admin.
-
----
-
-### A2 — `Trust Server Certificate=true` na connection string
-
+- **Regra:** `csharpsquid:S2068`
 - **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linha 10
+- **Severidade:** MAJOR
+- **Mensagem:** *"password" detected here, make sure this is not a hard-coded credential.*
 - **OWASP:** A02 Cryptographic Failures
-- **Risco:** Desabilita a validação do certificado TLS do PostgreSQL, permitindo ataques Man-in-the-Middle na comunicação entre a API e o banco.
-- **Evidência:**
-  ```
-  Trust Server Certificate=true
-  ```
-- **Status:** ❌ Não corrigido — aceitável apenas em desenvolvimento local; deve ser removido antes de qualquer ambiente compartilhado.
-- **Correção:** Remover a opção ou definir `Ssl Mode=Require` com certificado válido em produção.
+- **Risco:** A senha do PostgreSQL está em texto claro no arquivo versionado. Qualquer acesso ao repositório expõe o banco de dados.
+- **Correção:** Mover para variável de ambiente (`ASPNETCORE_ConnectionStrings__DefaultConnection`) e remover o valor do `appsettings.json`.
 
 ---
 
-### A3 — Entropia insuficiente nas chaves criptográficas
+### V2 — Chave criptográfica hardcoded (PasswordKey)
 
-- **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linhas 14 e 20
+- **Regra:** `csharpsquid:S2068`
+- **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linha 20
+- **Severidade:** MAJOR
+- **Mensagem:** *"password" detected here, make sure this is not a hard-coded credential.*
 - **OWASP:** A02 Cryptographic Failures
-- **Risco:** Embora as chaves atendam o tamanho mínimo, são strings descritivas com baixa entropia (`"mecanica-jwt-secret-key-minimo-32-chars!!"`). Reduz a resistência a ataques de força bruta contra tokens capturados.
-- **Status:** ⚠️ Parcialmente corrigido — tamanho adequado, entropia insuficiente
-- **Correção:** Gerar as chaves com `openssl rand -base64 64` ou equivalente criptográfico.
+- **Risco:** A chave HMAC usada para hash de senhas está versionada. Qualquer pessoa com acesso ao repositório pode replicar o mecanismo de hash.
+- **Correção:** Mover para variável de ambiente. Gerar chave com entropia suficiente: `openssl rand -base64 64`.
 
 ---
 
-## Vulnerabilidades Médias
+## Security Hotspots (4 identificados)
 
-### M1 — `AllowedHosts: "*"` permissivo
+Security Hotspots são pontos que **requerem revisão manual** — o SonarQube os sinaliza como potencialmente sensíveis, mas não classifica automaticamente como vulnerabilidade. Os 4 hotspots identificados estão disponíveis para triagem em:
 
-- **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linha 12
-- **OWASP:** A05 Security Misconfiguration
-- **Risco:** Desabilita proteção contra Host Header Injection. Pode ser explorado em ataques de cache poisoning ou redirecionamentos maliciosos.
-- **Status:** ❌ Não corrigido
-- **Correção:** Especificar hosts explícitos: `"AllowedHosts": "localhost;api.oficina.com"`.
+`http://localhost:9000/security_hotspots?id=mecanica-api`
+
+Cada hotspot deve ser avaliado e marcado como **"Fixed"** (corrigido) ou **"Safe"** (falso positivo justificado) após revisão.
 
 ---
 
-### M2 — Porta 5432 do PostgreSQL exposta no compose
+## Issues de Confiabilidade (Reliability — Rating C)
 
-- **Arquivo:** `docker-compose.yaml`, linhas 13–14
-- **OWASP:** A05 Security Misconfiguration
-- **Risco:** O banco de dados fica acessível diretamente na rede local (ou em cloud sem firewall), além da API. Qualquer serviço na rede pode tentar conexões diretas.
-- **Status:** ⚠️ Aceitável em desenvolvimento; não deve ser replicado em produção
-- **Correção:** Remover o mapeamento de portas do serviço `postgres` no compose de produção. A API acessa o banco pela rede interna do Docker.
+### R1 — Chamada síncrona a `Migrate()` em contexto assíncrono
 
----
-
-### M3 — Ausência de validação de entrada nos DTOs
-
-- **Arquivos:** `src/OficinaMecanica.Application/DTOs/` (múltiplos)
-- **OWASP:** A03 Injection / A04 Insecure Design
-- **Risco:** DTOs como `LoginDto`, `CreateClienteDto` e `CreateOrdemServicoDto` não possuem Data Annotations (`[Required]`, `[StringLength]`, `[EmailAddress]`). Validações de negócio estão nos services/entities, mas erros de formato chegam mais fundo na stack antes de serem rejeitados.
-- **Status:** ✅ Mitigado funcionalmente — validações de negócio estão nas entidades de domínio e nos services; nenhuma injeção de SQL identificada pois todo acesso ao banco usa EF Core com LINQ parametrizado.
-- **Melhoria recomendada:** Adicionar anotações nos DTOs para rejeitar entradas inválidas na camada de apresentação, reduzindo processamento desnecessário.
+- **Regra:** `csharpsquid:S6966`
+- **Arquivo:** `src/OficinaMecanica.API/Program.cs`, linha 102
+- **Severidade:** MAJOR
+- **Mensagem:** *Await MigrateAsync instead.*
+- **Risco:** Bloqueia a thread durante a migration no startup, podendo causar deadlock em ambientes com SynchronizationContext.
+- **Correção:** Substituir `context.Database.Migrate()` por `await context.Database.MigrateAsync()`.
 
 ---
 
-### M4 — Expiração do JWT muito curta para o fluxo de uso
+### R2 — Chamada síncrona a `Run()` em contexto assíncrono
 
-- **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linha 17
-- **OWASP:** A07 Identification and Authentication Failures
-- **Risco:** Token expira em 5 minutos. O fluxo de OS (diagnóstico → aprovação → execução) pode durar horas; usuários precisarão re-autenticar constantemente, aumentando a superfície de ataque (mais requisições de login).
-- **Status:** ✅ Mitigado para o contexto do Tech Challenge — aceitável como escolha conservadora de segurança; ideal seria implementar refresh token para operações longas.
-
----
-
-## Pontos Positivos — Controles Implementados
-
-### A01 — Broken Access Control
-- Todos os endpoints administrativos protegidos com `[Authorize(Roles = "Admin")]`
-- Rotas por perfil: `Mecanico` acessa diagnóstico/conclusão; `Cliente` acessa aprovação/rejeição/histórico; `Admin` tem acesso total
-- Endpoint público `/Publico/os/{id}/status` retorna apenas `osId`, `status` e `atualizadoEm` — nenhum dado pessoal exposto
-- `AuthController` e `PublicoController` marcados com `[AllowAnonymous]` explicitamente
-
-### A02 — Cryptographic Failures
-- Senhas armazenadas com HMAC-SHA256 + salt aleatório de 32 bytes via `RandomNumberGenerator.GetBytes()` — não reversível
-- Comparação de hashes com `CryptographicOperations.FixedTimeEquals()` — resistente a timing attacks
-- JWT assinado com HmacSha256; validação completa de issuer, audience, lifetime e chave
-
-### A03 — Injection
-- Nenhum SQL raw identificado — toda persistência usa EF Core com LINQ parametrizado
-- Inputs de e-mail normalizados (`.ToLower().Trim()`) antes de persistir
-
-### A05 — Security Misconfiguration
-- Container da API executa com usuário não-root (`appuser`) — Dockerfile linhas 23–24
-- Build multi-stage no Dockerfile separa artefatos de build do runtime
-- Imagens base oficiais Microsoft (`mcr.microsoft.com/dotnet/aspnet:10.0`)
-
-### A07 — Identification and Authentication Failures
-- JWT com validação de issuer, audience, lifetime e chave de assinatura (`Program.cs` linhas 55–63)
-- Claims bem estruturados: `sub`, `email`, `role`, `jti` (ID único por token)
-
-### A09 — Security Logging and Monitoring Failures
-- Histórico de transições de status da OS registrado com `alteradoPor` e `motivo` para todas as operações (`HistoricoStatusOS`)
-- `NotificacaoService` registra envio de orçamento via log estruturado
+- **Regra:** `csharpsquid:S6966`
+- **Arquivo:** `src/OficinaMecanica.API/Program.cs`, linha 105
+- **Severidade:** MAJOR
+- **Mensagem:** *Await RunAsync instead.*
+- **Correção:** Substituir `app.Run()` por `await app.RunAsync()`.
 
 ---
 
-## Considerações OWASP Top 10 — Resumo
+## Issues de Manutenibilidade — principais (Maintainability — Rating A)
 
-| Categoria | Status | Observação |
-|-----------|--------|------------|
-| A01 Broken Access Control | ⚠️ | Perfil Admin como default no cadastro (ver A1) |
-| A02 Cryptographic Failures | ⚠️ | Chaves hardcoded (ver C1, C2, A2, A3) |
-| A03 Injection | ✅ | EF Core parametrizado; sem SQL raw |
-| A04 Insecure Design | ⚠️ | Validação de entrada nos DTOs ausente (ver M3) |
-| A05 Security Misconfiguration | ⚠️ | AllowedHosts e porta PostgreSQL (ver M1, M2) |
-| A06 Vulnerable Components | ✅ | Dependências atuais (.NET 10, pacotes recentes) |
-| A07 Authentication Failures | ✅ | JWT configurado corretamente; timing-safe hash |
-| A08 Software Integrity Failures | ✅ | Sem deserialização insegura identificada |
-| A09 Logging & Monitoring | ✅ | Histórico de OS; log de notificações |
-| A10 SSRF | ✅ | Sem requisições HTTP a URLs externas controláveis pelo usuário |
+### Código-fonte (MAIN)
+
+| Regra | Arquivo | Linha | Severidade | Descrição |
+|---|---|---|---|---|
+| `S1118` | `Program.cs` | 107 | MAJOR | Classe `Program` sem constructor `protected` ou modificador `static` |
+| `S1144` | `Veiculo.cs` | 14 | MAJOR | Setter privado `set_Cliente` não utilizado — remover |
+| `CS8618` | `Veiculo.cs` | 16 | MAJOR | Propriedades `Placa`, `Marca`, `Modelo` não anuláveis sem valor inicial no construtor |
+| `S1905` | `ServicosController.cs` | 66 | MINOR | Cast desnecessário para `IEnumerable<ServicoDto>` |
+| `S1192` | `ServicosController.cs` | 117 | MINOR | Literal `"Serviço não encontrado"` repetida 4 vezes — extrair constante |
+| `S1192` | `ExampleSchemaTransformer.cs` | 14 | MINOR | Literal `"email"` repetida 4 vezes — extrair constante |
+| `S1192` | `ExampleSchemaTransformer.cs` | 54 | MINOR | Literal `"descricao"` repetida 4 vezes — extrair constante |
+| `S1135` | `OrdemServicoStatusController.cs` | 88 | INFO | Comentário TODO pendente |
+| `CA1873` | `NotificacaoService.cs` | 14, 23 | INFO | Interpolação de string avaliada mesmo quando logging está desabilitado — usar `LogInformation(template, args)` |
+| `CA1860` | `OrdemServicoRepository.cs` | 79 | INFO | Preferir `.Count > 0` a `.Any()` por performance |
+| `ASP0025` | `Program.cs` | 71 | INFO | Usar `AddAuthorizationBuilder` em vez de `AddAuthorization` com callback |
+| `ASP0027` | `Program.cs` | 107 | INFO | `public partial class Program` não é mais necessário no .NET 10 |
+
+### Testes (TEST)
+
+| Regra | Arquivo | Linha | Severidade | Descrição |
+|---|---|---|---|---|
+| `S2699` | `NotificacaoServiceTests.cs` | 18 | **BLOCKER** | Teste sem nenhuma assertion — não valida comportamento |
+| `CS8604` | `OrdemServicoStatusControllerTests.cs` | 146 | MAJOR | Possível referência nula em `Enumerable.Last()` |
+| `CA1806` | `HistoricoStatusOSTests.cs` | 32, 41, 50 | INFO | Instâncias criadas mas nunca usadas nos testes de exceção |
+| `CA1806` | `OrdemServicoTests.cs` | 33, 40 | INFO | Instâncias criadas mas nunca usadas nos testes de exceção |
+| `CA1822` | `OrdemServicoStatusServiceTests.cs` | 26 | INFO | Método `OSRecebida` pode ser `static` |
 
 ---
 
-## Como executar o scan no SonarQube local
+## Análise Complementar — OWASP Top 10 (revisão manual)
 
-```bash
-# O SonarQube já está disponível em http://localhost:9000 via docker compose up -d
+O SonarQube detecta vulnerabilidades de código mas não cobre falhas de design de negócio. Os itens abaixo complementam a análise automatizada:
 
-# Gerar token em: http://localhost:9000 → My Account → Security → Generate Token
+| Categoria OWASP | Status | Achado |
+|---|---|---|
+| **A01 Broken Access Control** | ⚠️ | `RegistrarUsuarioDto` tem `Perfil.Admin` como valor padrão — endpoint público permite auto-promoção a Admin |
+| **A02 Cryptographic Failures** | ⚠️ | Detectado pelo SonarQube (V1 e V2 acima). Adicionalmente: `Trust Server Certificate=true` desabilita validação TLS do PostgreSQL |
+| **A03 Injection** | ✅ | Sem SQL raw — todo acesso usa EF Core com LINQ parametrizado |
+| **A04 Insecure Design** | ⚠️ | DTOs sem Data Annotations (`[Required]`, `[EmailAddress]`); validação ocorre só nas entidades de domínio |
+| **A05 Security Misconfiguration** | ⚠️ | `AllowedHosts: "*"` em `appsettings.json`; porta 5432 do PostgreSQL exposta no `docker-compose.yaml` |
+| **A06 Vulnerable Components** | ✅ | Dependências atuais (.NET 10, pacotes recentes sem CVEs conhecidos) |
+| **A07 Authentication Failures** | ✅ | JWT com validação de issuer, audience, lifetime e chave; hash de senhas com HMAC-SHA256 + salt via `RandomNumberGenerator`; comparação timing-safe com `CryptographicOperations.FixedTimeEquals()` |
+| **A08 Software Integrity** | ✅ | Sem deserialização insegura identificada |
+| **A09 Logging & Monitoring** | ✅ | Histórico completo de transições de OS com `alteradoPor` e `motivo`; log estruturado no `NotificacaoService` |
+| **A10 SSRF** | ✅ | Sem requisições HTTP a URLs controladas pelo usuário |
 
-dotnet sonarscanner begin \
-  /k:"mecanica-api" \
-  /d:sonar.host.url="http://localhost:9000" \
-  /d:sonar.login="SEU_TOKEN" \
-  /d:sonar.exclusions="**/Migrations/**,**/obj/**"
+---
 
-dotnet build src/OficinaMecanica.API/OficinaMecanica.API.csproj
+## Controles de Segurança Implementados
 
-dotnet sonarscanner end /d:sonar.login="SEU_TOKEN"
+- **Autenticação JWT** completa: validação de issuer, audience, lifetime e chave de assinatura (`Program.cs` linhas 55–63)
+- **Autorização por perfil** em todos os controllers: `[Authorize(Roles = "Admin")]`, `[Authorize(Roles = "Admin,Mecanico")]`, etc.
+- **Hash de senhas** com HMAC-SHA256 + salt aleatório de 32 bytes — não reversível
+- **Comparação timing-safe** de hashes com `CryptographicOperations.FixedTimeEquals()`
+- **Sem SQL raw** — toda persistência via EF Core com LINQ parametrizado
+- **Container não-root**: Dockerfile cria e usa `appuser` com `groupadd`/`useradd`
+- **Build multi-stage** no Dockerfile: artefatos de build não acompanham a imagem de runtime
+- **Endpoint público** (`/Publico/os/{id}/status`) retorna apenas `osId`, `status` e `atualizadoEm` — sem dados pessoais
+
+---
+
+## Como reproduzir a análise
+
+```powershell
+# 1. Subir o SonarQube (já incluso no docker-compose)
+docker compose up -d sonarqube
+
+# 2. Acessar http://localhost:9000, criar projeto "mecanica-api" e gerar token
+
+# 3. Executar o scan (PowerShell ou CMD — não Git Bash)
+dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN" /d:sonar.exclusions="**/Migrations/**,**/obj/**"
+dotnet build OficinaMecanica.slnx
+dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
-Resultados disponíveis em `http://localhost:9000/dashboard?id=mecanica-api` após a análise.
+Resultados em: `http://localhost:9000/dashboard?id=mecanica-api`
