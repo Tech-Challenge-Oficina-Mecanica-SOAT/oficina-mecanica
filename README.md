@@ -28,6 +28,8 @@ Rodando com Docker (recomendado)
 
 A API estará acessível em http://localhost:5165/ e a documentação interativa (Scalar) em http://localhost:5165/scalar. O Dockerfile expõe a porta 5000.
 
+Para roteiros de teste passo a passo (autenticação JWT, CRUDs, estoque, painel público) e um arquivo `.http` ponta a ponta, veja [`docs/testing/`](./docs/testing/README.md).
+
 Conectar ao banco (psql)
 
 - Abrir shell psql dentro do container:

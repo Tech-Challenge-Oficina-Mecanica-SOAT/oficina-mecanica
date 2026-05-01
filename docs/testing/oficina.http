@@ -1,0 +1,447 @@
+### Variáveis de ambiente
+### Use a extensão "REST Client" (VS Code) ou Rider para executar.
+### O resultado de cada request fica armazenado e pode ser referenciado por
+### `{{nome.response.body.$.campo}}` nas chamadas seguintes.
+
+@baseUrl = http://localhost:5000
+@email    = admin@oficina.com
+@senha    = Senha@123
+
+###############################################################################
+# 1. AUTENTICAÇÃO
+###############################################################################
+
+### 1.1 - Registrar usuário Admin (público)
+# @name registrar
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "{{senha}}",
+  "perfil": 0
+}
+
+### 1.2 - Registrar usuário Mecânico
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "mecanico@oficina.com",
+  "senha": "{{senha}}",
+  "perfil": 1
+}
+
+### 1.3 - Registrar usuário Cliente
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "cliente@email.com",
+  "senha": "{{senha}}",
+  "perfil": 2
+}
+
+### 1.4 - Login como Admin (gera o JWT)
+# @name login
+POST {{baseUrl}}/Auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "{{senha}}"
+}
+
+### Captura o token retornado — usado em todas as requisições autenticadas
+@token = {{login.response.body.token}}
+
+###############################################################################
+# 2. CLIENTES (Admin)
+###############################################################################
+
+### 2.1 - Criar cliente
+# @name criarCliente
+POST {{baseUrl}}/api/Clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "documento": "52998224725",
+  "telefone": "11999998888",
+  "email": "joao@email.com"
+}
+
+@clienteId = {{criarCliente.response.body.id}}
+
+### 2.2 - Listar todos os clientes
+GET {{baseUrl}}/api/Clientes
+Authorization: Bearer {{token}}
+
+### 2.3 - Buscar cliente por ID
+GET {{baseUrl}}/api/Clientes/{{clienteId}}
+Authorization: Bearer {{token}}
+
+### 2.4 - Buscar cliente por documento (CPF)
+GET {{baseUrl}}/api/Clientes/documento/52998224725
+Authorization: Bearer {{token}}
+
+### 2.5 - Atualizar dados do cliente
+PUT {{baseUrl}}/api/Clientes/{{clienteId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva Junior",
+  "telefone": "11988887777",
+  "email": "joao.novo@email.com"
+}
+
+### 2.6 - Desativar cliente
+PATCH {{baseUrl}}/api/Clientes/{{clienteId}}/desativar
+Authorization: Bearer {{token}}
+
+### 2.7 - Reativar cliente
+PATCH {{baseUrl}}/api/Clientes/{{clienteId}}/ativar
+Authorization: Bearer {{token}}
+
+###############################################################################
+# 3. VEÍCULOS (Admin)
+###############################################################################
+
+### 3.1 - Criar veículo associado ao cliente
+# @name criarVeiculo
+POST {{baseUrl}}/api/Veiculos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clienteId": "{{clienteId}}",
+  "placa": "ABC1D23",
+  "marca": "Volkswagen",
+  "modelo": "Gol",
+  "ano": 2020
+}
+
+@veiculoId = {{criarVeiculo.response.body.id}}
+
+### 3.2 - Listar todos os veículos
+GET {{baseUrl}}/api/Veiculos
+Authorization: Bearer {{token}}
+
+### 3.3 - Buscar por placa
+GET {{baseUrl}}/api/Veiculos/placa/ABC1D23
+Authorization: Bearer {{token}}
+
+### 3.4 - Listar veículos de um cliente
+GET {{baseUrl}}/api/Veiculos/cliente/{{clienteId}}
+Authorization: Bearer {{token}}
+
+### 3.5 - Atualizar veículo
+PUT {{baseUrl}}/api/Veiculos/{{veiculoId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "placa": "ABC1D23",
+  "marca": "Volkswagen",
+  "modelo": "Gol G6",
+  "ano": 2021
+}
+
+###############################################################################
+# 4. SERVIÇOS — catálogo (Admin)
+###############################################################################
+
+### 4.1 - Criar serviço
+# @name criarServico
+POST {{baseUrl}}/api/Servicos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Troca de óleo",
+  "descricao": "Troca de óleo do motor + filtro",
+  "valor": 150.00
+}
+
+@servicoId = {{criarServico.response.body.id}}
+
+### 4.2 - Listar serviços ativos
+GET {{baseUrl}}/api/Servicos/ativos
+Authorization: Bearer {{token}}
+
+### 4.3 - Atualizar serviço
+PUT {{baseUrl}}/api/Servicos/{{servicoId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Troca de óleo premium",
+  "descricao": "Troca de óleo sintético + filtro",
+  "valor": 220.00
+}
+
+### 4.4 - Desativar serviço
+PATCH {{baseUrl}}/api/Servicos/{{servicoId}}/desativar
+Authorization: Bearer {{token}}
+
+### 4.5 - Reativar serviço
+PATCH {{baseUrl}}/api/Servicos/{{servicoId}}/ativar
+Authorization: Bearer {{token}}
+
+###############################################################################
+# 5. PEÇAS / ESTOQUE (Admin)
+###############################################################################
+
+### 5.1 - Criar peça
+# @name criarPeca
+POST {{baseUrl}}/api/Pecas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Filtro de óleo",
+  "codigo": "FO-001",
+  "precoUnitario": 45.90,
+  "estoque": 50,
+  "descricao": "Filtro de óleo motor 1.0 a 2.0"
+}
+
+@pecaId = {{criarPeca.response.body.id}}
+
+### 5.2 - Consultar estoque atual
+GET {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+
+### 5.3 - Listar peças com estoque baixo (<= 10)
+GET {{baseUrl}}/api/Pecas/estoque-baixo?limite=10
+Authorization: Bearer {{token}}
+
+### 5.4 - Entrada de estoque (incrementar)
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 20,
+  "tipoOperacao": "incrementar"
+}
+
+### 5.5 - Saída de estoque (decrementar / uso em OS)
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 5,
+  "tipoOperacao": "decrementar"
+}
+
+###############################################################################
+# 6. ORDENS DE SERVIÇO (Admin)
+###############################################################################
+
+### 6.1 - Abrir nova OS
+# @name criarOS
+POST {{baseUrl}}/api/ordens-servico
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clienteId": "{{clienteId}}",
+  "veiculoId": "{{veiculoId}}",
+  "observacoes": "Barulho ao frear no lado esquerdo"
+}
+
+@osId = {{criarOS.response.body.id}}
+
+### 6.2 - Listar todas as OS (resumo)
+GET {{baseUrl}}/api/ordens-servico
+Authorization: Bearer {{token}}
+
+### 6.3 - Detalhe da OS com itens e total
+GET {{baseUrl}}/api/ordens-servico/{{osId}}
+Authorization: Bearer {{token}}
+
+### 6.4 - Adicionar serviço à OS
+# @name adicionarServico
+POST {{baseUrl}}/api/ordens-servico/{{osId}}/itens
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tipo": "servico",
+  "referenciaId": "{{servicoId}}",
+  "descricao": "Troca de pastilha de freio",
+  "quantidade": 1,
+  "precoUnitario": 150.00
+}
+
+@itemServicoId = {{adicionarServico.response.body.id}}
+
+### 6.5 - Adicionar peça à OS
+# @name adicionarPeca
+POST {{baseUrl}}/api/ordens-servico/{{osId}}/itens
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tipo": "peca",
+  "referenciaId": "{{pecaId}}",
+  "descricao": "Pastilha de freio dianteira",
+  "quantidade": 2,
+  "precoUnitario": 89.90
+}
+
+@itemPecaId = {{adicionarPeca.response.body.id}}
+
+### 6.6 - Consultar OS com orçamento consolidado (total atualizado)
+GET {{baseUrl}}/api/ordens-servico/{{osId}}
+Authorization: Bearer {{token}}
+
+### 6.7 - Remover item da OS
+DELETE {{baseUrl}}/api/ordens-servico/{{osId}}/itens/{{itemServicoId}}
+Authorization: Bearer {{token}}
+
+### 6.8 - Tempo médio de execução das OS finalizadas (em horas)
+GET {{baseUrl}}/api/ordens-servico/tempo-medio-execucao
+Authorization: Bearer {{token}}
+
+###############################################################################
+# 7. STATUS DA OS — ciclo de vida (ver 08-status-os.md)
+###############################################################################
+
+### 7.1 - Iniciar diagnóstico (Admin ou Mecânico) → Recebida → EmDiagnostico
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/iniciar-diagnostico
+Authorization: Bearer {{token}}
+
+### 7.2 - Avançar para AguardandoAprovacao via ForcarStatus (Admin)
+###        (não existe endpoint dedicado para esta transição)
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "novoStatus": 3,
+  "motivo": "Diagnóstico concluído, orçamento enviado ao cliente"
+}
+
+### 7.3a - Aprovar orçamento (Admin ou Cliente) → AguardandoAprovacao → EmExecucao
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/aprovar
+Authorization: Bearer {{token}}
+
+### 7.3b - Rejeitar orçamento (Admin ou Cliente) → AguardandoAprovacao → Rejeitada
+###         Execute 7.3b OU 7.3a, nunca os dois
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/rejeitar
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "motivo": "Valor fora do orçamento do cliente"
+}
+
+### 7.4 - Notificar conclusão do serviço (Admin ou Mecânico) → EmExecucao → Finalizada
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/notificar-conclusao
+Authorization: Bearer {{token}}
+
+### 7.5 - Registrar entrega do veículo (Admin) → Finalizada → Entregue
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/entregar
+Authorization: Bearer {{token}}
+
+### 7.6 - Consultar histórico completo de transições da OS
+GET {{baseUrl}}/api/ordens-servico/{{osId}}/historico
+Authorization: Bearer {{token}}
+
+###############################################################################
+# 8. PAINEL PÚBLICO (sem autenticação)
+###############################################################################
+
+### 8.1 - Consultar status público da OS pelo ID (não requer token)
+GET {{baseUrl}}/Publico/os/{{osId}}/status
+
+###############################################################################
+# 9. CAMINHOS TRISTES — erros esperados
+###############################################################################
+
+### 9.1 - Login com senha incorreta → 401
+POST {{baseUrl}}/Auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "senha-errada"
+}
+
+### 9.2 - Registrar e-mail duplicado → 409
+POST {{baseUrl}}/Auth/registrar
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "senha": "{{senha}}",
+  "perfil": 0
+}
+
+### 9.3 - Acessar endpoint protegido sem token → 401
+GET {{baseUrl}}/api/Clientes
+
+### 9.4 - Token inválido → 401
+GET {{baseUrl}}/api/Clientes
+Authorization: Bearer token-invalido.123.456
+
+### 9.5 - Cliente inexistente → 404
+GET {{baseUrl}}/api/Clientes/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
+
+### 9.6 - Documento duplicado → 400
+POST {{baseUrl}}/api/Clientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Outro João",
+  "documento": "52998224725",
+  "telefone": "11000000000",
+  "email": "outro@email.com"
+}
+
+### 9.7 - Veículo para cliente inexistente → 404
+POST {{baseUrl}}/api/Veiculos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clienteId": "00000000-0000-0000-0000-000000000000",
+  "placa": "ZZZ9Z99",
+  "marca": "Fiat",
+  "modelo": "Uno",
+  "ano": 2010
+}
+
+### 9.8 - Decrementar estoque além do saldo → 400
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 99999,
+  "tipoOperacao": "decrementar"
+}
+
+### 9.9 - tipoOperacao inválido → 400
+PATCH {{baseUrl}}/api/Pecas/{{pecaId}}/estoque
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade": 1,
+  "tipoOperacao": "zerar"
+}
+
+### 9.10 - Transição inválida de status (aprovar OS ainda Recebida) → 400
+PATCH {{baseUrl}}/api/ordens-servico/{{osId}}/aprovar
+Authorization: Bearer {{token}}
+
+### 9.11 - Status público de OS inexistente → 404
+GET {{baseUrl}}/Publico/os/00000000-0000-0000-0000-000000000000/status

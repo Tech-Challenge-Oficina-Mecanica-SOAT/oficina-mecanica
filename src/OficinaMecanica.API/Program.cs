@@ -7,6 +7,7 @@ using OficinaMecanica.Application;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Infrastructure.Repositories;
 using Scalar.AspNetCore;
@@ -15,7 +16,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 // Configurar Banco de Dados Postgrees
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -75,36 +75,20 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(Policies.Cliente,  p => p.RequireRole(Policies.Cliente));
 });
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<JwtBearerDocumentTransformer>();
+    options.AddSchemaTransformer<ExampleSchemaTransformer>();
+});
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    
-    app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("API Oficina Mecanica - Tech Challenge FIAP SOAT");
-    });
+app.MapOpenApi();
 
-    app.UseScalar(options =>
-    {
-        options.Title = "Oficina API";
-        options.Theme = OficinaMecanica.API.ScalarTheme.Light;
-        options.DefaultHttpClient = new ScalarHttpClientOptions
-        {
-            BaseUrl = "http://localhost:5000"
-        };
-    });
-    
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Oficina Mecanica API v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+app.MapScalarApiReference(options =>
+{
+    options.WithTitle("API Oficina Mecanica - Tech Challenge FIAP SOAT");
+});
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
