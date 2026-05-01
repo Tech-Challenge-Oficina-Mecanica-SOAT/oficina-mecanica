@@ -6,9 +6,9 @@ namespace OficinaMecanica.Domain.Entities
     public class PecaInsumo
     {
         public Guid Id { get; private set; }
-        public string Nome { get; private set; }
-        public string Codigo { get; private set; }
-        public string Descricao { get; private set; }
+        public string Nome { get; private set; } = null!;
+        public string Codigo { get; private set; } = null!;
+        public string Descricao { get; private set; } = null!;
         public decimal Preco { get; private set; }
         public int Quantidade { get; private set; }
         public DateTime CriadoEm { get; private set; }

@@ -5,9 +5,9 @@ namespace OficinaMecanica.Domain.Entities;
 public class Veiculo
 {
     public Guid Id { get; private set; }
-    public string Placa { get; private set; }
-    public string Marca { get; private set; }
-    public string Modelo { get; private set; }
+    public string Placa { get; private set; } = null!;
+    public string Marca { get; private set; } = null!;
+    public string Modelo { get; private set; } = null!;
     public int Ano { get; private set; }
     public DateTime CriadoEm { get; private set; }
     public Guid ClienteId { get; private set; }
