@@ -44,11 +44,11 @@ public class OrdemServicoRepository : IOrdemServicoRepository
         return ordemServico.Id;
     }
 
-    public async Task<OrdemServicoItem> AdicionarItemAsync(OrdemServicoItem item)
+    public async Task<IEnumerable<OrdemServicoItem>> AdicionarItensAsync(IEnumerable<OrdemServicoItem> itens)
     {
-        _context.OrdensServicoItens.Add(item);
+        _context.OrdensServicoItens.AddRange(itens);
         await _context.SaveChangesAsync();
-        return item;
+        return itens;
     }
 
     public async Task RemoverItemAsync(Guid ordemServicoId, Guid itemId)
