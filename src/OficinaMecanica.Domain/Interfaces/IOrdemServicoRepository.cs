@@ -9,7 +9,7 @@ public interface IOrdemServicoRepository
     Task<OrdemServico?> ObterPorIdComItensAsync(Guid id);
     Task<IEnumerable<OrdemServico>> ListarTodosAsync();
     Task<Guid> CriarAsync(OrdemServico ordemServico);
-    Task<OrdemServicoItem> AdicionarItemAsync(OrdemServicoItem item);
+    Task<IEnumerable<OrdemServicoItem>> AdicionarItensAsync(IEnumerable<OrdemServicoItem> itens);
     Task RemoverItemAsync(Guid ordemServicoId, Guid itemId);
     Task AtualizarTotalAsync(Guid ordemServicoId, decimal total);
     Task<double> GetTempoMedioExecucaoHorasAsync();

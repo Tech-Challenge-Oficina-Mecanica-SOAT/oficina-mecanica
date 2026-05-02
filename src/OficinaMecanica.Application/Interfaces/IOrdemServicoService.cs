@@ -7,7 +7,7 @@ public interface IOrdemServicoService
     Task<OrdemServicoDto> CreateAsync(CreateOrdemServicoDto createDto);
     Task<OrdemServicoDto?> GetByIdAsync(Guid id);
     Task<IEnumerable<OrdemServicoResumoDto>> GetAllAsync();
-    Task<OrdemServicoItemDto> AddItemAsync(Guid ordemServicoId, CreateOrdemServicoItemDto itemDto);
+    Task<IEnumerable<OrdemServicoItemDto>> AddItensAsync(Guid ordemServicoId, List<CreateOrdemServicoItemDto> itensDto);
     Task RemoveItemAsync(Guid ordemServicoId, Guid itemId);
     Task<double> GetTempoMedioExecucaoAsync(); // em horas
 }

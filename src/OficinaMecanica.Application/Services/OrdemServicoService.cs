@@ -8,10 +8,14 @@ namespace OficinaMecanica.Application.Services;
 public class OrdemServicoService : IOrdemServicoService
 {
     private readonly IOrdemServicoRepository _repository;
+    private readonly IOrdemServicoStatusService _statusService;
+    private readonly INotificacaoService _notificacaoService;
 
-    public OrdemServicoService(IOrdemServicoRepository repository)
+    public OrdemServicoService(IOrdemServicoRepository repository, IOrdemServicoStatusService statusService, INotificacaoService notificacaoService)
     {
         _repository = repository;
+        _statusService = statusService;
+        _notificacaoService = notificacaoService;
     }
 
     public async Task<OrdemServicoDto> CreateAsync(CreateOrdemServicoDto createDto)
@@ -41,28 +45,39 @@ public class OrdemServicoService : IOrdemServicoService
         return lista.Select(MapToResumoDto);
     }
 
-    public async Task<OrdemServicoItemDto> AddItemAsync(Guid ordemServicoId, CreateOrdemServicoItemDto itemDto)
+    public async Task<IEnumerable<OrdemServicoItemDto>> AddItensAsync(Guid ordemServicoId, List<CreateOrdemServicoItemDto> itensDto)
     {
         var os = await _repository.ObterPorIdComItensAsync(ordemServicoId)
             ?? throw new KeyNotFoundException("Ordem de serviço não encontrada");
 
-        if (!Enum.TryParse<TipoOSItem>(itemDto.Tipo, ignoreCase: true, out var tipo))
-            throw new ArgumentException("Tipo inválido. Use: servico, peca ou insumo");
+        var itens = itensDto.Select(itemDto =>
+        {
+            if (!Enum.TryParse<TipoOSItem>(itemDto.Tipo, ignoreCase: true, out var tipo))
+                throw new ArgumentException("Tipo inválido. Use: servico, peca ou insumo");
 
-        var item = new OrdemServicoItem(
-            ordemServicoId,
-            tipo,
-            itemDto.ReferenciaId,
-            itemDto.Descricao,
-            itemDto.Quantidade,
-            itemDto.PrecoUnitario
-        );
+            return new OrdemServicoItem(
+                ordemServicoId,
+                tipo,
+                itemDto.ReferenciaId,
+                itemDto.Descricao,
+                itemDto.Quantidade,
+                itemDto.PrecoUnitario
+            );
+        }).ToList();
 
-        var salvo = await _repository.AdicionarItemAsync(item);
+        var salvo = await _repository.AdicionarItensAsync(itens);
 
-        os.Itens.Add(salvo);
+        foreach (var item in salvo)
+            if (!os.Itens.Contains(item))
+                os.Itens.Add(item);
+
         os.RecalcularTotal();
+
         await _repository.AtualizarTotalAsync(ordemServicoId, os.Total);
+
+        await _statusService.MarcarAguardandoAprovacaoAsync(ordemServicoId, "sistema");
+
+        await _notificacaoService.EnviarOrcamentoAsync(ordemServicoId, os.Cliente.Email, os.Total);
 
         return MapToItemDto(salvo);
     }
@@ -119,14 +134,16 @@ public class OrdemServicoService : IOrdemServicoService
         DataFechamento = os.DataFechamento
     };
 
-    private static OrdemServicoItemDto MapToItemDto(OrdemServicoItem i) => new()
+    private static IEnumerable<OrdemServicoItemDto> MapToItemDto(IEnumerable<OrdemServicoItem> itens) => itens.Select(MapToItemDto);
+
+    private static OrdemServicoItemDto MapToItemDto(OrdemServicoItem item) => new()
     {
-        Id = i.Id,
-        Tipo = i.Tipo.ToString().ToLower(),
-        ReferenciaId = i.ReferenciaId,
-        Descricao = i.Descricao,
-        Quantidade = i.Quantidade,
-        PrecoUnitario = i.PrecoUnitario,
-        Subtotal = i.Subtotal
+        Id = item.Id,
+        Tipo = item.Tipo.ToString().ToLower(),
+        ReferenciaId = item.ReferenciaId,
+        Descricao = item.Descricao,
+        Quantidade = item.Quantidade,
+        PrecoUnitario = item.PrecoUnitario,
+        Subtotal = item.Subtotal
     };
 }

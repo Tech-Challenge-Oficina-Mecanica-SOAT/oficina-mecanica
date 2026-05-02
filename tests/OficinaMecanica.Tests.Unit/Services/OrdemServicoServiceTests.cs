@@ -2,6 +2,7 @@ using Moq;
 using FluentAssertions;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Services;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
 
@@ -10,12 +11,19 @@ namespace OficinaMecanica.Tests.Unit.Services;
 public class OrdemServicoServiceTests
 {
     private readonly Mock<IOrdemServicoRepository> _repositoryMock;
+    private readonly Mock<IOrdemServicoStatusService> _statusServiceMock;
+    private readonly Mock<INotificacaoService> _notificacaoServiceMock;
     private readonly OrdemServicoService _service;
 
     public OrdemServicoServiceTests()
     {
         _repositoryMock = new Mock<IOrdemServicoRepository>();
-        _service = new OrdemServicoService(_repositoryMock.Object);
+        _statusServiceMock = new Mock<IOrdemServicoStatusService>();
+        _notificacaoServiceMock = new Mock<INotificacaoService>();
+        _service = new OrdemServicoService(
+            _repositoryMock.Object,
+            _statusServiceMock.Object,
+            _notificacaoServiceMock.Object);
     }
 
     private static OrdemServico CriarOsEmExecucao(Guid clienteId, Guid veiculoId, string obs = "obs")
@@ -132,10 +140,10 @@ public class OrdemServicoServiceTests
         result.Should().BeNull();
     }
 
-    // ─── AddItemAsync ────────────────────────────────────────
+    // ─── AddItensAsync ───────────────────────────────────────
 
     [Fact]
-    public async Task AddItemAsync_WithValidServico_ShouldAddItemAndRecalcularTotal()
+    public async Task AddItensAsync_WithValidServico_ShouldAddItemAndRecalcularTotal()
     {
         // Arrange
         var osId = Guid.NewGuid();
@@ -157,26 +165,32 @@ public class OrdemServicoServiceTests
 
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync(os);
-        _repositoryMock.Setup(x => x.AdicionarItemAsync(It.IsAny<OrdemServicoItem>()))
-            .ReturnsAsync(itemSalvo);
+        _repositoryMock.Setup(x => x.AdicionarItensAsync(It.IsAny<IEnumerable<OrdemServicoItem>>()))
+            .ReturnsAsync(new List<OrdemServicoItem> { itemSalvo });
         _repositoryMock.Setup(x => x.AtualizarTotalAsync(osId, It.IsAny<decimal>()))
+            .Returns(Task.CompletedTask);
+        _statusServiceMock.Setup(x => x.MarcarAguardandoAprovacaoAsync(osId, "sistema"))
+            .Returns(Task.CompletedTask);
+        _notificacaoServiceMock.Setup(x => x.EnviarOrcamentoAsync(osId, os.Cliente.Email, 150.00m))
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _service.AddItemAsync(osId, itemDto);
+        var result = await _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { itemDto });
 
         // Assert
-        result.Should().NotBeNull();
-        result.Descricao.Should().Be("Troca de Óleo");
-        result.PrecoUnitario.Should().Be(150.00m);
-        result.Subtotal.Should().Be(150.00m);
-        result.Tipo.Should().Be("servico");
+        var itemResult = result.Should().ContainSingle().Subject;
+        itemResult.Descricao.Should().Be("Troca de Óleo");
+        itemResult.PrecoUnitario.Should().Be(150.00m);
+        itemResult.Subtotal.Should().Be(150.00m);
+        itemResult.Tipo.Should().Be("servico");
 
         _repositoryMock.Verify(x => x.AtualizarTotalAsync(osId, 150.00m), Times.Once);
+        _statusServiceMock.Verify(x => x.MarcarAguardandoAprovacaoAsync(osId, "sistema"), Times.Once);
+        _notificacaoServiceMock.Verify(x => x.EnviarOrcamentoAsync(osId, os.Cliente.Email, 150.00m), Times.Once);
     }
 
     [Fact]
-    public async Task AddItemAsync_WithMultipleItems_ShouldCalculateTotalCorrectly()
+    public async Task AddItensAsync_WithMultipleItems_ShouldCalculateTotalCorrectly()
     {
         // Arrange
         var osId = Guid.NewGuid();
@@ -199,20 +213,26 @@ public class OrdemServicoServiceTests
 
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync(os);
-        _repositoryMock.Setup(x => x.AdicionarItemAsync(It.IsAny<OrdemServicoItem>()))
-            .ReturnsAsync(item2);
+        _repositoryMock.Setup(x => x.AdicionarItensAsync(It.IsAny<IEnumerable<OrdemServicoItem>>()))
+            .ReturnsAsync(new List<OrdemServicoItem> { item2 });
         _repositoryMock.Setup(x => x.AtualizarTotalAsync(osId, It.IsAny<decimal>()))
+            .Returns(Task.CompletedTask);
+        _statusServiceMock.Setup(x => x.MarcarAguardandoAprovacaoAsync(osId, "sistema"))
+            .Returns(Task.CompletedTask);
+        _notificacaoServiceMock.Setup(x => x.EnviarOrcamentoAsync(osId, os.Cliente.Email, 220.00m))
             .Returns(Task.CompletedTask);
 
         // Act
-        await _service.AddItemAsync(osId, novoItemDto);
+        await _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { novoItemDto });
 
         // Assert: total = 150 + (2 x 35) = 220
         _repositoryMock.Verify(x => x.AtualizarTotalAsync(osId, 220.00m), Times.Once);
+        _statusServiceMock.Verify(x => x.MarcarAguardandoAprovacaoAsync(osId, "sistema"), Times.Once);
+        _notificacaoServiceMock.Verify(x => x.EnviarOrcamentoAsync(osId, os.Cliente.Email, 220.00m), Times.Once);
     }
 
     [Fact]
-    public async Task AddItemAsync_WithInvalidTipo_ShouldThrowException()
+    public async Task AddItensAsync_WithInvalidTipo_ShouldThrowException()
     {
         // Arrange
         var osId = Guid.NewGuid();
@@ -233,11 +253,11 @@ public class OrdemServicoServiceTests
             .ReturnsAsync(os);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.AddItemAsync(osId, itemDto));
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { itemDto }));
     }
 
     [Fact]
-    public async Task AddItemAsync_WithNonExistingOS_ShouldThrowException()
+    public async Task AddItensAsync_WithNonExistingOS_ShouldThrowException()
     {
         // Arrange
         var osId = Guid.NewGuid();
@@ -254,7 +274,7 @@ public class OrdemServicoServiceTests
         };
 
         // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AddItemAsync(osId, itemDto));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { itemDto }));
     }
 
     // ─── RemoveItemAsync ─────────────────────────────────────

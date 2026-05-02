@@ -63,22 +63,22 @@ public class OrdemServicosController : ControllerBase
     }
 
     /// <summary>
-    /// Adiciona um item (serviço, peça ou insumo) à ordem de serviço.
-    /// O total é recalculado automaticamente.
+    /// Adiciona os itens (serviço, peça ou insumo) à ordem de serviço.
+    /// O total é calculado automaticamente.
     /// </summary>
     /// <remarks>
     /// O campo **tipo** aceita: `servico`, `peca` ou `insumo`
     /// </remarks>
     [HttpPost("{id:guid}/itens")]
-    [ProducesResponseType(typeof(OrdemServicoItemDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(IEnumerable<OrdemServicoItemDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AddItem(Guid id, [FromBody] CreateOrdemServicoItemDto itemDto)
+    public async Task<IActionResult> AddItem(Guid id, [FromBody] List<CreateOrdemServicoItemDto> itensDto)
     {
         try
         {
-            var item = await _service.AddItemAsync(id, itemDto);
-            return CreatedAtAction(nameof(GetById), new { id }, item);
+            var itens = await _service.AddItensAsync(id, itensDto);
+            return CreatedAtAction(nameof(GetById), new { id }, itens);
         }
         catch (KeyNotFoundException ex)
         {
