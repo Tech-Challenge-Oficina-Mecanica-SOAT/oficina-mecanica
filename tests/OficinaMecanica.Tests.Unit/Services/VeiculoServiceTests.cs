@@ -195,7 +195,7 @@ public class VeiculoServiceTests
         var id = Guid.NewGuid();
         _veiculoRepositoryMock
             .Setup(r => r.GetByIdAsync(id))
-            .ReturnsAsync((Veiculo)null);
+            .ReturnsAsync((Veiculo?)null);
 
         // Act
         var resultado = await _veiculoService.GetByIdAsync(id);
@@ -280,7 +280,7 @@ public class VeiculoServiceTests
 
         _veiculoRepositoryMock
             .Setup(r => r.GetByIdAsync(id))
-            .ReturnsAsync((Veiculo)null);
+            .ReturnsAsync((Veiculo?)null);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<KeyNotFoundException>(
@@ -306,7 +306,7 @@ public class VeiculoServiceTests
 
         _clienteRepositoryMock
             .Setup(r => r.GetByIdAsync(updateDto.ClienteId.Value))
-            .ReturnsAsync((Cliente)null);
+            .ReturnsAsync((Cliente?)null);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<KeyNotFoundException>(

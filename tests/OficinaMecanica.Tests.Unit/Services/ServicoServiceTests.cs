@@ -194,4 +194,101 @@ public class ServicoServiceTests
         // Assert
         _servicoRepositoryMock.Verify(x => x.DeleteAsync(servicoId), Times.Once);
     }
+
+    [Fact]
+    public async Task GetByIdAsync_WithNonExistingId_ShouldReturnNull()
+    {
+        _servicoRepositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((Servico?)null);
+
+        var result = await _servicoService.GetByIdAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAtivosAsync_ShouldReturnOnlyActiveServicos()
+    {
+        var servicos = new List<Servico>
+        {
+            new Servico("Troca de Óleo", "Descrição", 150.00m),
+            new Servico("Alinhamento", "Descrição", 100.00m)
+        };
+
+        _servicoRepositoryMock.Setup(x => x.GetAtivosAsync())
+            .ReturnsAsync(servicos);
+
+        var result = await _servicoService.GetAtivosAsync();
+
+        result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithNonExistingId_ShouldThrowKeyNotFoundException()
+    {
+        _servicoRepositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((Servico?)null);
+
+        var act = () => _servicoService.UpdateAsync(Guid.NewGuid(), new UpdateServicoDto
+        {
+            Nome = "Novo", Descricao = "Desc", Valor = 100m
+        });
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task AtivarAsync_ShouldActivateServico()
+    {
+        var servicoId = Guid.NewGuid();
+        var servico = new Servico("Troca de Óleo", "Descrição", 150.00m);
+        servico.Desativar();
+
+        _servicoRepositoryMock.Setup(x => x.GetByIdAsync(servicoId))
+            .ReturnsAsync(servico);
+        _servicoRepositoryMock.Setup(x => x.UpdateAsync(It.IsAny<Servico>()))
+            .Returns(Task.CompletedTask);
+
+        await _servicoService.AtivarAsync(servicoId);
+
+        servico.Ativo.Should().BeTrue();
+        _servicoRepositoryMock.Verify(x => x.UpdateAsync(servico), Times.Once);
+    }
+
+    [Fact]
+    public async Task AtivarAsync_WithNonExistingId_ShouldThrowKeyNotFoundException()
+    {
+        _servicoRepositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((Servico?)null);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _servicoService.AtivarAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task DesativarAsync_ShouldDeactivateServico()
+    {
+        var servicoId = Guid.NewGuid();
+        var servico = new Servico("Troca de Óleo", "Descrição", 150.00m);
+
+        _servicoRepositoryMock.Setup(x => x.GetByIdAsync(servicoId))
+            .ReturnsAsync(servico);
+        _servicoRepositoryMock.Setup(x => x.UpdateAsync(It.IsAny<Servico>()))
+            .Returns(Task.CompletedTask);
+
+        await _servicoService.DesativarAsync(servicoId);
+
+        servico.Ativo.Should().BeFalse();
+        _servicoRepositoryMock.Verify(x => x.UpdateAsync(servico), Times.Once);
+    }
+
+    [Fact]
+    public async Task DesativarAsync_WithNonExistingId_ShouldThrowKeyNotFoundException()
+    {
+        _servicoRepositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((Servico?)null);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _servicoService.DesativarAsync(Guid.NewGuid()));
+    }
 }

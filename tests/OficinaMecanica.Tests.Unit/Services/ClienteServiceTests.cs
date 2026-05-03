@@ -300,7 +300,7 @@ public class ClienteServiceTests
         var id = Guid.NewGuid();
         _clienteRepositoryMock
             .Setup(r => r.GetByIdAsync(id))
-            .ReturnsAsync((Cliente)null);
+            .ReturnsAsync((Cliente?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _clienteService.AtivarAsync(id));
@@ -351,7 +351,7 @@ public class ClienteServiceTests
         var id = Guid.NewGuid();
         _clienteRepositoryMock
             .Setup(r => r.GetByIdAsync(id))
-            .ReturnsAsync((Cliente)null);
+            .ReturnsAsync((Cliente?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _clienteService.DesativarAsync(id));
@@ -391,7 +391,7 @@ public class ClienteServiceTests
 
         _clienteRepositoryMock
             .Setup(r => r.GetByIdAsync(id))
-            .ReturnsAsync((Cliente)null);
+            .ReturnsAsync((Cliente?)null);
 
         // Act & Assert
         var excecao = await Assert.ThrowsAsync<KeyNotFoundException>(

@@ -39,7 +39,7 @@ public class ServicoTests
     public void Construtor_ComNomeNulo_DeveThrowArgumentException()
     {
         // Arrange & Act & Assert
-        Assert.Throws<ArgumentException>(() => new Servico(null, "Descrição", 150.00m));
+        Assert.Throws<ArgumentException>(() => new Servico(null!, "Descrição", 150.00m));
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class ServicoTests
         var valor = 150.00m;
 
         // Act
-        var servico = new Servico(nome, null, valor);
+        var servico = new Servico(nome, null!, valor);
 
         // Assert
         Assert.Equal(string.Empty, servico.Descricao);

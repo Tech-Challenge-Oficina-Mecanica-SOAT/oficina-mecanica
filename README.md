@@ -139,7 +139,7 @@ Guias passo a passo por funcionalidade e um arquivo `.http` para uso no VS Code 
 
 ## Cobertura de testes
 
-O projeto possui **116 testes** (99 unitários + 17 de integração) cobrindo services, entidades de domínio e controllers.
+O projeto possui **418 testes** (337 unitários + 81 de integração) cobrindo services, entidades de domínio e todos os controllers.
 
 ### Gerar o relatório
 
@@ -163,15 +163,15 @@ O arquivo `coverage-report/Summary.txt` contém o resumo em texto puro.
 
 | Camada | Cobertura de linhas |
 |---|---|
-| Application (services + DTOs) | **86.5%** |
-| Domain (entidades) | **74.2%** |
-| API (controllers) | **25.7%** |
-| Infrastructure (repositories) | **8.6%** — testados via integração com InMemory |
-| **Total (linhas)** | **57.2%** |
-| **Total (branches)** | **47.8%** |
-| **Total (métodos)** | **66.5%** |
+| Application (services + DTOs) | **99.4%** |
+| Domain (entidades) | **92.7%** |
+| API (controllers) | **80.4%** |
+| Infrastructure (repositories) | **80.0%** — exercitados via testes de integração com InMemory |
+| **Total (linhas)** | **90.5%** |
+| **Total (branches)** | **73.7%** |
+| **Total (métodos)** | **93.9%** |
 
-> Os repositories de Infrastructure têm 0% de cobertura direta porque os testes de integração usam `InMemory` e exercitam o comportamento via services, não instanciando os repositories diretamente.
+> `HistoricoStatusOSRepository` está em 0% pois o fluxo de histórico é coberto indiretamente via `OrdemServicoStatusService`. `PublicoController` e `OrdemServicosController` têm endpoints não cobertos pelos testes de integração atuais por dependerem de `EF.Functions.ILike` (PostgreSQL-only, incompatível com InMemory).
 
 ---
 

@@ -75,11 +75,11 @@ public class VeiculoTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Constructor_ComMarcaInvalida_DevelancarException(string marca)
+    public void Constructor_ComMarcaInvalida_DevelancarException(string? marca)
     {
         // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", marca, "Corolla", 2023));
+            new Veiculo(_clienteIdValido, "ABC1234", marca!, "Corolla", 2023));
 
         Assert.Equal("Marca é obrigatória", ex.Message);
     }
@@ -88,11 +88,11 @@ public class VeiculoTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData(null)]
-    public void Constructor_ComModeloInvalido_DevelancarException(string modelo)
+    public void Constructor_ComModeloInvalido_DevelancarException(string? modelo)
     {
         // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", "Toyota", modelo, 2023));
+            new Veiculo(_clienteIdValido, "ABC1234", "Toyota", modelo!, 2023));
 
         Assert.Equal("Modelo é obrigatório", ex.Message);
     }
@@ -193,11 +193,11 @@ public class VeiculoTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public void Atualizar_ComMarcaInvalida_DevelancarException(string marca)
+    public void Atualizar_ComMarcaInvalida_DevelancarException(string? marca)
     {
         // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", marca, "Corolla", 2023));
+            new Veiculo(_clienteIdValido, "ABC1234", marca!, "Corolla", 2023));
 
         Assert.Equal("Marca é obrigatória", ex.Message);
     }
@@ -246,11 +246,11 @@ public class VeiculoTests
     [InlineData("1234567")]
     [InlineData("ABC1DD3")]
     [InlineData("123ABCD")]
-    public void ValidarPlaca_ComFormatoInvalido_DeveRetornarFalse(string placa)
+    public void ValidarPlaca_ComFormatoInvalido_DeveRetornarFalse(string? placa)
     {
         // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, placa, "Toyota", "Corolla", 2023));
+            new Veiculo(_clienteIdValido, placa!, "Toyota", "Corolla", 2023));
 
         Assert.Equal("Placa inválida. Formato: ABC1234 ou ABC1D23", ex.Message);
     }

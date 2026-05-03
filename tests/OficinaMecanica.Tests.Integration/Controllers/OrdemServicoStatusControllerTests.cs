@@ -143,7 +143,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         var admin = ClientCom("Admin");
         var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSDto>>($"/api/ordens-servico/{osId}/historico");
         hist!.Last().StatusNovo.Should().Be("Rejeitada");
-        hist.Last().Motivo.Should().Contain("preço acima");
+        hist!.Last().Motivo.Should().Contain("preço acima");
     }
 
     [Fact]

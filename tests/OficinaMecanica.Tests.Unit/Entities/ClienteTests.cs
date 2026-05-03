@@ -16,8 +16,8 @@ public class ClienteTests
         var cliente = new Cliente(nome, documento, telefone, email);
 
         Assert.Equal(nome, cliente.Nome);
-        Assert.Equal(Cliente.ValidarDocumento(documento), true);
-        Assert.Equal(Cliente.ValidarDocumento(cliente.Documento), true);
+        Assert.True(Cliente.ValidarDocumento(documento));
+        Assert.True(Cliente.ValidarDocumento(cliente.Documento));
         Assert.Equal(telefone, cliente.Telefone);
         Assert.Equal(email.ToLower(), cliente.Email);
         Assert.True(cliente.Ativo);
@@ -29,10 +29,10 @@ public class ClienteTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Construtor_DeveLancarExcecao_QuandoNomeInvalido(string nome)
+    public void Construtor_DeveLancarExcecao_QuandoNomeInvalido(string? nome)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Cliente(nome, "12345678909", "11999999999", "teste@email.com"));
+            new Cliente(nome!, "12345678909", "11999999999", "teste@email.com"));
     }
 
     [Theory]
@@ -43,20 +43,20 @@ public class ClienteTests
     [InlineData("11111111111")]
     [InlineData("00000000000000")]
     [InlineData("1234567890123")]
-    public void Construtor_DeveLancarExcecao_QuandoDocumentoInvalido(string documento)
+    public void Construtor_DeveLancarExcecao_QuandoDocumentoInvalido(string? documento)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Cliente("Nome", documento, "11999999999", "teste@email.com"));
+            new Cliente("Nome", documento!, "11999999999", "teste@email.com"));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Construtor_DeveLancarExcecao_QuandoTelefoneInvalido(string telefone)
+    public void Construtor_DeveLancarExcecao_QuandoTelefoneInvalido(string? telefone)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Cliente("Nome", "12345678909", telefone, "teste@email.com"));
+            new Cliente("Nome", "12345678909", telefone!, "teste@email.com"));
     }
 
     [Theory]
@@ -67,10 +67,10 @@ public class ClienteTests
     [InlineData("email@")]
     [InlineData("@email.com")]
     [InlineData("email@email")]
-    public void Construtor_DeveLancarExcecao_QuandoEmailInvalido(string email)
+    public void Construtor_DeveLancarExcecao_QuandoEmailInvalido(string? email)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Cliente("Nome", "12345678909", "11999999999", email));
+            new Cliente("Nome", "12345678909", "11999999999", email!));
     }
 
     [Fact]
@@ -88,22 +88,22 @@ public class ClienteTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Atualizar_DeveLancarExcecao_QuandoNomeInvalido(string nome)
+    public void Atualizar_DeveLancarExcecao_QuandoNomeInvalido(string? nome)
     {
         var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
         Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar(nome, "11999999999", "teste@email.com"));
+            cliente.Atualizar(nome!, "11999999999", "teste@email.com"));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Atualizar_DeveLancarExcecao_QuandoTelefoneInvalido(string telefone)
+    public void Atualizar_DeveLancarExcecao_QuandoTelefoneInvalido(string? telefone)
     {
         var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
         Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar("Nome", telefone, "teste@email.com"));
+            cliente.Atualizar("Nome", telefone!, "teste@email.com"));
     }
 
     [Theory]
@@ -114,11 +114,11 @@ public class ClienteTests
     [InlineData("email@")]
     [InlineData("@email.com")]
     [InlineData("email@email")]
-    public void Atualizar_DeveLancarExcecao_QuandoEmailInvalido(string email)
+    public void Atualizar_DeveLancarExcecao_QuandoEmailInvalido(string? email)
     {
         var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
         Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar("Nome", "11999999999", email));
+            cliente.Atualizar("Nome", "11999999999", email!));
     }
 
     [Fact]
@@ -191,8 +191,8 @@ public class ClienteTests
     [InlineData("teste.teste@dominio.com.br")]
     public void ValidarEmail_DeveRetornarTrue_ParaEmailValido(string email)
     {
-        var metodo = typeof(Cliente).GetMethod("ValidarEmail", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-        Assert.True((bool)metodo.Invoke(null, new object[] { email }));
+        var metodo = typeof(Cliente).GetMethod("ValidarEmail", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        Assert.True((bool)metodo.Invoke(null, new object[] { email })!);
     }
 
     [Theory]
@@ -202,7 +202,7 @@ public class ClienteTests
     [InlineData("email@email")]
     public void ValidarEmail_DeveRetornarFalse_ParaEmailInvalido(string email)
     {
-        var metodo = typeof(Cliente).GetMethod("ValidarEmail", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-        Assert.False((bool)metodo.Invoke(null, new object[] { email }));
+        var metodo = typeof(Cliente).GetMethod("ValidarEmail", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
+        Assert.False((bool)metodo.Invoke(null, new object[] { email })!);
     }
 }
