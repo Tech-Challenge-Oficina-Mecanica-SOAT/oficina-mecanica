@@ -26,7 +26,7 @@ public class ClienteRepository : IClienteRepository
         // Limpar o documento antes de buscar
         var docLimpo = new string(documento.Where(c => char.IsLetterOrDigit(c)).ToArray()).ToUpper();
         return await _context.Clientes.FirstOrDefaultAsync(c => c.Documento == docLimpo);
-    }    
+    }
 
     public async Task<Cliente> AddAsync(Cliente cliente)
     {

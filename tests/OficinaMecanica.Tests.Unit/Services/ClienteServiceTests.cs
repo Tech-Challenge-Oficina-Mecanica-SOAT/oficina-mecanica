@@ -1,5 +1,5 @@
-﻿using Moq;
-using FluentAssertions;
+﻿using FluentAssertions;
+using Moq;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
@@ -246,5 +246,189 @@ public class ClienteServiceTests
 
         // Assert
         cliente.Ativo.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetByDocumentoAsync_WhenClienteExists_ReturnsClienteDto()
+    {
+        // Arrange
+        var documento = "39053344705";
+        var clienteEntity = new Cliente("João Silva", documento, "11999999999", "joao@email.com");
+        var clienteId = Guid.NewGuid();
+        var reflexao = typeof(Cliente).GetProperty("Id")!.DeclaringType!.GetProperty("Id");
+
+        _clienteRepositoryMock
+            .Setup(r => r.GetByDocumentoAsync(documento))
+            .ReturnsAsync(clienteEntity);
+
+        // Act
+        var result = await _clienteService.GetByDocumentoAsync(documento);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(clienteEntity.Id, result.Id);
+        Assert.Equal(clienteEntity.Nome, result.Nome);
+        Assert.Equal(clienteEntity.Documento, result.Documento);
+        Assert.Equal(clienteEntity.Telefone, result.Telefone);
+        Assert.Equal(clienteEntity.Email, result.Email);
+        Assert.Equal(clienteEntity.Ativo, result.Ativo);
+        Assert.Equal(clienteEntity.CriadoEm, result.CriadoEm);
+        _clienteRepositoryMock.Verify(r => r.GetByDocumentoAsync(documento), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByDocumentoAsync_WhenClienteNotExists_ReturnsNull()
+    {
+        // Arrange
+        var documento = "39053344705";
+        _clienteRepositoryMock
+            .Setup(r => r.GetByDocumentoAsync(documento))
+            .ReturnsAsync((Cliente?)null);
+
+        // Act
+        var result = await _clienteService.GetByDocumentoAsync(documento);
+
+        // Assert
+        Assert.Null(result);
+        _clienteRepositoryMock.Verify(r => r.GetByDocumentoAsync(documento), Times.Once);
+    }
+
+    [Fact]
+    public async Task AtivarAsync_DeveLancarExcecao_QuandoClienteNaoExiste()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _clienteRepositoryMock
+            .Setup(r => r.GetByIdAsync(id))
+            .ReturnsAsync((Cliente)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _clienteService.AtivarAsync(id));
+    }
+
+    [Fact]
+    public async Task AtivarAsync_DeveAtivarCliente_QuandoClienteExiste()
+    {
+        var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
+
+        _clienteRepositoryMock
+            .Setup(r => r.GetByIdAsync(cliente.Id))
+            .ReturnsAsync(cliente);
+
+        _clienteRepositoryMock
+            .Setup(r => r.UpdateAsync(cliente))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _clienteService.AtivarAsync(cliente.Id);
+
+        // Assert
+        Assert.True(cliente.Ativo);
+        _clienteRepositoryMock.Verify(r => r.UpdateAsync(cliente), Times.Once);
+    }
+
+    [Fact]
+    public async Task AtivarAsync_DevePropagarExcecao_SeUpdateFalhar()
+    {
+        var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
+
+        _clienteRepositoryMock
+            .Setup(r => r.GetByIdAsync(cliente.Id))
+            .ReturnsAsync(cliente);
+
+        _clienteRepositoryMock
+            .Setup(r => r.UpdateAsync(cliente))
+            .ThrowsAsync(new InvalidOperationException("Erro ao atualizar"));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _clienteService.AtivarAsync(cliente.Id));
+    }
+
+    [Fact]
+    public async Task DesativarAsync_DeveLancarExcecao_QuandoClienteNaoExiste()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _clienteRepositoryMock
+            .Setup(r => r.GetByIdAsync(id))
+            .ReturnsAsync((Cliente)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _clienteService.DesativarAsync(id));
+    }
+
+    [Fact]
+    public async Task DesativarAsync_DeveDesativarCliente_QuandoClienteExiste()
+    {
+        var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
+        _clienteRepositoryMock
+            .Setup(r => r.GetByIdAsync(cliente.Id))
+            .ReturnsAsync(cliente);
+
+        _clienteRepositoryMock
+            .Setup(r => r.UpdateAsync(cliente))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _clienteService.DesativarAsync(cliente.Id);
+
+        // Assert
+        Assert.False(cliente.Ativo);
+        _clienteRepositoryMock.Verify(r => r.UpdateAsync(cliente), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeveLancarExcecao_QuandoClienteNaoExiste()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var updateDto = new UpdateClienteDto
+        {
+            Nome = "Novo Nome",
+            Telefone = "11999999999",
+            Email = "teste@teste.com"
+        };
+
+        _clienteRepositoryMock
+            .Setup(r => r.GetByIdAsync(id))
+            .ReturnsAsync((Cliente)null);
+
+        // Act & Assert
+        var excecao = await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _clienteService.UpdateAsync(id, updateDto)
+        );
+
+        Assert.Equal("Cliente não encontrado", excecao.Message);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DeveAtualizarCliente_QuandoClienteExiste()
+    {
+        var cliente = new Cliente("Antigo Nome","12345678909","11888888888","antigo@teste.com");
+
+        var updateDto = new UpdateClienteDto
+        {
+            Nome = "Novo Nome",
+            Telefone = "11999999999",
+            Email = "novo@teste.com"
+        };
+
+        _clienteRepositoryMock
+            .Setup(r => r.GetByIdAsync(cliente.Id))
+            .ReturnsAsync(cliente);
+
+        _clienteRepositoryMock
+            .Setup(r => r.UpdateAsync(cliente))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var resultado = await _clienteService.UpdateAsync(cliente.Id, updateDto);
+
+        // Assert
+        Assert.NotNull(resultado);
+        Assert.Equal("Novo Nome", resultado.Nome);
+        Assert.Equal("11999999999", resultado.Telefone);
+        Assert.Equal("novo@teste.com", resultado.Email);
+        _clienteRepositoryMock.Verify(r => r.UpdateAsync(cliente), Times.Once);
     }
 }

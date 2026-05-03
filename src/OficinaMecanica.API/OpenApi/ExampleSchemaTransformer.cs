@@ -1,7 +1,7 @@
-using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 using OficinaMecanica.Application.DTOs;
+using System.Text.Json.Nodes;
 
 namespace OficinaMecanica.API.OpenApi;
 

@@ -62,7 +62,7 @@ public class PecaService : IPecaService
         if (peca == null) return null;
 
         peca.Atualizar(updateDto.Nome, updateDto.Descricao, updateDto.PrecoUnitario, updateDto.Estoque);
-        
+
         var updated = await _pecaRepository.UpdateAsync(peca);
         return MapToDto(updated);
     }
@@ -80,7 +80,7 @@ public class PecaService : IPecaService
     public async Task<PecaDto> UpdateEstoqueAsync(Guid id, UpdateEstoqueDto updateEstoqueDto)
     {
         PecaInsumo peca;
-        
+
         if (updateEstoqueDto.TipoOperacao == "incrementar")
         {
             peca = await _pecaRepository.IncrementarEstoqueAsync(id, updateEstoqueDto.Quantidade);

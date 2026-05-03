@@ -1,16 +1,15 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using OficinaMecanica.API;
+using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Application;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
-using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Infrastructure.Repositories;
 using Scalar.AspNetCore;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,9 +69,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy(Policies.Admin,    p => p.RequireRole(Policies.Admin));
+    options.AddPolicy(Policies.Admin, p => p.RequireRole(Policies.Admin));
     options.AddPolicy(Policies.Mecanico, p => p.RequireRole(Policies.Mecanico));
-    options.AddPolicy(Policies.Cliente,  p => p.RequireRole(Policies.Cliente));
+    options.AddPolicy(Policies.Cliente, p => p.RequireRole(Policies.Cliente));
 });
 
 builder.Services.AddOpenApi(options =>

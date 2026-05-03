@@ -85,7 +85,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// <remarks>
     /// Exclusivo para Admin. Use para corrigir estados inválidos ou avançar manualmente etapas sem endpoint dedicado
     /// (ex.: `EmDiagnostico → AguardandoAprovacao` com `novoStatus: 3`).
-    /// Todo uso é registrado no histórico com o motivo informado.
+    /// Todas as vezes o uso é registrado no histórico com o motivo informado.
     /// </remarks>
     [HttpPatch("{id:guid}/status")]
     [Authorize(Roles = "Admin")]

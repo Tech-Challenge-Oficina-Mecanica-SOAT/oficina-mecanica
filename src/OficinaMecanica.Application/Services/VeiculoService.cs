@@ -20,7 +20,7 @@ public class VeiculoService : IVeiculoService
     {
         var veiculo = await _veiculoRepository.GetByIdAsync(id);
         if (veiculo == null) return null;
-        
+
         return MapToDto(veiculo);
     }
 
@@ -28,7 +28,7 @@ public class VeiculoService : IVeiculoService
     {
         var veiculo = await _veiculoRepository.GetByPlacaAsync(placa);
         if (veiculo == null) return null;
-        
+
         return MapToDto(veiculo);
     }
 
@@ -50,14 +50,14 @@ public class VeiculoService : IVeiculoService
         var cliente = await _clienteRepository.GetByIdAsync(createDto.ClienteId);
         if (cliente == null)
             throw new KeyNotFoundException($"Cliente com ID {createDto.ClienteId} não encontrado");
-            
+
         // Validar se a placa já existe
         if (await _veiculoRepository.ExistsByPlacaAsync(createDto.Placa))
             throw new InvalidOperationException($"Veículo com placa {createDto.Placa} já cadastrado");
-        
+
         var veiculo = new Veiculo(createDto.ClienteId, createDto.Placa, createDto.Marca, createDto.Modelo, createDto.Ano);
         var created = await _veiculoRepository.AddAsync(veiculo);
-        
+
         return MapToDto(created);
     }
 
@@ -66,7 +66,7 @@ public class VeiculoService : IVeiculoService
         var veiculo = await _veiculoRepository.GetByIdAsync(id);
         if (veiculo == null)
             throw new KeyNotFoundException($"Veículo com ID {id} não encontrado");
-            
+
         // Validar se o cliente existe (se foi informado um novo cliente)
         if (updateDto.ClienteId.HasValue && updateDto.ClienteId.Value != Guid.Empty)
         {
@@ -74,11 +74,11 @@ public class VeiculoService : IVeiculoService
             if (cliente == null)
                 throw new KeyNotFoundException($"Cliente com ID {updateDto.ClienteId} não encontrado");
         }
-            
+
         // Validar se a placa já existe em outro veículo
         if (await _veiculoRepository.ExistsByPlacaForOtherVeiculoAsync(updateDto.Placa, id))
             throw new InvalidOperationException($"Veículo com placa {updateDto.Placa} já cadastrado em outro veículo");
-        
+
         veiculo.Atualizar(
             updateDto.ClienteId,
             updateDto.Placa,
@@ -86,7 +86,7 @@ public class VeiculoService : IVeiculoService
             updateDto.Modelo,
             updateDto.Ano
         );
-        
+
         var updated = await _veiculoRepository.UpdateAsync(veiculo);
         return MapToDto(updated);
     }

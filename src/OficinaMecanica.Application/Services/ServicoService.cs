@@ -18,7 +18,7 @@ public class ServicoService : IServicoService
     {
         var servico = await _servicoRepository.GetByIdAsync(id);
         if (servico == null) return null;
-        
+
         return MapToDto(servico);
     }
 
@@ -47,7 +47,7 @@ public class ServicoService : IServicoService
 
         var servico = new Servico(createDto.Nome, createDto.Descricao, createDto.Valor);
         var created = await _servicoRepository.AddAsync(servico);
-        
+
         return MapToDto(created);
     }
 
@@ -59,7 +59,7 @@ public class ServicoService : IServicoService
 
         servico.Atualizar(updateDto.Nome, updateDto.Descricao, updateDto.Valor);
         await _servicoRepository.UpdateAsync(servico);
-        
+
         return MapToDto(servico);
     }
 
@@ -73,7 +73,7 @@ public class ServicoService : IServicoService
         var servico = await _servicoRepository.GetByIdAsync(id);
         if (servico == null)
             throw new KeyNotFoundException("Serviço não encontrado");
-            
+
         servico.Ativar();
         await _servicoRepository.UpdateAsync(servico);
     }
@@ -83,7 +83,7 @@ public class ServicoService : IServicoService
         var servico = await _servicoRepository.GetByIdAsync(id);
         if (servico == null)
             throw new KeyNotFoundException("Serviço não encontrado");
-            
+
         servico.Desativar();
         await _servicoRepository.UpdateAsync(servico);
     }

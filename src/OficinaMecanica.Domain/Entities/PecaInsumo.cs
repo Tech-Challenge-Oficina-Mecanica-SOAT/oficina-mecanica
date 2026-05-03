@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace OficinaMecanica.Domain.Entities
+﻿namespace OficinaMecanica.Domain.Entities
 {
     public class PecaInsumo
     {
@@ -22,13 +19,13 @@ namespace OficinaMecanica.Domain.Entities
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new ArgumentException("Nome é obrigatório");
-            
+
             if (preco <= 0)
                 throw new ArgumentException("Preço deve ser maior que zero");
-            
+
             if (quantidade < 0)
                 throw new ArgumentException("Quantidade não pode ser negativa");
-            
+
             Id = Guid.NewGuid();
             Nome = nome;
             Codigo = codigo ?? string.Empty;
@@ -43,13 +40,13 @@ namespace OficinaMecanica.Domain.Entities
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new ArgumentException("Nome é obrigatório");
-            
+
             if (preco <= 0)
                 throw new ArgumentException("Preço deve ser maior que zero");
-            
+
             if (quantidade < 0)
                 throw new ArgumentException("Quantidade não pode ser negativa");
-            
+
             Nome = nome;
             Descricao = descricao ?? string.Empty;
             Preco = preco;

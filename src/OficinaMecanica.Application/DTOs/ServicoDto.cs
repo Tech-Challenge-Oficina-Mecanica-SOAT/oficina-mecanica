@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace OficinaMecanica.Application.DTOs
+﻿namespace OficinaMecanica.Application.DTOs
 {
     public class ServicoDto
     {

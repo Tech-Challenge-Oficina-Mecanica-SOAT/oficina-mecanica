@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using OficinaMecanica.Application.DTOs;
@@ -7,6 +5,8 @@ using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace OficinaMecanica.Tests.Integration.Controllers;
 
@@ -75,8 +75,8 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
     {
         var osId = await SeedOSAsync();
         var mecanico = ClientCom("Mecanico");
-        var cliente  = ClientCom("Cliente");
-        var admin    = ClientCom("Admin");
+        var cliente = ClientCom("Cliente");
+        var admin = ClientCom("Admin");
 
         // Recebida → EmDiagnostico
         (await mecanico.PatchAsync($"/api/ordens-servico/{osId}/iniciar-diagnostico", null)).EnsureSuccessStatusCode();

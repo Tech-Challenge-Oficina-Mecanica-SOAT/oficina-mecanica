@@ -1,8 +1,5 @@
-using System.Net;
-using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OficinaMecanica.Application.DTOs;
@@ -10,6 +7,8 @@ using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
+using System.Net;
+using System.Net.Http.Json;
 using Xunit.Abstractions;
 
 namespace OficinaMecanica.Tests.Integration.Controllers;
