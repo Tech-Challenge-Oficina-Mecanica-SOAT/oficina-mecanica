@@ -1,6 +1,6 @@
 # Relatório de Vulnerabilidades — Oficina Mecânica API
 
-**Data da análise:** 2026-05-01  
+**Data da análise:** 2026-05-03  
 **Ferramenta:** SonarQube Community Build 26.4.0.121862  
 **Versão analisada:** branch `main`  
 **Quality Gate:** ✅ **Passed**  
@@ -14,12 +14,19 @@
 |---|---|---|
 | Security (Vulnerabilidades) | 2 | C |
 | Reliability | 2 | C |
-| Maintainability | 21 | A |
+| Maintainability | 19 | A |
 | Security Hotspots | 4 | E |
-| Coverage | 0,0% | — |
+| Coverage | **90,5%** | — |
 | Duplications | 0,0% | — |
 
-> **Nota sobre Coverage:** o scan foi executado sem integração com os relatórios de cobertura. Para incluir cobertura, veja a seção "Scan com cobertura integrada" no README.
+### Corrigidos desde a análise anterior (2026-05-01)
+
+| Regra | Arquivo | Descrição |
+|---|---|---|
+| `csharpsquid:S1135` | `OrdemServicoStatusController.cs:88` | Comentário TODO pendente — removido |
+| `external_roslyn:CS8604` | `OrdemServicoStatusControllerTests.cs:146` | Possível null em `Enumerable.Last()` — null-forgiving adicionado |
+| `external_roslyn:CS8618` | `Veiculo.cs:16` | Propriedade `Placa` não anulável sem inicialização — corrigido |
+| `csharpsquid:S1905` | `ServicosController.cs:66` | Cast desnecessário para `IEnumerable<ServicoDto>` — removido |
 
 ---
 
@@ -29,7 +36,7 @@
 
 - **Regra:** `csharpsquid:S2068`
 - **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linha 10
-- **Severidade:** MAJOR
+- **Severidade:** MAJOR | **Impacto:** SECURITY (MEDIUM)
 - **Mensagem:** *"password" detected here, make sure this is not a hard-coded credential.*
 - **OWASP:** A02 Cryptographic Failures
 - **Risco:** A senha do PostgreSQL está em texto claro no arquivo versionado. Qualquer acesso ao repositório expõe o banco de dados.
@@ -41,7 +48,7 @@
 
 - **Regra:** `csharpsquid:S2068`
 - **Arquivo:** `src/OficinaMecanica.API/appsettings.json`, linha 20
-- **Severidade:** MAJOR
+- **Severidade:** MAJOR | **Impacto:** SECURITY (MEDIUM)
 - **Mensagem:** *"password" detected here, make sure this is not a hard-coded credential.*
 - **OWASP:** A02 Cryptographic Failures
 - **Risco:** A chave HMAC usada para hash de senhas está versionada. Qualquer pessoa com acesso ao repositório pode replicar o mecanismo de hash.
@@ -64,8 +71,8 @@ Cada hotspot deve ser avaliado e marcado como **"Fixed"** (corrigido) ou **"Safe
 ### R1 — Chamada síncrona a `Migrate()` em contexto assíncrono
 
 - **Regra:** `csharpsquid:S6966`
-- **Arquivo:** `src/OficinaMecanica.API/Program.cs`, linha 102
-- **Severidade:** MAJOR
+- **Arquivo:** `src/OficinaMecanica.API/Program.cs`, linha 101
+- **Severidade:** MAJOR | **Impacto:** RELIABILITY (MEDIUM)
 - **Mensagem:** *Await MigrateAsync instead.*
 - **Risco:** Bloqueia a thread durante a migration no startup, podendo causar deadlock em ambientes com SynchronizationContext.
 - **Correção:** Substituir `context.Database.Migrate()` por `await context.Database.MigrateAsync()`.
@@ -75,8 +82,8 @@ Cada hotspot deve ser avaliado e marcado como **"Fixed"** (corrigido) ou **"Safe
 ### R2 — Chamada síncrona a `Run()` em contexto assíncrono
 
 - **Regra:** `csharpsquid:S6966`
-- **Arquivo:** `src/OficinaMecanica.API/Program.cs`, linha 105
-- **Severidade:** MAJOR
+- **Arquivo:** `src/OficinaMecanica.API/Program.cs`, linha 104
+- **Severidade:** MAJOR | **Impacto:** RELIABILITY (MEDIUM)
 - **Mensagem:** *Await RunAsync instead.*
 - **Correção:** Substituir `app.Run()` por `await app.RunAsync()`.
 
@@ -88,28 +95,26 @@ Cada hotspot deve ser avaliado e marcado como **"Fixed"** (corrigido) ou **"Safe
 
 | Regra | Arquivo | Linha | Severidade | Descrição |
 |---|---|---|---|---|
-| `S1118` | `Program.cs` | 107 | MAJOR | Classe `Program` sem constructor `protected` ou modificador `static` |
+| `S1118` | `Program.cs` | 106 | MAJOR | Classe `Program` sem constructor `protected` ou modificador `static` |
 | `S1144` | `Veiculo.cs` | 14 | MAJOR | Setter privado `set_Cliente` não utilizado — remover |
-| `CS8618` | `Veiculo.cs` | 16 | MAJOR | Propriedades `Placa`, `Marca`, `Modelo` não anuláveis sem valor inicial no construtor |
-| `S1905` | `ServicosController.cs` | 66 | MINOR | Cast desnecessário para `IEnumerable<ServicoDto>` |
+| `S3267` ⚠️ *novo* | `OrdemServicoService.cs` | 70 | MINOR | Loop pode ser simplificado usando o método LINQ `Where` |
 | `S1192` | `ServicosController.cs` | 117 | MINOR | Literal `"Serviço não encontrado"` repetida 4 vezes — extrair constante |
 | `S1192` | `ExampleSchemaTransformer.cs` | 14 | MINOR | Literal `"email"` repetida 4 vezes — extrair constante |
 | `S1192` | `ExampleSchemaTransformer.cs` | 54 | MINOR | Literal `"descricao"` repetida 4 vezes — extrair constante |
-| `S1135` | `OrdemServicoStatusController.cs` | 88 | INFO | Comentário TODO pendente |
 | `CA1873` | `NotificacaoService.cs` | 14, 23 | INFO | Interpolação de string avaliada mesmo quando logging está desabilitado — usar `LogInformation(template, args)` |
 | `CA1860` | `OrdemServicoRepository.cs` | 79 | INFO | Preferir `.Count > 0` a `.Any()` por performance |
-| `ASP0025` | `Program.cs` | 71 | INFO | Usar `AddAuthorizationBuilder` em vez de `AddAuthorization` com callback |
-| `ASP0027` | `Program.cs` | 107 | INFO | `public partial class Program` não é mais necessário no .NET 10 |
+| `ASP0025` | `Program.cs` | 70 | INFO | Usar `AddAuthorizationBuilder` em vez de `AddAuthorization` com callback |
+| `ASP0027` | `Program.cs` | 106 | INFO | `public partial class Program` não é mais necessário no .NET 10 |
 
 ### Testes (TEST)
 
 | Regra | Arquivo | Linha | Severidade | Descrição |
 |---|---|---|---|---|
 | `S2699` | `NotificacaoServiceTests.cs` | 18 | **BLOCKER** | Teste sem nenhuma assertion — não valida comportamento |
-| `CS8604` | `OrdemServicoStatusControllerTests.cs` | 146 | MAJOR | Possível referência nula em `Enumerable.Last()` |
+| `CA1822` ⚠️ *novo* | `OrdemServicosControllerTests.cs` | 23 | INFO | Método `SeedOSAsync` não acessa dados de instância — pode ser `static` |
+| `CA1822` | `OrdemServicoStatusServiceTests.cs` | 26 | INFO | Método `OSRecebida` pode ser `static` |
 | `CA1806` | `HistoricoStatusOSTests.cs` | 32, 41, 50 | INFO | Instâncias criadas mas nunca usadas nos testes de exceção |
 | `CA1806` | `OrdemServicoTests.cs` | 33, 40 | INFO | Instâncias criadas mas nunca usadas nos testes de exceção |
-| `CA1822` | `OrdemServicoStatusServiceTests.cs` | 26 | INFO | Método `OSRecebida` pode ser `static` |
 
 ---
 
@@ -160,3 +165,12 @@ dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
 Resultados em: `http://localhost:9000/dashboard?id=mecanica-api`
+
+### Exportar issues para CSV
+
+```powershell
+# Requer Docker. Gera sonarqube_issues.csv com todos os issues abertos.
+powershell.exe -ExecutionPolicy Bypass -File "run-export.ps1" -Token "SEU_TOKEN" -Format "csv"
+```
+
+O script está disponível em `J:\Dev\sonarqube-issues-export-to-excel\`.
