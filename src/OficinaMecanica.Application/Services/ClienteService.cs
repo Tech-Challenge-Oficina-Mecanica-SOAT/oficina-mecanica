@@ -18,7 +18,7 @@ public class ClienteService : IClienteService
     {
         var cliente = await _clienteRepository.GetByIdAsync(id);
         if (cliente == null) return null;
-        
+
         return new ClienteDto
         {
             Id = cliente.Id,
@@ -35,7 +35,7 @@ public class ClienteService : IClienteService
     {
         var cliente = await _clienteRepository.GetByDocumentoAsync(documento);
         if (cliente == null) return null;
-        
+
         return new ClienteDto
         {
             Id = cliente.Id,
@@ -70,7 +70,7 @@ public class ClienteService : IClienteService
 
         var cliente = new Cliente(createDto.Nome, createDto.Documento, createDto.Telefone, createDto.Email);
         var created = await _clienteRepository.AddAsync(cliente);
-        
+
         return new ClienteDto
         {
             Id = created.Id,
@@ -91,7 +91,7 @@ public class ClienteService : IClienteService
 
         cliente.Atualizar(updateDto.Nome, updateDto.Telefone, updateDto.Email);
         await _clienteRepository.UpdateAsync(cliente);
-        
+
         return new ClienteDto
         {
             Id = cliente.Id,
@@ -114,7 +114,7 @@ public class ClienteService : IClienteService
         var cliente = await _clienteRepository.GetByIdAsync(id);
         if (cliente == null)
             throw new KeyNotFoundException("Cliente não encontrado");
-            
+
         cliente.Ativar();
         await _clienteRepository.UpdateAsync(cliente);
     }
@@ -124,7 +124,7 @@ public class ClienteService : IClienteService
         var cliente = await _clienteRepository.GetByIdAsync(id);
         if (cliente == null)
             throw new KeyNotFoundException("Cliente não encontrado");
-            
+
         cliente.Desativar();
         await _clienteRepository.UpdateAsync(cliente);
     }

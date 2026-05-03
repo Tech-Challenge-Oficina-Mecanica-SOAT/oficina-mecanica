@@ -21,9 +21,11 @@ WORKDIR /app
 
 # Cria usuário não-root
 RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
-USER appuser
 
 COPY --from=build /app/publish ./
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 # Variáveis recomendadas
 ENV ASPNETCORE_URLS=http://+:5000

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace OficinaMecanica.Domain.Entities
+﻿namespace OficinaMecanica.Domain.Entities
 {
     public class Servico
     {
@@ -14,16 +11,16 @@ namespace OficinaMecanica.Domain.Entities
 
         public ICollection<OrdemServicoServico> OrdensServico { get; set; } = new List<OrdemServicoServico>();
 
-        private Servico() { }
+        public Servico() { }
 
         public Servico(string nome, string descricao, decimal valor)
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new ArgumentException("Nome é obrigatório");
-                
+
             if (valor <= 0)
                 throw new ArgumentException("Valor deve ser maior que zero");
-            
+
             Id = Guid.NewGuid();
             Nome = nome;
             Descricao = descricao ?? string.Empty;
@@ -36,10 +33,10 @@ namespace OficinaMecanica.Domain.Entities
         {
             if (string.IsNullOrWhiteSpace(nome))
                 throw new ArgumentException("Nome é obrigatório");
-                
+
             if (valor <= 0)
                 throw new ArgumentException("Valor deve ser maior que zero");
-                
+
             Nome = nome;
             Descricao = descricao ?? string.Empty;
             Valor = valor;

@@ -23,7 +23,7 @@ public class ServicoRepository : IServicoRepository
     {
         if (string.IsNullOrWhiteSpace(nome))
             return await GetAllAsync();
-            
+
         return await _context.Servicos
             .Where(s => EF.Functions.ILike(s.Nome, $"%{nome}%"))
             .OrderBy(s => s.Nome)

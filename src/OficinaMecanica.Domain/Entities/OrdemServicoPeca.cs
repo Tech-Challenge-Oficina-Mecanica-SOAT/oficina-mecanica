@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OficinaMecanica.Domain.Entities
+﻿namespace OficinaMecanica.Domain.Entities
 {
     public class OrdemServicoPeca
     {

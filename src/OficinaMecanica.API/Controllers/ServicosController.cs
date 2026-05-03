@@ -63,7 +63,7 @@ public class ServicosController : ControllerBase
     public async Task<IActionResult> GetByNome(string nome)
     {
         var servicos = await _servicoService.GetByNomeAsync(nome);
-        var lista = servicos as IEnumerable<ServicoDto>;
+        var lista = servicos;
 
         if (lista == null || !lista.Any())
             return NotFound();

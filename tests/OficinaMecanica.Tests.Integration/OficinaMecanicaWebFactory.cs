@@ -18,11 +18,11 @@ public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Jwt:SecretKey"]          = "mecanica-jwt-secret-key-minimo-32-chars!!",
-                ["Jwt:Issuer"]             = "mecanica-api",
-                ["Jwt:Audience"]           = "mecanica-cliente",
-                ["Jwt:ExpiracaoMinutos"]   = "5",
-                ["Seguranca:PasswordKey"]  = "K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF",
+                ["Jwt:SecretKey"] = "mecanica-jwt-secret-key-minimo-32-chars!!",
+                ["Jwt:Issuer"] = "mecanica-api",
+                ["Jwt:Audience"] = "mecanica-cliente",
+                ["Jwt:ExpiracaoMinutos"] = "5",
+                ["Seguranca:PasswordKey"] = "K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF",
                 ["ConnectionStrings:DefaultConnection"] = ""
             });
         });

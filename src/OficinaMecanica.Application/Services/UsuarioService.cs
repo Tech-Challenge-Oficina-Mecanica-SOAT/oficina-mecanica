@@ -1,11 +1,11 @@
-using System.Security.Cryptography;
-using System.Text;
 using Konscious.Security.Cryptography;
 using Microsoft.Extensions.Configuration;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace OficinaMecanica.Application.Services;
 

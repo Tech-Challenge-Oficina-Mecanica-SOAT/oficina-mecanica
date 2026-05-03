@@ -30,7 +30,7 @@ public class OrdemServico
     public ICollection<OrdemServicoItem> Itens { get; set; } = new List<OrdemServicoItem>();
     public ICollection<HistoricoStatusOS> Historico { get; private set; } = new List<HistoricoStatusOS>();
 
-    private OrdemServico() { }
+    public OrdemServico() { }
 
     public OrdemServico(Guid clienteId, Guid veiculoId, string observacoes)
     {

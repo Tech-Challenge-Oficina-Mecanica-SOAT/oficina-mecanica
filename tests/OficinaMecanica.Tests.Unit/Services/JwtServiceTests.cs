@@ -1,9 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Enums;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace OficinaMecanica.Tests.Unit.Services;
 
@@ -16,8 +16,8 @@ public class JwtServiceTests
         var configValues = new Dictionary<string, string?>
         {
             ["Jwt:SecretKey"] = "mecanica-jwt-secret-key-minimo-32-chars!!",
-            ["Jwt:Issuer"]    = "mecanica-api",
-            ["Jwt:Audience"]  = "mecanica-cliente",
+            ["Jwt:Issuer"] = "mecanica-api",
+            ["Jwt:Audience"] = "mecanica-cliente",
             ["Jwt:ExpiracaoMinutos"] = "5"
         };
         var config = new ConfigurationBuilder()

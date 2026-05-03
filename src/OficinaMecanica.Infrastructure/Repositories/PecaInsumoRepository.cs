@@ -75,7 +75,7 @@ public class PecaInsumoRepository : IPecaInsumoRepository
     {
         var peca = await GetByIdAsync(id);
         if (peca == null) throw new KeyNotFoundException("Peça não encontrada");
-        
+
         peca.IncrementarEstoque(quantidade);
         await UpdateAsync(peca);
         return peca;
@@ -85,7 +85,7 @@ public class PecaInsumoRepository : IPecaInsumoRepository
     {
         var peca = await GetByIdAsync(id);
         if (peca == null) throw new KeyNotFoundException("Peça não encontrada");
-        
+
         peca.DecrementarEstoque(quantidade);
         await UpdateAsync(peca);
         return peca;
