@@ -80,7 +80,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Settings
-builder.Services.AddSingleton<IJwtSettings, JwtSettings>();
+var jwtSettings = new JwtSettings(builder.Configuration);
+builder.Services.AddSingleton<IJwtSettings>(jwtSettings);
 builder.Services.AddSingleton<IPasswordSettings, PasswordSettings>();
 
 // DI - Repositories
@@ -187,10 +188,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+                Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
         };
     });
 
