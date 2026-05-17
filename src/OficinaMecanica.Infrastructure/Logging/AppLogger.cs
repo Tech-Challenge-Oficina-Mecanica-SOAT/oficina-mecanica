@@ -12,9 +12,15 @@ public class AppLogger<T> : IAppLogger<T>
     public void Info(string message, params object[] args) =>
         _logger.LogInformation(message, args);
 
-    public void Warning(string message, Exception? ex = null, params object[] args) =>
+    public void Warning(string message, params object[] args) =>
+        _logger.LogWarning(message, args);
+
+    public void Warning(string message, Exception ex, params object[] args) =>
         _logger.LogWarning(ex, message, args);
 
-    public void Error(string message, Exception? ex = null, params object[] args) =>
+    public void Error(string message, params object[] args) =>
+        _logger.LogError(message, args);
+
+    public void Error(string message, Exception ex, params object[] args) =>
         _logger.LogError(ex, message, args);
 }
