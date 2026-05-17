@@ -3,7 +3,7 @@ using OficinaMecanica.Domain.Entities;
 
 namespace OficinaMecanica.Application.Interfaces;
 
-public interface IJwtService
+public interface ITokenGenerator
 {
-    TokenDto GerarToken(Usuario usuario);
+    TokenDto GerarParaUsuario(Usuario usuario);
 }

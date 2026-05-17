@@ -8,6 +8,7 @@ using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Infrastructure.Auth;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Infrastructure.Repositories;
 using Scalar.AspNetCore;
@@ -45,7 +46,7 @@ builder.Services.AddScoped<IVeiculoService, VeiculoService>();
 // DI - Segurança
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 
 // DI - OrdemServico
 builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();

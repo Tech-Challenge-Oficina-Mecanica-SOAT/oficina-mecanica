@@ -12,12 +12,12 @@ namespace OficinaMecanica.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUsuarioService _usuarioService;
-    private readonly IJwtService _jwtService;
+    private readonly ITokenGenerator _tokenGenerator;
 
-    public AuthController(IUsuarioService usuarioService, IJwtService jwtService)
+    public AuthController(IUsuarioService usuarioService, ITokenGenerator tokenGenerator)
     {
         _usuarioService = usuarioService;
-        _jwtService = jwtService;
+        _tokenGenerator = tokenGenerator;
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
         if (usuario is null)
             return Unauthorized(new { mensagem = "Credenciais inválidas." });
 
-        var token = _jwtService.GerarToken(usuario);
+        var token = _tokenGenerator.GerarParaUsuario(usuario);
         return Ok(token);
     }
 

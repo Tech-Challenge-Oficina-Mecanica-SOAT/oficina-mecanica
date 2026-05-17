@@ -7,15 +7,15 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace OficinaMecanica.Application.Services;
+namespace OficinaMecanica.Infrastructure.Auth;
 
-public class JwtService : IJwtService
+public class JwtTokenGenerator : ITokenGenerator
 {
     private readonly IJwtSettings _settings;
 
-    public JwtService(IJwtSettings settings) => _settings = settings;
+    public JwtTokenGenerator(IJwtSettings settings) => _settings = settings;
 
-    public TokenDto GerarToken(Usuario usuario)
+    public TokenDto GerarParaUsuario(Usuario usuario)
     {
         var expiracao = DateTime.UtcNow.AddMinutes(_settings.ExpiracaoMinutos);
 
