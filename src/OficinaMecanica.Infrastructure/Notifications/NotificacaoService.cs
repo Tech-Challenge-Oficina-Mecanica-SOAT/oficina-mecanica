@@ -16,10 +16,34 @@ public class NotificacaoService : INotificacaoService
         return Task.CompletedTask;
     }
 
+    public Task EnviarAprovacaoAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info(
+            "Aprovacao notificada. OS: {OsId}, Cliente: {Email}",
+            osId, emailCliente);
+        return Task.CompletedTask;
+    }
+
+    public Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo)
+    {
+        _logger.Info(
+            "Rejeicao notificada. OS: {OsId}, Cliente: {Email}, Motivo: {Motivo}",
+            osId, emailCliente, motivo);
+        return Task.CompletedTask;
+    }
+
     public Task EnviarConclusaoAsync(Guid osId, string emailCliente)
     {
         _logger.Info(
             "Notificacao de conclusao enviada. OS: {OsId}, Cliente: {Email}",
+            osId, emailCliente);
+        return Task.CompletedTask;
+    }
+
+    public Task EnviarEntregaAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info(
+            "Entrega notificada. OS: {OsId}, Cliente: {Email}",
             osId, emailCliente);
         return Task.CompletedTask;
     }
