@@ -7,6 +7,7 @@ using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
 using System.Net;
@@ -27,7 +28,7 @@ public class OrdemServicosControllerTests
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Teste", "12345678909", "(11) 99999-0000", email);
+        var cliente = new Cliente("Teste", new Documento("12345678909"), "(11) 99999-0000", new Email(email));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 

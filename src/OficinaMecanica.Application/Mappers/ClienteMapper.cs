@@ -9,9 +9,9 @@ public class ClienteMapper
     {
         Id = cliente.Id,
         Nome = cliente.Nome,
-        Documento = cliente.Documento,
+        Documento = cliente.Documento.Valor,
         Telefone = cliente.Telefone,
-        Email = cliente.Email,
+        Email = cliente.Email.Valor,
         Ativo = cliente.Ativo,
         CriadoEm = cliente.CriadoEm
     };

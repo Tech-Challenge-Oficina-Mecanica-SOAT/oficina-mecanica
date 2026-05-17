@@ -5,6 +5,7 @@ using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
 using System.Net;
@@ -24,7 +25,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Teste", "12345678909", "(11) 99999-0000", "t@t.com");
+        var cliente = new Cliente("Teste", new Documento("12345678909"), "(11) 99999-0000", new Email("t@t.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 

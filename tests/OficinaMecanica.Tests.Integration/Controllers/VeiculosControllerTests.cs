@@ -1,6 +1,7 @@
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,8 +25,8 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Seed Veículo", "52998224725", "(11) 91234-5678",
-            $"vei_{Guid.NewGuid():N}@oficina.com");
+        var cliente = new Cliente("Seed Veículo", new Documento("52998224725"), "(11) 91234-5678",
+            new Email($"vei_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
 
         var veiculo = new Veiculo(cliente.Id, placa, "Toyota", "Corolla", 2022);
@@ -39,8 +40,8 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     {
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Cliente Vei", "19131243000197", "(11) 91234-0000",
-            $"cli_{Guid.NewGuid():N}@oficina.com");
+        var cliente = new Cliente("Cliente Vei", new Documento("19131243000197"), "(11) 91234-0000",
+            new Email($"cli_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
         return cliente.Id;

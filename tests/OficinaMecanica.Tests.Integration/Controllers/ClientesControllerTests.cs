@@ -1,6 +1,7 @@
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,8 +24,8 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     {
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Seed Silva", "52998224725", "(11) 91234-5678",
-            email ?? $"seed_{Guid.NewGuid():N}@oficina.com");
+        var cliente = new Cliente("Seed Silva", new Documento("52998224725"), "(11) 91234-5678",
+            new Email(email ?? $"seed_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
         return cliente.Id;
@@ -65,8 +66,8 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         var documento = "19131243000197";
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Doc Teste", documento, "(11) 91111-2222",
-            $"doc_{Guid.NewGuid():N}@oficina.com");
+        var cliente = new Cliente("Doc Teste", new Documento(documento), "(11) 91111-2222",
+            new Email($"doc_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 
@@ -77,7 +78,8 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task GetByDocumento_ComDocumentoInexistente_Retorna404()
     {
-        var resp = await AdminClient().GetAsync("/api/clientes/documento/00000000000");
+        // CNPJ válido (passa na validação do VO) mas inexistente no banco
+        var resp = await AdminClient().GetAsync("/api/clientes/documento/11222333000181");
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
 

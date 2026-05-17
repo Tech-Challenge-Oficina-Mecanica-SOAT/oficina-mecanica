@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Infrastructure.Data;
 
@@ -47,9 +48,19 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Documento).IsUnique();
             entity.Property(e => e.Nome).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Documento).IsRequired().HasMaxLength(14);
+            entity.Property(e => e.Documento)
+                .HasConversion(
+                    v => v.Valor,
+                    v => new Documento(v))
+                .IsRequired()
+                .HasMaxLength(14);
             entity.Property(e => e.Telefone).IsRequired().HasMaxLength(20);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Email)
+                .HasConversion(
+                    v => v.Valor,
+                    v => new Email(v))
+                .IsRequired()
+                .HasMaxLength(100);
             entity.Property(e => e.CriadoEm).IsRequired();
             entity.Property(e => e.Ativo).HasDefaultValue(true);
         });
