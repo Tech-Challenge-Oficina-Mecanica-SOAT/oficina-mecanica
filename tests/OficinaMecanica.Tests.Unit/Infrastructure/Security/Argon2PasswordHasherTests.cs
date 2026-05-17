@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Moq;
-using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Infrastructure.Security;
 
 namespace OficinaMecanica.Tests.Unit.Infrastructure.Security;

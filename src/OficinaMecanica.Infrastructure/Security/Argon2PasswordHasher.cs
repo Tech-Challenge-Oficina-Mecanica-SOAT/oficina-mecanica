@@ -1,5 +1,4 @@
 using Konscious.Security.Cryptography;
-using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
