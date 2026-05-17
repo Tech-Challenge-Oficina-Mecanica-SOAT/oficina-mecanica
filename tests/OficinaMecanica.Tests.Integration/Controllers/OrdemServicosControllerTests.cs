@@ -48,7 +48,7 @@ public class OrdemServicosControllerTests
     }
 
     [Fact]
-    public async Task AddItens_ChamaStatusENotificacao()
+    public async Task AddItens_ChamaStatusUseCase()
     {
         var statusSpy = new MarcarAguardandoAprovacaoSpy();
         var notificacaoSpy = new NotificacaoSpy();
@@ -82,6 +82,42 @@ public class OrdemServicosControllerTests
         statusSpy.Calls.Should().Be(1);
         statusSpy.LastOsId.Should().Be(osId);
         statusSpy.LastAlteradoPor.Should().Be("sistema");
+    }
+
+    [Fact]
+    public async Task AddItens_DisparaNotificacaoViaDomainEvent()
+    {
+        var notificacaoSpy = new NotificacaoSpy();
+
+        using var factory = new OrdemServicosNotificacaoFactory(notificacaoSpy);
+
+        var client = factory.CreateClient().ComToken("Admin");
+        var osId = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
+
+        var iniciar = await client.PatchAsync($"/api/ordens-servico/{osId}/iniciar-diagnostico", null);
+        iniciar.IsSuccessStatusCode.Should().BeTrue();
+
+        var itens = new List<AdicionarOSItemRequest>
+        {
+            new()
+            {
+                Tipo = "servico",
+                ReferenciaId = Guid.NewGuid(),
+                Descricao = "Troca de óleo",
+                Quantidade = 2,
+                PrecoUnitario = 100m
+            }
+        };
+
+        var resp = await client.PostAsJsonAsync($"/api/ordens-servico/{osId}/itens", itens);
+
+        if (!resp.IsSuccessStatusCode)
+        {
+            var body = await resp.Content.ReadAsStringAsync();
+            _output.WriteLine(body.Length > 500 ? body[..500] : body);
+        }
+
+        resp.StatusCode.Should().Be(HttpStatusCode.Created);
         notificacaoSpy.Calls.Should().Be(1);
         notificacaoSpy.LastOsId.Should().Be(osId);
         notificacaoSpy.LastEmail.Should().Be("cliente@teste.com");
@@ -141,6 +177,24 @@ public class OrdemServicosControllerTests
                 services.RemoveAll<IMarcarAguardandoAprovacaoUseCase>();
                 services.RemoveAll<INotificacaoService>();
                 services.AddSingleton(_statusUseCase);
+                services.AddSingleton(_notificacaoService);
+            });
+        }
+    }
+
+    private sealed class OrdemServicosNotificacaoFactory : OficinaMecanicaWebFactory
+    {
+        private readonly INotificacaoService _notificacaoService;
+
+        public OrdemServicosNotificacaoFactory(INotificacaoService notificacaoService) =>
+            _notificacaoService = notificacaoService;
+
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder);
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<INotificacaoService>();
                 services.AddSingleton(_notificacaoService);
             });
         }

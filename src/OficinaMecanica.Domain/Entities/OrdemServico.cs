@@ -1,3 +1,6 @@
+using OficinaMecanica.Domain.Common;
+using OficinaMecanica.Domain.Events;
+
 namespace OficinaMecanica.Domain.Entities;
 
 public enum EnumStatusOS
@@ -11,7 +14,7 @@ public enum EnumStatusOS
     Rejeitada = 7
 }
 
-public class OrdemServico
+public class OrdemServico : Entity
 {
     public Guid Id { get; private set; }
     public DateTime DataAbertura { get; private set; }
@@ -53,7 +56,10 @@ public class OrdemServico
         => Transitar(EnumStatusOS.Recebida, EnumStatusOS.EmDiagnostico, alteradoPor, "Diagnóstico iniciado");
 
     public void EnviarParaAprovacao(string alteradoPor)
-        => Transitar(EnumStatusOS.EmDiagnostico, EnumStatusOS.AguardandoAprovacao, alteradoPor, "Orçamento enviado, aguardando aprovação do cliente");
+    {
+        Transitar(EnumStatusOS.EmDiagnostico, EnumStatusOS.AguardandoAprovacao, alteradoPor, "Orçamento enviado, aguardando aprovação do cliente");
+        RaiseEvent(new OrcamentoEnviadoEvent(Id, Cliente?.Email?.Valor ?? string.Empty, Total, DateTime.UtcNow));
+    }
 
     public void Aprovar(string alteradoPor)
         => Transitar(EnumStatusOS.AguardandoAprovacao, EnumStatusOS.EmExecucao, alteradoPor, "Orçamento aprovado");

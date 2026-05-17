@@ -6,6 +6,8 @@ using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Application;
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.Configuration;
+using OficinaMecanica.Application.EventHandlers;
+using OficinaMecanica.Domain.Events;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Application.UseCases.Auth.AutenticarUsuario;
@@ -99,6 +101,7 @@ builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
 
 // DI - Domain Events
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, EnviarEmailOrcamentoHandler>();
 
 // DI - Logging
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));

@@ -1,7 +1,6 @@
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
-using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Domain.Entities;
@@ -14,18 +13,15 @@ public class AdicionarItensOSUseCase : IAdicionarItensOSUseCase
     private readonly IOrdemServicoRepository _repository;
     private readonly OrdemServicoMapper _mapper;
     private readonly IMarcarAguardandoAprovacaoUseCase _marcarAguardandoAprovacao;
-    private readonly INotificacaoService _notificacao;
 
     public AdicionarItensOSUseCase(
         IOrdemServicoRepository repository,
         OrdemServicoMapper mapper,
-        IMarcarAguardandoAprovacaoUseCase marcarAguardandoAprovacao,
-        INotificacaoService notificacao)
+        IMarcarAguardandoAprovacaoUseCase marcarAguardandoAprovacao)
     {
         _repository = repository;
         _mapper = mapper;
         _marcarAguardandoAprovacao = marcarAguardandoAprovacao;
-        _notificacao = notificacao;
     }
 
     public async Task<Result<IEnumerable<OrdemServicoItemResponse>>> ExecutarAsync(AdicionarItensOSRequest request)
@@ -57,8 +53,10 @@ public class AdicionarItensOSUseCase : IAdicionarItensOSUseCase
         os.RecalcularTotal();
         await _repository.AtualizarTotalAsync(request.OrdemServicoId, os.Total);
 
-        await _marcarAguardandoAprovacao.ExecutarAsync(new MarcarAguardandoAprovacaoRequest(request.OrdemServicoId, "sistema"));
-        await _notificacao.EnviarOrcamentoAsync(request.OrdemServicoId, os.Cliente?.Email ?? string.Empty, os.Total);
+        var marcarResult = await _marcarAguardandoAprovacao.ExecutarAsync(
+            new MarcarAguardandoAprovacaoRequest(request.OrdemServicoId, "sistema"));
+        if (!marcarResult.IsSuccess)
+            return Result<IEnumerable<OrdemServicoItemResponse>>.Validation(marcarResult.Error ?? "Falha na transição de status.");
 
         return Result<IEnumerable<OrdemServicoItemResponse>>.Success(salvos.Select(_mapper.MapToItemResponse));
     }
