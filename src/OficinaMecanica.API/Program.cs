@@ -93,8 +93,8 @@ builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 builder.Services.AddScoped<IHistoricoStatusOSRepository, HistoricoStatusOSRepository>();
 
 // DI - Segurança
-builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
-builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
+builder.Services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
+builder.Services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
 
 // DI - Notificacoes
 builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
@@ -104,7 +104,7 @@ builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, EnviarEmailOrcamentoHandler>();
 
 // DI - Logging
-builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // DI - Mappers
 builder.Services.AddSingleton<OrdemServicoMapper>();
