@@ -1,6 +1,6 @@
 using Moq;
-using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Enums;
@@ -11,16 +11,26 @@ namespace OficinaMecanica.Tests.Unit.Services;
 public class UsuarioServiceTests
 {
     private readonly Mock<IUsuarioRepository> _repositoryMock;
+    private readonly Mock<IPasswordHasher> _hasherMock;
     private readonly UsuarioService _sut;
+    private int _hashCounter;
 
     public UsuarioServiceTests()
     {
         _repositoryMock = new Mock<IUsuarioRepository>();
+        _hasherMock = new Mock<IPasswordHasher>();
 
-        var passwordSettings = new Mock<IPasswordSettings>();
-        passwordSettings.Setup(s => s.PasswordKey).Returns("K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF");
+        _hasherMock.Setup(h => h.Hash(It.IsAny<string>()))
+            .Returns<string>(senha =>
+            {
+                _hashCounter++;
+                return $"hashed::{senha}::{_hashCounter}";
+            });
 
-        _sut = new UsuarioService(_repositoryMock.Object, passwordSettings.Object);
+        _hasherMock.Setup(h => h.Verificar(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string>((senha, hash) => hash.StartsWith($"hashed::{senha}::"));
+
+        _sut = new UsuarioService(_repositoryMock.Object, _hasherMock.Object);
     }
 
     [Fact]
@@ -77,7 +87,7 @@ public class UsuarioServiceTests
         Assert.NotNull(usuario);
         Assert.Equal("novo@oficina.com", usuario.Email);
         Assert.NotEqual("Senha@123", usuario.SenhaHash);
-        Assert.StartsWith("$argon2id$v=19$", usuario.SenhaHash);
+        _hasherMock.Verify(h => h.Hash("Senha@123"), Times.Once);
     }
 
     [Fact]
