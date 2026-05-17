@@ -97,7 +97,7 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Create_ComDocumentoDuplicado_Retorna400()
+    public async Task Create_ComDocumentoDuplicado_Retorna409()
     {
         var documento = "11222333000181";
         var email1 = $"dup1_{Guid.NewGuid():N}@oficina.com";
@@ -115,7 +115,7 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
             Telefone = "(11) 91111-0002", Email = email2
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
     [Fact]

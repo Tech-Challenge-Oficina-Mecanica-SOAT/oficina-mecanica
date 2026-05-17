@@ -1,8 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OficinaMecanica.API.Common;
+using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
-using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Application.UseCases.Veiculo.AtualizarVeiculo;
+using OficinaMecanica.Application.UseCases.Veiculo.ConsultarVeiculo;
+using OficinaMecanica.Application.UseCases.Veiculo.ConsultarVeiculoPorPlaca;
+using OficinaMecanica.Application.UseCases.Veiculo.CriarVeiculo;
+using OficinaMecanica.Application.UseCases.Veiculo.ListarVeiculos;
+using OficinaMecanica.Application.UseCases.Veiculo.ListarVeiculosPorCliente;
+using OficinaMecanica.Application.UseCases.Veiculo.RemoverVeiculo;
 
 namespace OficinaMecanica.API.Controllers;
 
@@ -12,11 +20,30 @@ namespace OficinaMecanica.API.Controllers;
 [Authorize(Roles = "Admin")]
 public class VeiculosController : ControllerBase
 {
-    private readonly IVeiculoService _veiculoService;
+    private readonly ICriarVeiculoUseCase _criar;
+    private readonly IAtualizarVeiculoUseCase _atualizar;
+    private readonly IConsultarVeiculoUseCase _consultar;
+    private readonly IConsultarVeiculoPorPlacaUseCase _consultarPorPlaca;
+    private readonly IListarVeiculosUseCase _listar;
+    private readonly IListarVeiculosPorClienteUseCase _listarPorCliente;
+    private readonly IRemoverVeiculoUseCase _remover;
 
-    public VeiculosController(IVeiculoService veiculoService)
+    public VeiculosController(
+        ICriarVeiculoUseCase criar,
+        IAtualizarVeiculoUseCase atualizar,
+        IConsultarVeiculoUseCase consultar,
+        IConsultarVeiculoPorPlacaUseCase consultarPorPlaca,
+        IListarVeiculosUseCase listar,
+        IListarVeiculosPorClienteUseCase listarPorCliente,
+        IRemoverVeiculoUseCase remover)
     {
-        _veiculoService = veiculoService;
+        _criar = criar;
+        _atualizar = atualizar;
+        _consultar = consultar;
+        _consultarPorPlaca = consultarPorPlaca;
+        _listar = listar;
+        _listarPorCliente = listarPorCliente;
+        _remover = remover;
     }
 
     /// <summary>
@@ -26,8 +53,8 @@ public class VeiculosController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<VeiculoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
-        var veiculos = await _veiculoService.GetAllAsync();
-        return Ok(veiculos);
+        var result = await _listar.ExecutarAsync(Unit.Value);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -38,10 +65,8 @@ public class VeiculosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var veiculo = await _veiculoService.GetByIdAsync(id);
-        if (veiculo == null)
-            return NotFound();
-        return Ok(veiculo);
+        var result = await _consultar.ExecutarAsync(id);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -55,10 +80,8 @@ public class VeiculosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByPlaca(string placa)
     {
-        var veiculo = await _veiculoService.GetByPlacaAsync(placa);
-        if (veiculo == null)
-            return NotFound();
-        return Ok(veiculo);
+        var result = await _consultarPorPlaca.ExecutarAsync(placa);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -68,8 +91,8 @@ public class VeiculosController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<VeiculoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByClienteId(Guid clienteId)
     {
-        var veiculos = await _veiculoService.GetByClienteIdAsync(clienteId);
-        return Ok(veiculos);
+        var result = await _listarPorCliente.ExecutarAsync(clienteId);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -82,25 +105,12 @@ public class VeiculosController : ControllerBase
     [ProducesResponseType(typeof(VeiculoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Create([FromBody] CriarVeiculoRequest createDto)
+    public async Task<IActionResult> Create([FromBody] CriarVeiculoRequest request)
     {
-        try
-        {
-            var veiculo = await _veiculoService.CreateAsync(createDto);
-            return CreatedAtAction(nameof(GetById), new { id = veiculo.Id }, veiculo);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _criar.ExecutarAsync(request);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+            : this.MapError(result);
     }
 
     /// <summary>
@@ -110,25 +120,11 @@ public class VeiculosController : ControllerBase
     [ProducesResponseType(typeof(VeiculoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarVeiculoRequest updateDto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarVeiculoRequest dto)
     {
-        try
-        {
-            var veiculo = await _veiculoService.UpdateAsync(id, updateDto);
-            return Ok(veiculo);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _atualizar.ExecutarAsync(
+            new AtualizarVeiculoUseCaseRequest(id, dto.ClienteId, dto.Placa, dto.Marca, dto.Modelo, dto.Ano));
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -139,14 +135,7 @@ public class VeiculosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            await _veiculoService.DeleteAsync(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        var result = await _remover.ExecutarAsync(id);
+        return result.IsSuccess ? NoContent() : this.MapError(result);
     }
 }

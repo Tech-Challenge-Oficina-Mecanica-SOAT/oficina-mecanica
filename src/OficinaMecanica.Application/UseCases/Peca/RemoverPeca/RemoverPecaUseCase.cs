@@ -14,6 +14,10 @@ public class RemoverPecaUseCase : IRemoverPecaUseCase
 
     public async Task<Result<bool>> ExecutarAsync(Guid id)
     {
+        var peca = await _repository.GetByIdAsync(id);
+        if (peca is null)
+            return Result<bool>.NotFound($"Peça com ID {id} não encontrada");
+
         await _repository.DeleteAsync(id);
         return Result<bool>.Success(true);
     }

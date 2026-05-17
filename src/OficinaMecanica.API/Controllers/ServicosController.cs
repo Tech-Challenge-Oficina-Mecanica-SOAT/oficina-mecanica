@@ -1,8 +1,18 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OficinaMecanica.API.Common;
+using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
-using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Application.UseCases.Servico.AtivarServico;
+using OficinaMecanica.Application.UseCases.Servico.AtualizarServico;
+using OficinaMecanica.Application.UseCases.Servico.ConsultarServico;
+using OficinaMecanica.Application.UseCases.Servico.CriarServico;
+using OficinaMecanica.Application.UseCases.Servico.DesativarServico;
+using OficinaMecanica.Application.UseCases.Servico.ListarServicos;
+using OficinaMecanica.Application.UseCases.Servico.ListarServicosAtivos;
+using OficinaMecanica.Application.UseCases.Servico.ListarServicosPorNome;
+using OficinaMecanica.Application.UseCases.Servico.RemoverServico;
 
 namespace OficinaMecanica.API.Controllers;
 
@@ -12,11 +22,36 @@ namespace OficinaMecanica.API.Controllers;
 [Authorize(Roles = "Admin")]
 public class ServicosController : ControllerBase
 {
-    private readonly IServicoService _servicoService;
+    private readonly ICriarServicoUseCase _criar;
+    private readonly IAtualizarServicoUseCase _atualizar;
+    private readonly IConsultarServicoUseCase _consultar;
+    private readonly IListarServicosUseCase _listar;
+    private readonly IListarServicosAtivosUseCase _listarAtivos;
+    private readonly IListarServicosPorNomeUseCase _listarPorNome;
+    private readonly IRemoverServicoUseCase _remover;
+    private readonly IAtivarServicoUseCase _ativar;
+    private readonly IDesativarServicoUseCase _desativar;
 
-    public ServicosController(IServicoService servicoService)
+    public ServicosController(
+        ICriarServicoUseCase criar,
+        IAtualizarServicoUseCase atualizar,
+        IConsultarServicoUseCase consultar,
+        IListarServicosUseCase listar,
+        IListarServicosAtivosUseCase listarAtivos,
+        IListarServicosPorNomeUseCase listarPorNome,
+        IRemoverServicoUseCase remover,
+        IAtivarServicoUseCase ativar,
+        IDesativarServicoUseCase desativar)
     {
-        _servicoService = servicoService;
+        _criar = criar;
+        _atualizar = atualizar;
+        _consultar = consultar;
+        _listar = listar;
+        _listarAtivos = listarAtivos;
+        _listarPorNome = listarPorNome;
+        _remover = remover;
+        _ativar = ativar;
+        _desativar = desativar;
     }
 
     /// <summary>
@@ -26,8 +61,8 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ServicoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
-        var servicos = await _servicoService.GetAllAsync();
-        return Ok(servicos);
+        var result = await _listar.ExecutarAsync(Unit.Value);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -37,8 +72,8 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ServicoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAtivos()
     {
-        var servicos = await _servicoService.GetAtivosAsync();
-        return Ok(servicos);
+        var result = await _listarAtivos.ExecutarAsync(Unit.Value);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -49,10 +84,8 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var servico = await _servicoService.GetByIdAsync(id);
-        if (servico == null)
-            return NotFound();
-        return Ok(servico);
+        var result = await _consultar.ExecutarAsync(id);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -63,9 +96,11 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByNome(string nome)
     {
-        var servicos = await _servicoService.GetByNomeAsync(nome);
-        var lista = servicos;
+        var result = await _listarPorNome.ExecutarAsync(nome);
+        if (!result.IsSuccess)
+            return this.MapError(result);
 
+        var lista = result.Value;
         if (lista == null || !lista.Any())
             return NotFound();
 
@@ -82,21 +117,12 @@ public class ServicosController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ServicoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CriarServicoRequest createDto)
+    public async Task<IActionResult> Create([FromBody] CriarServicoRequest request)
     {
-        try
-        {
-            var servico = await _servicoService.CreateAsync(createDto);
-            return CreatedAtAction(nameof(GetById), new { id = servico.Id }, servico);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _criar.ExecutarAsync(request);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+            : this.MapError(result);
     }
 
     /// <summary>
@@ -106,21 +132,11 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(typeof(ServicoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarServicoRequest updateDto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarServicoRequest dto)
     {
-        try
-        {
-            var servico = await _servicoService.UpdateAsync(id, updateDto);
-            return Ok(servico);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { message = "Serviço não encontrado" });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _atualizar.ExecutarAsync(
+            new AtualizarServicoUseCaseRequest(id, dto.Nome, dto.Descricao, dto.Valor));
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -131,15 +147,8 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        try
-        {
-            await _servicoService.DeleteAsync(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { message = "Serviço não encontrado" });
-        }
+        var result = await _remover.ExecutarAsync(id);
+        return result.IsSuccess ? NoContent() : this.MapError(result);
     }
 
     /// <summary>
@@ -150,15 +159,8 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Ativar(Guid id)
     {
-        try
-        {
-            await _servicoService.AtivarAsync(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { message = "Serviço não encontrado" });
-        }
+        var result = await _ativar.ExecutarAsync(id);
+        return result.IsSuccess ? NoContent() : this.MapError(result);
     }
 
     /// <summary>
@@ -169,14 +171,7 @@ public class ServicosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Desativar(Guid id)
     {
-        try
-        {
-            await _servicoService.DesativarAsync(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { message = "Serviço não encontrado" });
-        }
+        var result = await _desativar.ExecutarAsync(id);
+        return result.IsSuccess ? NoContent() : this.MapError(result);
     }
 }

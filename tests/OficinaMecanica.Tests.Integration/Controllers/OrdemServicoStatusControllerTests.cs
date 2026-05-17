@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
@@ -85,8 +86,8 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         // EmDiagnostico → AguardandoAprovacao (via service direto, simula gancho M4)
         using (var scope = _factory.Services.CreateScope())
         {
-            var statusService = scope.ServiceProvider.GetRequiredService<IOrdemServicoStatusService>();
-            await statusService.MarcarAguardandoAprovacaoAsync(osId, "M4-simulado");
+            var marcarAguardando = scope.ServiceProvider.GetRequiredService<IMarcarAguardandoAprovacaoUseCase>();
+            await marcarAguardando.ExecutarAsync(new MarcarAguardandoAprovacaoRequest(osId, "M4-simulado"));
         }
 
         // AguardandoAprovacao → EmExecucao

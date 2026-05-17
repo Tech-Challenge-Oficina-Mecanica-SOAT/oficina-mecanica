@@ -14,6 +14,10 @@ public class ObterEstoqueUseCase : IObterEstoqueUseCase
 
     public async Task<Result<int>> ExecutarAsync(Guid id)
     {
+        var peca = await _repository.GetByIdAsync(id);
+        if (peca is null)
+            return Result<int>.NotFound($"Peça com ID {id} não encontrada");
+
         var estoque = await _repository.GetEstoqueAsync(id);
         return Result<int>.Success(estoque);
     }

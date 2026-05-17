@@ -117,7 +117,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Create_ComCodigoDuplicado_Retorna400()
+    public async Task Create_ComCodigoDuplicado_Retorna409()
     {
         var codigo = $"DUP-{Guid.NewGuid():N}"[..10];
         await SeedPecaAsync(codigo);
@@ -128,7 +128,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
             Descricao = "Desc", PrecoUnitario = 10m, Estoque = 1
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
     [Fact]

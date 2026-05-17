@@ -3,6 +3,7 @@ using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Mappers;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
 
@@ -12,18 +13,18 @@ public class AdicionarItensOSUseCase : IAdicionarItensOSUseCase
 {
     private readonly IOrdemServicoRepository _repository;
     private readonly OrdemServicoMapper _mapper;
-    private readonly IOrdemServicoStatusService _statusService;
+    private readonly IMarcarAguardandoAprovacaoUseCase _marcarAguardandoAprovacao;
     private readonly INotificacaoService _notificacao;
 
     public AdicionarItensOSUseCase(
         IOrdemServicoRepository repository,
         OrdemServicoMapper mapper,
-        IOrdemServicoStatusService statusService,
+        IMarcarAguardandoAprovacaoUseCase marcarAguardandoAprovacao,
         INotificacaoService notificacao)
     {
         _repository = repository;
         _mapper = mapper;
-        _statusService = statusService;
+        _marcarAguardandoAprovacao = marcarAguardandoAprovacao;
         _notificacao = notificacao;
     }
 
@@ -56,7 +57,7 @@ public class AdicionarItensOSUseCase : IAdicionarItensOSUseCase
         os.RecalcularTotal();
         await _repository.AtualizarTotalAsync(request.OrdemServicoId, os.Total);
 
-        await _statusService.MarcarAguardandoAprovacaoAsync(request.OrdemServicoId, "sistema");
+        await _marcarAguardandoAprovacao.ExecutarAsync(new MarcarAguardandoAprovacaoRequest(request.OrdemServicoId, "sistema"));
         await _notificacao.EnviarOrcamentoAsync(request.OrdemServicoId, os.Cliente?.Email ?? string.Empty, os.Total);
 
         return Result<IEnumerable<OrdemServicoItemResponse>>.Success(salvos.Select(_mapper.MapToItemResponse));

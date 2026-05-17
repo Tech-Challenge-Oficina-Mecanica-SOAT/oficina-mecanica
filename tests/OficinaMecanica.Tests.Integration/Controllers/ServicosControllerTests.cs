@@ -81,7 +81,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Create_ComNomeDuplicado_Retorna400()
+    public async Task Create_ComNomeDuplicado_Retorna409()
     {
         var nome = $"Serviço Dup {Guid.NewGuid():N}";
         await SeedServicoAsync(nome);
@@ -91,7 +91,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
             Nome = nome, Descricao = "Outro", Valor = 100m
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
     [Fact]

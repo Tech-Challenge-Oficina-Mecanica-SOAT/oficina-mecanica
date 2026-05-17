@@ -133,7 +133,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Create_ComPlacaDuplicada_Retorna400()
+    public async Task Create_ComPlacaDuplicada_Retorna409()
     {
         var clienteId = await SeedClienteAsync();
         var placa = "EEE5555";
@@ -148,7 +148,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
             ClienteId = clienteId, Placa = placa, Marca = "Ford", Modelo = "Focus", Ano = 2022
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
     [Fact]

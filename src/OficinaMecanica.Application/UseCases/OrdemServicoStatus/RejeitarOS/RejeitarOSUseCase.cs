@@ -17,6 +17,7 @@ public class RejeitarOSUseCase : IRejeitarOSUseCase
 
         try { os.Rejeitar(request.AlteradoPor, request.Motivo); }
         catch (InvalidOperationException ex) { return Result<bool>.Validation(ex.Message); }
+        catch (ArgumentException ex) { return Result<bool>.Validation(ex.Message); }
 
         await _repository.UpdateAsync(os);
         return Result<bool>.Success(true);

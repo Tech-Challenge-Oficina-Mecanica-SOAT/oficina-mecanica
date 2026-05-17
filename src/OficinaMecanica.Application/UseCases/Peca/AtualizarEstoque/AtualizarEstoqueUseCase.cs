@@ -19,20 +19,29 @@ public class AtualizarEstoqueUseCase : IAtualizarEstoqueUseCase
 
     public async Task<Result<PecaResponse>> ExecutarAsync(AtualizarEstoqueUseCaseRequest request)
     {
+        var existente = await _repository.GetByIdAsync(request.Id);
+        if (existente is null)
+            return Result<PecaResponse>.NotFound($"Peça com ID {request.Id} não encontrada");
+
         PecaInsumo peca;
-        if (request.TipoOperacao == "incrementar")
+        try
         {
-            peca = await _repository.IncrementarEstoqueAsync(request.Id, request.Quantidade);
+            if (request.TipoOperacao == "incrementar")
+            {
+                peca = await _repository.IncrementarEstoqueAsync(request.Id, request.Quantidade);
+            }
+            else if (request.TipoOperacao == "decrementar")
+            {
+                peca = await _repository.DecrementarEstoqueAsync(request.Id, Math.Abs(request.Quantidade));
+            }
+            else
+            {
+                return Result<PecaResponse>.Validation(
+                    $"tipoOperacao inválido: '{request.TipoOperacao}'. Use 'incrementar' ou 'decrementar'.");
+            }
         }
-        else if (request.TipoOperacao == "decrementar")
-        {
-            peca = await _repository.DecrementarEstoqueAsync(request.Id, Math.Abs(request.Quantidade));
-        }
-        else
-        {
-            return Result<PecaResponse>.Validation(
-                $"tipoOperacao inválido: '{request.TipoOperacao}'. Use 'incrementar' ou 'decrementar'.");
-        }
+        catch (InvalidOperationException ex) { return Result<PecaResponse>.Validation(ex.Message); }
+        catch (ArgumentException ex) { return Result<PecaResponse>.Validation(ex.Message); }
 
         return Result<PecaResponse>.Success(_mapper.MapToResponse(peca));
     }

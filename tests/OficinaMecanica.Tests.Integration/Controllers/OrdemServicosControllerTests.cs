@@ -2,9 +2,10 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.DTOs.Requests;
-using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
@@ -48,7 +49,7 @@ public class OrdemServicosControllerTests
     [Fact]
     public async Task AddItens_ChamaStatusENotificacao()
     {
-        var statusSpy = new OrdemServicoStatusSpy();
+        var statusSpy = new MarcarAguardandoAprovacaoSpy();
         var notificacaoSpy = new NotificacaoSpy();
 
         using var factory = new OrdemServicosWebFactory(statusSpy, notificacaoSpy);
@@ -86,27 +87,19 @@ public class OrdemServicosControllerTests
         notificacaoSpy.LastTotal.Should().Be(200m);
     }
 
-    private sealed class OrdemServicoStatusSpy : IOrdemServicoStatusService
+    private sealed class MarcarAguardandoAprovacaoSpy : IMarcarAguardandoAprovacaoUseCase
     {
         public int Calls { get; private set; }
         public Guid? LastOsId { get; private set; }
         public string? LastAlteradoPor { get; private set; }
 
-        public Task IniciarDiagnosticoAsync(Guid osId, string alteradoPor) => Task.CompletedTask;
-        public Task MarcarAguardandoAprovacaoAsync(Guid osId, string alteradoPor)
+        public Task<Result<bool>> ExecutarAsync(MarcarAguardandoAprovacaoRequest request)
         {
             Calls++;
-            LastOsId = osId;
-            LastAlteradoPor = alteradoPor;
-            return Task.CompletedTask;
+            LastOsId = request.OsId;
+            LastAlteradoPor = request.AlteradoPor;
+            return Task.FromResult(Result<bool>.Success(true));
         }
-
-        public Task AprovarAsync(Guid osId, string alteradoPor) => Task.CompletedTask;
-        public Task RejeitarAsync(Guid osId, string alteradoPor, string motivo) => Task.CompletedTask;
-        public Task NotificarConclusaoAsync(Guid osId, string alteradoPor) => Task.CompletedTask;
-        public Task EntregarAsync(Guid osId, string alteradoPor) => Task.CompletedTask;
-        public Task ForcarStatusAsync(Guid osId, EnumStatusOS novoStatus, string alteradoPor, string motivo) => Task.CompletedTask;
-        public Task<IEnumerable<HistoricoStatusOSResponse>> ObterHistoricoAsync(Guid osId) => Task.FromResult<IEnumerable<HistoricoStatusOSResponse>>([]);
     }
 
     private sealed class NotificacaoSpy : INotificacaoService
@@ -130,12 +123,12 @@ public class OrdemServicosControllerTests
 
     private sealed class OrdemServicosWebFactory : OficinaMecanicaWebFactory
     {
-        private readonly IOrdemServicoStatusService _statusService;
+        private readonly IMarcarAguardandoAprovacaoUseCase _statusUseCase;
         private readonly INotificacaoService _notificacaoService;
 
-        public OrdemServicosWebFactory(IOrdemServicoStatusService statusService, INotificacaoService notificacaoService)
+        public OrdemServicosWebFactory(IMarcarAguardandoAprovacaoUseCase statusUseCase, INotificacaoService notificacaoService)
         {
-            _statusService = statusService;
+            _statusUseCase = statusUseCase;
             _notificacaoService = notificacaoService;
         }
 
@@ -144,9 +137,9 @@ public class OrdemServicosControllerTests
             base.ConfigureWebHost(builder);
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<IOrdemServicoStatusService>();
+                services.RemoveAll<IMarcarAguardandoAprovacaoUseCase>();
                 services.RemoveAll<INotificacaoService>();
-                services.AddSingleton(_statusService);
+                services.AddSingleton(_statusUseCase);
                 services.AddSingleton(_notificacaoService);
             });
         }
