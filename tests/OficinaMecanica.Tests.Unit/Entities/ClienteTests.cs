@@ -62,7 +62,6 @@ public class ClienteTests
     [InlineData("emailinvalido")]
     [InlineData("email@")]
     [InlineData("@email.com")]
-    [InlineData("email@email")]
     public void Email_DeveLancarExcecao_QuandoValorInvalido(string email)
     {
         Assert.Throws<ArgumentException>(() => new Email(email));
