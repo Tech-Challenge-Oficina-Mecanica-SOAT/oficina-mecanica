@@ -51,4 +51,14 @@ public class Argon2PasswordHasherTests
     {
         _sut.Verificar("qualquer", "lixo-invalido").Should().BeFalse();
     }
+
+    [Theory]
+    [InlineData("$argon2i$v=19$m=9216,t=4,p=1$salt$hash")]
+    [InlineData("$argon2id$v=19$m=9216,t=4$salt$hash")]
+    [InlineData("$argon2id$v=19$m=9216,t=4,p=1$###$hash")]
+    [InlineData("$argon2id$v=19$m=9216,t=4,p=1$YWJjMTIz$###")]
+    public void Verificar_RetornaFalseParaHashMalformadoVariadosCasos(string hashInvalido)
+    {
+        _sut.Verificar("qualquer", hashInvalido).Should().BeFalse();
+    }
 }
