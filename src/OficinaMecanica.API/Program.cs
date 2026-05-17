@@ -6,6 +6,7 @@ using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Application;
 using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
 using OficinaMecanica.Infrastructure.Auth;
@@ -63,6 +64,14 @@ builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
 
 // DI - Logging
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+
+// DI - Mappers
+builder.Services.AddSingleton<OrdemServicoMapper>();
+builder.Services.AddSingleton<ClienteMapper>();
+builder.Services.AddSingleton<VeiculoMapper>();
+builder.Services.AddSingleton<PecaMapper>();
+builder.Services.AddSingleton<ServicoMapper>();
+builder.Services.AddSingleton<HistoricoStatusOSMapper>();
 
 // Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
