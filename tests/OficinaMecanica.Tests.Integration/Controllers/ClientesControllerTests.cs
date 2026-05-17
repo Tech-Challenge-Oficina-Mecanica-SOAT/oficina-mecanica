@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
@@ -83,7 +84,7 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Create_ComDadosValidos_Retorna201()
     {
-        var dto = new CreateClienteDto
+        var dto = new CriarClienteRequest
         {
             Nome = "Novo Cliente",
             Documento = "12345678909",
@@ -102,13 +103,13 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         var email1 = $"dup1_{Guid.NewGuid():N}@oficina.com";
         var email2 = $"dup2_{Guid.NewGuid():N}@oficina.com";
 
-        await AdminClient().PostAsJsonAsync("/api/clientes", new CreateClienteDto
+        await AdminClient().PostAsJsonAsync("/api/clientes", new CriarClienteRequest
         {
             Nome = "Primeiro", Documento = documento,
             Telefone = "(11) 91111-0001", Email = email1
         });
 
-        var resp = await AdminClient().PostAsJsonAsync("/api/clientes", new CreateClienteDto
+        var resp = await AdminClient().PostAsJsonAsync("/api/clientes", new CriarClienteRequest
         {
             Nome = "Segundo", Documento = documento,
             Telefone = "(11) 91111-0002", Email = email2
@@ -121,7 +122,7 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     public async Task Update_ComIdExistente_Retorna200()
     {
         var id = await SeedClienteAsync();
-        var dto = new UpdateClienteDto
+        var dto = new AtualizarClienteRequest
         {
             Nome = "Nome Atualizado",
             Telefone = "(11) 99999-0001",
@@ -135,7 +136,7 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Update_ComIdInexistente_Retorna404()
     {
-        var dto = new UpdateClienteDto
+        var dto = new AtualizarClienteRequest
         {
             Nome = "X", Telefone = "(11) 90000-0000", Email = "x@x.com"
         };

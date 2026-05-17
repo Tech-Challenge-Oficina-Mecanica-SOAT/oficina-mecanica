@@ -1,8 +1,9 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Tests.Unit.DTOs
 {
-    public class RejeitarOSDtoTests
+    public class RejeitarOSRequestTests
     {
         [Fact]
         public void DeveCriarRejeitarOSDto_ComMotivoValido()
@@ -11,7 +12,7 @@ namespace OficinaMecanica.Tests.Unit.DTOs
             var motivo = "Peça indisponível";
 
             // Act
-            var dto = new RejeitarOSDto(motivo);
+            var dto = new RejeitarOSRequest(motivo);
 
             // Assert
             Assert.NotNull(dto);
@@ -25,7 +26,7 @@ namespace OficinaMecanica.Tests.Unit.DTOs
         public void DeveCriarRejeitarOSDto_ComVariosMotivos(string motivo)
         {
             // Act
-            var dto = new RejeitarOSDto(motivo);
+            var dto = new RejeitarOSRequest(motivo);
 
             // Assert
             Assert.Equal(motivo, dto.Motivo);
@@ -36,8 +37,8 @@ namespace OficinaMecanica.Tests.Unit.DTOs
         {
             // Arrange
             var motivo = "Orçamento recusado pelo cliente";
-            var dto1 = new RejeitarOSDto(motivo);
-            var dto2 = new RejeitarOSDto(motivo);
+            var dto1 = new RejeitarOSRequest(motivo);
+            var dto2 = new RejeitarOSRequest(motivo);
 
             // Act & Assert
             Assert.Equal(dto1, dto2);
@@ -47,19 +48,19 @@ namespace OficinaMecanica.Tests.Unit.DTOs
         public void NaoDeveCompararDoisRejeitarOSDto_ComMotivoDiferente()
         {
             // Arrange
-            var dto1 = new RejeitarOSDto("Motivo 1");
-            var dto2 = new RejeitarOSDto("Motivo 2");
+            var dto1 = new RejeitarOSRequest("Motivo 1");
+            var dto2 = new RejeitarOSRequest("Motivo 2");
 
             // Act & Assert
             Assert.NotEqual(dto1, dto2);
         }
 
         [Fact]
-        public void DeveDesconstruirRejeitarOSDto()
+        public void DeveDesconstruirRejeitarOSRequest()
         {
             // Arrange
             var motivo = "Falha na inspeção";
-            var dto = new RejeitarOSDto(motivo);
+            var dto = new RejeitarOSRequest(motivo);
 
             // Act
             var motivoObtido = dto.Motivo;
@@ -73,13 +74,13 @@ namespace OficinaMecanica.Tests.Unit.DTOs
         {
             // Arrange
             var motivo = "Teste de representação";
-            var dto = new RejeitarOSDto(motivo);
+            var dto = new RejeitarOSRequest(motivo);
 
             // Act
             var toString = dto.ToString();
 
             // Assert
-            Assert.Contains("RejeitarOSDto", toString);
+            Assert.Contains("RejeitarOSRequest", toString);
             Assert.Contains(motivo, toString);
         }
     }

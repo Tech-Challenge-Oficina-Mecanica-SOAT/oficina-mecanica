@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
@@ -102,7 +103,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     public async Task Create_ComDadosValidos_Retorna201()
     {
         var clienteId = await SeedClienteAsync();
-        var dto = new CreateVeiculoDto
+        var dto = new CriarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "CCC3333",
@@ -118,7 +119,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Create_ComClienteInexistente_Retorna404()
     {
-        var dto = new CreateVeiculoDto
+        var dto = new CriarVeiculoRequest
         {
             ClienteId = Guid.NewGuid(),
             Placa = "DDD4444",
@@ -137,12 +138,12 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         var clienteId = await SeedClienteAsync();
         var placa = "EEE5555";
 
-        await AdminClient().PostAsJsonAsync("/api/veiculos", new CreateVeiculoDto
+        await AdminClient().PostAsJsonAsync("/api/veiculos", new CriarVeiculoRequest
         {
             ClienteId = clienteId, Placa = placa, Marca = "Ford", Modelo = "Ka", Ano = 2021
         });
 
-        var resp = await AdminClient().PostAsJsonAsync("/api/veiculos", new CreateVeiculoDto
+        var resp = await AdminClient().PostAsJsonAsync("/api/veiculos", new CriarVeiculoRequest
         {
             ClienteId = clienteId, Placa = placa, Marca = "Ford", Modelo = "Focus", Ano = 2022
         });
@@ -154,7 +155,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     public async Task Update_ComIdExistente_Retorna200()
     {
         var (clienteId, veiculoId) = await SeedClienteEVeiculoAsync("FFF6666");
-        var dto = new UpdateVeiculoDto
+        var dto = new AtualizarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "GGG7777",
@@ -170,7 +171,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Update_ComIdInexistente_Retorna404()
     {
-        var dto = new UpdateVeiculoDto { Placa = "HHH8888", Marca = "X", Modelo = "Y", Ano = 2020 };
+        var dto = new AtualizarVeiculoRequest { Placa = "HHH8888", Marca = "X", Modelo = "Y", Ano = 2020 };
         var resp = await AdminClient().PutAsJsonAsync($"/api/veiculos/{Guid.NewGuid()}", dto);
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }

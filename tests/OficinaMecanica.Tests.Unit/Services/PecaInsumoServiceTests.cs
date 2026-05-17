@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -22,7 +23,7 @@ public class PecaInsumoServiceTests
     public async Task CreateAsync_WithValidData_ShouldCreatePeca()
     {
         // Arrange
-        var createDto = new CreatePecaDto
+        var createDto = new CriarPecaRequest
         {
             Nome = "Filtro de Óleo",
             Codigo = "FO-123",
@@ -52,7 +53,7 @@ public class PecaInsumoServiceTests
     public async Task CreateAsync_WithNegativeEstoque_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreatePecaDto
+        var createDto = new CriarPecaRequest
         {
             Nome = "Peça Teste",
             Codigo = "PT-001",
@@ -69,7 +70,7 @@ public class PecaInsumoServiceTests
     public async Task CreateAsync_WithDuplicateCodigo_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreatePecaDto
+        var createDto = new CriarPecaRequest
         {
             Nome = "Filtro de Óleo",
             Codigo = "FO-123",
@@ -151,7 +152,7 @@ public class PecaInsumoServiceTests
         // Arrange
         var pecaId = Guid.NewGuid();
         var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição original", 45.90m, 10);
-        var updateDto = new UpdatePecaDto
+        var updateDto = new AtualizarPecaRequest
         {
             Nome = "Filtro de Óleo Premium",
             Descricao = "Descrição atualizada",
@@ -200,7 +201,7 @@ public class PecaInsumoServiceTests
         // Arrange
         var pecaId = Guid.NewGuid();
         var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10);
-        var updateEstoqueDto = new UpdateEstoqueDto
+        var updateEstoqueDto = new AtualizarEstoqueRequest
         {
             Quantidade = 5,
             TipoOperacao = "incrementar"
@@ -224,7 +225,7 @@ public class PecaInsumoServiceTests
         // Arrange
         var pecaId = Guid.NewGuid();
         var peca = new PecaInsumo("Filtro de Óleo", "FO-123", "Descrição do filtro", 45.90m, 10);
-        var updateEstoqueDto = new UpdateEstoqueDto
+        var updateEstoqueDto = new AtualizarEstoqueRequest
         {
             Quantidade = 3,
             TipoOperacao = "decrementar"

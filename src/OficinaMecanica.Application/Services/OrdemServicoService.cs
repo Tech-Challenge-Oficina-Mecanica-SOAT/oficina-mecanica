@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -18,7 +19,7 @@ public class OrdemServicoService : IOrdemServicoService
         _notificacaoService = notificacaoService;
     }
 
-    public async Task<OrdemServicoDto> CreateAsync(CreateOrdemServicoDto createDto)
+    public async Task<OrdemServicoResponse> CreateAsync(AbrirOrdemServicoRequest createDto)
     {
         if (createDto.ClienteId == Guid.Empty)
             throw new ArgumentException("ClienteId é obrigatório!");
@@ -33,19 +34,19 @@ public class OrdemServicoService : IOrdemServicoService
         return MapToDto(criada!);
     }
 
-    public async Task<OrdemServicoDto?> GetByIdAsync(Guid id)
+    public async Task<OrdemServicoResponse?> GetByIdAsync(Guid id)
     {
         var os = await _repository.ObterPorIdComItensAsync(id);
         return os == null ? null : MapToDto(os);
     }
 
-    public async Task<IEnumerable<OrdemServicoResumoDto>> GetAllAsync()
+    public async Task<IEnumerable<OrdemServicoResumoResponse>> GetAllAsync()
     {
         var lista = await _repository.ListarTodosAsync();
         return lista.Select(MapToResumoDto);
     }
 
-    public async Task<IEnumerable<OrdemServicoItemDto>> AddItensAsync(Guid ordemServicoId, List<CreateOrdemServicoItemDto> itensDto)
+    public async Task<IEnumerable<OrdemServicoItemResponse>> AddItensAsync(Guid ordemServicoId, List<AdicionarOSItemRequest> itensDto)
     {
         var os = await _repository.ObterPorIdComItensAsync(ordemServicoId)
             ?? throw new KeyNotFoundException("Ordem de serviço não encontrada");
@@ -104,7 +105,7 @@ public class OrdemServicoService : IOrdemServicoService
 
     // ─── Mappers ────────────────────────────────────────────
 
-    private static OrdemServicoDto MapToDto(OrdemServico os) => new()
+    private static OrdemServicoResponse MapToDto(OrdemServico os) => new()
     {
         Id = os.Id,
         ClienteId = os.ClienteId,
@@ -121,7 +122,7 @@ public class OrdemServicoService : IOrdemServicoService
         Itens = os.Itens.Select(MapToItemDto).ToList()
     };
 
-    private static OrdemServicoResumoDto MapToResumoDto(OrdemServico os) => new()
+    private static OrdemServicoResumoResponse MapToResumoDto(OrdemServico os) => new()
     {
         Id = os.Id,
         ClienteNome = os.Cliente?.Nome ?? string.Empty,
@@ -134,9 +135,9 @@ public class OrdemServicoService : IOrdemServicoService
         DataFechamento = os.DataFechamento
     };
 
-    private static IEnumerable<OrdemServicoItemDto> MapToItemDto(IEnumerable<OrdemServicoItem> itens) => itens.Select(MapToItemDto);
+    private static IEnumerable<OrdemServicoItemResponse> MapToItemDto(IEnumerable<OrdemServicoItem> itens) => itens.Select(MapToItemDto);
 
-    private static OrdemServicoItemDto MapToItemDto(OrdemServicoItem item) => new()
+    private static OrdemServicoItemResponse MapToItemDto(OrdemServicoItem item) => new()
     {
         Id = item.Id,
         Tipo = item.Tipo.ToString().ToLower(),

@@ -1,4 +1,5 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -14,31 +15,31 @@ public class PecaService : IPecaService
         _pecaRepository = pecaRepository;
     }
 
-    public async Task<PecaDto?> GetByIdAsync(Guid id)
+    public async Task<PecaResponse?> GetByIdAsync(Guid id)
     {
         var peca = await _pecaRepository.GetByIdAsync(id);
         return peca == null ? null : MapToDto(peca);
     }
 
-    public async Task<IEnumerable<PecaDto>> GetAllAsync()
+    public async Task<IEnumerable<PecaResponse>> GetAllAsync()
     {
         var pecas = await _pecaRepository.GetAllAsync();
         return pecas.Select(MapToDto);
     }
 
-    public async Task<IEnumerable<PecaDto>> GetByNomeAsync(string nome)
+    public async Task<IEnumerable<PecaResponse>> GetByNomeAsync(string nome)
     {
         var pecas = await _pecaRepository.GetByNomeAsync(nome);
         return pecas.Select(MapToDto);
     }
 
-    public async Task<IEnumerable<PecaDto>> GetByEstoqueBaixoAsync(int limiteEstoque)
+    public async Task<IEnumerable<PecaResponse>> GetByEstoqueBaixoAsync(int limiteEstoque)
     {
         var pecas = await _pecaRepository.GetByEstoqueBaixoAsync(limiteEstoque);
         return pecas.Select(MapToDto);
     }
 
-    public async Task<PecaDto> CreateAsync(CreatePecaDto createDto)
+    public async Task<PecaResponse> CreateAsync(CriarPecaRequest createDto)
     {
         var existeCodigo = await _pecaRepository.ExistsByCodigoAsync(createDto.Codigo);
         if (existeCodigo)
@@ -56,7 +57,7 @@ public class PecaService : IPecaService
         return MapToDto(created);
     }
 
-    public async Task<PecaDto?> UpdateAsync(Guid id, UpdatePecaDto updateDto)
+    public async Task<PecaResponse?> UpdateAsync(Guid id, AtualizarPecaRequest updateDto)
     {
         var peca = await _pecaRepository.GetByIdAsync(id);
         if (peca == null) return null;
@@ -77,7 +78,7 @@ public class PecaService : IPecaService
         return await _pecaRepository.GetEstoqueAsync(id);
     }
 
-    public async Task<PecaDto> UpdateEstoqueAsync(Guid id, UpdateEstoqueDto updateEstoqueDto)
+    public async Task<PecaResponse> UpdateEstoqueAsync(Guid id, AtualizarEstoqueRequest updateEstoqueDto)
     {
         PecaInsumo peca;
 
@@ -97,9 +98,9 @@ public class PecaService : IPecaService
         return MapToDto(peca);
     }
 
-    private static PecaDto MapToDto(PecaInsumo peca)
+    private static PecaResponse MapToDto(PecaInsumo peca)
     {
-        return new PecaDto
+        return new PecaResponse
         {
             Id = peca.Id,
             Nome = peca.Nome,

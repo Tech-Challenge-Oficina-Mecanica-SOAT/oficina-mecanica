@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 
 namespace OficinaMecanica.API.Controllers;
@@ -22,7 +23,7 @@ public class VeiculosController : ControllerBase
     /// Lista todos os veículos cadastrados
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<VeiculoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<VeiculoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
         var veiculos = await _veiculoService.GetAllAsync();
@@ -33,7 +34,7 @@ public class VeiculosController : ControllerBase
     /// Obtém um veículo por ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(VeiculoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(VeiculoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -50,7 +51,7 @@ public class VeiculosController : ControllerBase
     /// A placa deve estar no formato Mercosul (ex.: `ABC1D23`) ou no formato antigo (ex.: `ABC1234`).
     /// </remarks>
     [HttpGet("placa/{placa}")]
-    [ProducesResponseType(typeof(VeiculoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(VeiculoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByPlaca(string placa)
     {
@@ -64,7 +65,7 @@ public class VeiculosController : ControllerBase
     /// Lista todos os veículos de um cliente
     /// </summary>
     [HttpGet("cliente/{clienteId:guid}")]
-    [ProducesResponseType(typeof(IEnumerable<VeiculoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<VeiculoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByClienteId(Guid clienteId)
     {
         var veiculos = await _veiculoService.GetByClienteIdAsync(clienteId);
@@ -78,10 +79,10 @@ public class VeiculosController : ControllerBase
     /// O `clienteId` deve corresponder a um cliente ativo. A placa deve ser única no sistema.
     /// </remarks>
     [HttpPost]
-    [ProducesResponseType(typeof(VeiculoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(VeiculoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Create([FromBody] CreateVeiculoDto createDto)
+    public async Task<IActionResult> Create([FromBody] CriarVeiculoRequest createDto)
     {
         try
         {
@@ -106,10 +107,10 @@ public class VeiculosController : ControllerBase
     /// Atualiza os dados de um veículo existente
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(VeiculoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(VeiculoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateVeiculoDto updateDto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarVeiculoRequest updateDto)
     {
         try
         {

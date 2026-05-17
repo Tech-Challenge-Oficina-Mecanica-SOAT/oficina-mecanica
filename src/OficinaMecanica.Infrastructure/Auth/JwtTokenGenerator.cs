@@ -1,6 +1,7 @@
 using Microsoft.IdentityModel.Tokens;
 using OficinaMecanica.Application.Configuration;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,7 +16,7 @@ public class JwtTokenGenerator : ITokenGenerator
 
     public JwtTokenGenerator(IJwtSettings settings) => _settings = settings;
 
-    public TokenDto GerarParaUsuario(Usuario usuario)
+    public TokenResponse GerarParaUsuario(Usuario usuario)
     {
         var expiracao = DateTime.UtcNow.AddMinutes(_settings.ExpiracaoMinutos);
 
@@ -37,6 +38,6 @@ public class JwtTokenGenerator : ITokenGenerator
             expires: expiracao,
             signingCredentials: creds);
 
-        return new TokenDto(new JwtSecurityTokenHandler().WriteToken(token), expiracao);
+        return new TokenResponse(new JwtSecurityTokenHandler().WriteToken(token), expiracao);
     }
 }

@@ -1,15 +1,16 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Tests.Unit.DTOs;
 
 
-public class VeiculoDtoTests
+public class VeiculoResponseTests
 {
     [Fact]
     public void VeiculoDto_QuandoCriado_DeveInicializarComValoresPadrao()
     {
         // Arrange & Act
-        var dto = new VeiculoDto();
+        var dto = new VeiculoResponse();
 
         // Assert
         Assert.Equal(Guid.Empty, dto.Id);
@@ -30,7 +31,7 @@ public class VeiculoDtoTests
         var clienteId = Guid.NewGuid();
         var data = DateTime.Now;
 
-        var dto = new VeiculoDto
+        var dto = new VeiculoResponse
         {
             Id = id,
             ClienteId = clienteId,
@@ -54,13 +55,13 @@ public class VeiculoDtoTests
     }
 }
 
-public class CreateVeiculoDtoTests
+public class CreateVeiculoResponseTests
 {
     [Fact]
     public void CreateVeiculoDto_QuandoCriado_DeveInicializarComValoresPadrao()
     {
         // Arrange & Act
-        var dto = new CreateVeiculoDto();
+        var dto = new CriarVeiculoRequest();
 
         // Assert
         Assert.Equal(Guid.Empty, dto.ClienteId);
@@ -75,7 +76,7 @@ public class CreateVeiculoDtoTests
     {
         // Arrange
         var clienteId = Guid.NewGuid();
-        var dto = new CreateVeiculoDto
+        var dto = new CriarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "XYZ-9999",
@@ -99,7 +100,7 @@ public class CreateVeiculoDtoTests
         var clienteId = Guid.NewGuid();
 
         // Act
-        var dto = new CreateVeiculoDto { ClienteId = clienteId };
+        var dto = new CriarVeiculoRequest { ClienteId = clienteId };
 
         // Assert
         Assert.NotEqual(Guid.Empty, dto.ClienteId);
@@ -107,13 +108,13 @@ public class CreateVeiculoDtoTests
     }
 }
 
-public class UpdateVeiculoDtoTests
+public class UpdateVeiculoResponseTests
 {
     [Fact]
     public void UpdateVeiculoDto_QuandoCriado_DeveInicializarComValoresPadrao()
     {
         // Arrange & Act
-        var dto = new UpdateVeiculoDto();
+        var dto = new AtualizarVeiculoRequest();
 
         // Assert
         Assert.Null(dto.ClienteId);
@@ -128,7 +129,7 @@ public class UpdateVeiculoDtoTests
     {
         // Arrange
         var clienteId = Guid.NewGuid();
-        var dto = new UpdateVeiculoDto
+        var dto = new AtualizarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "ABC-1234",
@@ -149,7 +150,7 @@ public class UpdateVeiculoDtoTests
     public void UpdateVeiculoDto_ClienteIdOpcional_DevePermitirNulo()
     {
         // Arrange & Act
-        var dto = new UpdateVeiculoDto { Placa = "XYZ-9999" };
+        var dto = new AtualizarVeiculoRequest { Placa = "XYZ-9999" };
 
         // Assert
         Assert.Null(dto.ClienteId);
@@ -161,7 +162,7 @@ public class UpdateVeiculoDtoTests
     {
         // Arrange
         var clienteId = Guid.NewGuid();
-        var dto = new UpdateVeiculoDto { Placa = "ABC-1234" };
+        var dto = new AtualizarVeiculoRequest { Placa = "ABC-1234" };
 
         // Act
         dto.ClienteId = clienteId;

@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
 
 namespace OficinaMecanica.Application.Interfaces;
@@ -6,5 +7,5 @@ namespace OficinaMecanica.Application.Interfaces;
 public interface IUsuarioService
 {
     Task<Usuario?> AutenticarAsync(string email, string senha);
-    Task<Usuario> RegistrarAsync(RegistrarUsuarioDto dto);
+    Task<Usuario> RegistrarAsync(RegistrarUsuarioRequest dto);
 }

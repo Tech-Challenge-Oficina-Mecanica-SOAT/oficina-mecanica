@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 
 namespace OficinaMecanica.API.Controllers;
@@ -22,7 +23,7 @@ public class ServicosController : ControllerBase
     /// Lista todos os serviços do catálogo (ativos e inativos)
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<ServicoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ServicoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
         var servicos = await _servicoService.GetAllAsync();
@@ -33,7 +34,7 @@ public class ServicosController : ControllerBase
     /// Lista apenas os serviços ativos disponíveis para inclusão em ordens de serviço
     /// </summary>
     [HttpGet("ativos")]
-    [ProducesResponseType(typeof(IEnumerable<ServicoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ServicoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAtivos()
     {
         var servicos = await _servicoService.GetAtivosAsync();
@@ -44,7 +45,7 @@ public class ServicosController : ControllerBase
     /// Obtém um serviço por ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ServicoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -58,7 +59,7 @@ public class ServicosController : ControllerBase
     /// Busca serviços pelo nome (busca parcial)
     /// </summary>
     [HttpGet("nome/{nome}")]
-    [ProducesResponseType(typeof(IEnumerable<ServicoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<ServicoResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByNome(string nome)
     {
@@ -79,9 +80,9 @@ public class ServicosController : ControllerBase
     /// disponível imediatamente para ser adicionado a ordens de serviço.
     /// </remarks>
     [HttpPost]
-    [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ServicoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateServicoDto createDto)
+    public async Task<IActionResult> Create([FromBody] CriarServicoRequest createDto)
     {
         try
         {
@@ -102,10 +103,10 @@ public class ServicosController : ControllerBase
     /// Atualiza os dados de um serviço existente
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(ServicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ServicoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateServicoDto updateDto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarServicoRequest updateDto)
     {
         try
         {

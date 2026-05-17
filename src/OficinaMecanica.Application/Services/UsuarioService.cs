@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -23,7 +24,7 @@ public class UsuarioService : IUsuarioService
         return _hasher.Verificar(senha, usuario.SenhaHash) ? usuario : null;
     }
 
-    public async Task<Usuario> RegistrarAsync(RegistrarUsuarioDto dto)
+    public async Task<Usuario> RegistrarAsync(RegistrarUsuarioRequest dto)
     {
         var existente = await _repository.ObterPorEmailAsync(dto.Email.ToLower().Trim());
         if (existente is not null)

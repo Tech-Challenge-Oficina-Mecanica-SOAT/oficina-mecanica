@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
 
 namespace OficinaMecanica.Application.Interfaces;
@@ -12,5 +13,5 @@ public interface IOrdemServicoStatusService
     Task NotificarConclusaoAsync(Guid osId, string alteradoPor);
     Task EntregarAsync(Guid osId, string alteradoPor);
     Task ForcarStatusAsync(Guid osId, EnumStatusOS novoStatus, string alteradoPor, string motivo);
-    Task<IEnumerable<HistoricoStatusOSDto>> ObterHistoricoAsync(Guid osId);
+    Task<IEnumerable<HistoricoStatusOSResponse>> ObterHistoricoAsync(Guid osId);
 }

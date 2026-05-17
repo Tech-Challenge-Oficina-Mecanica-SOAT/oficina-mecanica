@@ -1,8 +1,9 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Tests.Unit.DTOs
 {
-    public class PainelStatusOSDtoTests
+    public class PainelStatusOSResponseTests
     {
         [Fact]
         public void Constructor_CreateValidInstance_Success()
@@ -13,7 +14,7 @@ namespace OficinaMecanica.Tests.Unit.DTOs
             var atualizadoEm = DateTime.Now;
 
             // Act
-            var dto = new PainelStatusOSDto(osId, status, atualizadoEm);
+            var dto = new PainelStatusOSResponse(osId, status, atualizadoEm);
 
             // Assert
             Assert.Equal(osId, dto.OsId);
@@ -30,8 +31,8 @@ namespace OficinaMecanica.Tests.Unit.DTOs
             var atualizadoEm = DateTime.Now;
 
             // Act
-            var dto1 = new PainelStatusOSDto(osId, status, atualizadoEm);
-            var dto2 = new PainelStatusOSDto(osId, status, atualizadoEm);
+            var dto1 = new PainelStatusOSResponse(osId, status, atualizadoEm);
+            var dto2 = new PainelStatusOSResponse(osId, status, atualizadoEm);
 
             // Assert
             Assert.Equal(dto1, dto2);
@@ -45,8 +46,8 @@ namespace OficinaMecanica.Tests.Unit.DTOs
             var osId2 = Guid.NewGuid();
 
             // Act
-            var dto1 = new PainelStatusOSDto(osId1, "Aberto", DateTime.Now);
-            var dto2 = new PainelStatusOSDto(osId2, "Fechado", DateTime.Now);
+            var dto1 = new PainelStatusOSResponse(osId1, "Aberto", DateTime.Now);
+            var dto2 = new PainelStatusOSResponse(osId2, "Fechado", DateTime.Now);
 
             // Assert
             Assert.NotEqual(dto1, dto2);
@@ -64,7 +65,7 @@ namespace OficinaMecanica.Tests.Unit.DTOs
             var atualizadoEm = DateTime.Now;
 
             // Act
-            var dto = new PainelStatusOSDto(osId, status, atualizadoEm);
+            var dto = new PainelStatusOSResponse(osId, status, atualizadoEm);
 
             // Assert
             Assert.Equal(status, dto.Status);

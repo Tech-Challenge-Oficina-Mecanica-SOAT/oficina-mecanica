@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Tests.Integration.TestHelpers;
 using System.Net;
 using System.Net.Http.Json;
@@ -17,7 +18,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
 
     private async Task<Guid> SeedServicoAsync(string? nome = null)
     {
-        var createDto = new CreateServicoDto
+        var createDto = new CriarServicoRequest
         {
             Nome = nome ?? $"Serviço {Guid.NewGuid():N}",
             Descricao = "Descrição automática",
@@ -25,7 +26,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         };
         var resp = await AdminClient().PostAsJsonAsync("/api/servicos", createDto);
         resp.EnsureSuccessStatusCode();
-        var dto = await resp.Content.ReadFromJsonAsync<ServicoDto>();
+        var dto = await resp.Content.ReadFromJsonAsync<ServicoResponse>();
         return dto!.Id;
     }
 
@@ -68,7 +69,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Create_ComDadosValidos_Retorna201()
     {
-        var dto = new CreateServicoDto
+        var dto = new CriarServicoRequest
         {
             Nome = $"Serviço Novo {Guid.NewGuid():N}",
             Descricao = "Descrição",
@@ -85,7 +86,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         var nome = $"Serviço Dup {Guid.NewGuid():N}";
         await SeedServicoAsync(nome);
 
-        var resp = await AdminClient().PostAsJsonAsync("/api/servicos", new CreateServicoDto
+        var resp = await AdminClient().PostAsJsonAsync("/api/servicos", new CriarServicoRequest
         {
             Nome = nome, Descricao = "Outro", Valor = 100m
         });
@@ -97,7 +98,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     public async Task Update_ComIdExistente_Retorna200()
     {
         var id = await SeedServicoAsync();
-        var dto = new UpdateServicoDto
+        var dto = new AtualizarServicoRequest
         {
             Nome = $"Atualizado {Guid.NewGuid():N}",
             Descricao = "Nova descrição",
@@ -111,7 +112,7 @@ public class ServicosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Update_ComIdInexistente_Retorna404()
     {
-        var dto = new UpdateServicoDto { Nome = "X", Descricao = "Y", Valor = 10m };
+        var dto = new AtualizarServicoRequest { Nome = "X", Descricao = "Y", Valor = 10m };
         var resp = await AdminClient().PutAsJsonAsync($"/api/servicos/{Guid.NewGuid()}", dto);
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }

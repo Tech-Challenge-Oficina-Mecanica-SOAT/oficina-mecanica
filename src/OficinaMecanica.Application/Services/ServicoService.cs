@@ -1,4 +1,5 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -14,7 +15,7 @@ public class ServicoService : IServicoService
         _servicoRepository = servicoRepository;
     }
 
-    public async Task<ServicoDto?> GetByIdAsync(Guid id)
+    public async Task<ServicoResponse?> GetByIdAsync(Guid id)
     {
         var servico = await _servicoRepository.GetByIdAsync(id);
         if (servico == null) return null;
@@ -22,25 +23,25 @@ public class ServicoService : IServicoService
         return MapToDto(servico);
     }
 
-    public async Task<IEnumerable<ServicoDto>> GetByNomeAsync(string nome)
+    public async Task<IEnumerable<ServicoResponse>> GetByNomeAsync(string nome)
     {
         var servicos = await _servicoRepository.GetByNomeAsync(nome);
         return servicos.Select(MapToDto);
     }
 
-    public async Task<IEnumerable<ServicoDto>> GetAllAsync()
+    public async Task<IEnumerable<ServicoResponse>> GetAllAsync()
     {
         var servicos = await _servicoRepository.GetAllAsync();
         return servicos.Select(MapToDto);
     }
 
-    public async Task<IEnumerable<ServicoDto>> GetAtivosAsync()
+    public async Task<IEnumerable<ServicoResponse>> GetAtivosAsync()
     {
         var servicos = await _servicoRepository.GetAtivosAsync();
         return servicos.Select(MapToDto);
     }
 
-    public async Task<ServicoDto> CreateAsync(CreateServicoDto createDto)
+    public async Task<ServicoResponse> CreateAsync(CriarServicoRequest createDto)
     {
         if (await _servicoRepository.ExistsByNomeAsync(createDto.Nome))
             throw new InvalidOperationException("Serviço com este nome já cadastrado");
@@ -51,7 +52,7 @@ public class ServicoService : IServicoService
         return MapToDto(created);
     }
 
-    public async Task<ServicoDto> UpdateAsync(Guid id, UpdateServicoDto updateDto)
+    public async Task<ServicoResponse> UpdateAsync(Guid id, AtualizarServicoRequest updateDto)
     {
         var servico = await _servicoRepository.GetByIdAsync(id);
         if (servico == null)
@@ -88,9 +89,9 @@ public class ServicoService : IServicoService
         await _servicoRepository.UpdateAsync(servico);
     }
 
-    private static ServicoDto MapToDto(Servico servico)
+    private static ServicoResponse MapToDto(Servico servico)
     {
-        return new ServicoDto
+        return new ServicoResponse
         {
             Id = servico.Id,
             Nome = servico.Nome,

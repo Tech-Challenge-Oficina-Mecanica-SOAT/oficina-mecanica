@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 
 namespace OficinaMecanica.API.Controllers;
@@ -27,9 +28,9 @@ public class AuthController : ControllerBase
     /// O token retornado deve ser enviado no header `Authorization: Bearer {token}` em todas as rotas protegidas.
     /// </remarks>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(TokenDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    public async Task<IActionResult> Login([FromBody] LoginRequest dto)
     {
         var usuario = await _usuarioService.AutenticarAsync(dto.Email, dto.Senha);
         if (usuario is null)
@@ -49,7 +50,7 @@ public class AuthController : ControllerBase
     [HttpPost("registrar")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Registrar([FromBody] RegistrarUsuarioDto dto)
+    public async Task<IActionResult> Registrar([FromBody] RegistrarUsuarioRequest dto)
     {
         try
         {

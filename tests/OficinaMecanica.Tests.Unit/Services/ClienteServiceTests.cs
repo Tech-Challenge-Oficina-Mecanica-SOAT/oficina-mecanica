@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -22,7 +23,7 @@ public class ClienteServiceTests
     public async Task CreateAsync_WithValidCpf_ShouldCreateCliente()
     {
         // Arrange
-        var createDto = new CreateClienteDto
+        var createDto = new CriarClienteRequest
         {
             Nome = "João Silva",
             Documento = "12345678909",
@@ -49,7 +50,7 @@ public class ClienteServiceTests
     public async Task CreateAsync_WithCpfWithMask_ShouldCreateCliente()
     {
         // Arrange
-        var createDto = new CreateClienteDto
+        var createDto = new CriarClienteRequest
         {
             Nome = "Maria Santos",
             Documento = "123.456.789-09",
@@ -74,7 +75,7 @@ public class ClienteServiceTests
     public async Task CreateAsync_WithInvalidCpf_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreateClienteDto
+        var createDto = new CriarClienteRequest
         {
             Nome = "João Silva",
             Documento = "11111111111",
@@ -90,7 +91,7 @@ public class ClienteServiceTests
     public async Task CreateAsync_WithValidCnpj_ShouldCreateCliente()
     {
         // Arrange
-        var createDto = new CreateClienteDto
+        var createDto = new CriarClienteRequest
         {
             Nome = "Empresa Teste LTDA",
             Documento = "12345678000195",
@@ -116,7 +117,7 @@ public class ClienteServiceTests
     public async Task CreateAsync_WithDuplicateDocument_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreateClienteDto
+        var createDto = new CriarClienteRequest
         {
             Nome = "João Silva",
             Documento = "12345678909",
@@ -190,7 +191,7 @@ public class ClienteServiceTests
         // Arrange
         var clienteId = Guid.NewGuid();
         var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
-        var updateDto = new UpdateClienteDto
+        var updateDto = new AtualizarClienteRequest
         {
             Nome = "João Santos",
             Telefone = "(11) 98888-8888",
@@ -382,7 +383,7 @@ public class ClienteServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var updateDto = new UpdateClienteDto
+        var updateDto = new AtualizarClienteRequest
         {
             Nome = "Novo Nome",
             Telefone = "11999999999",
@@ -406,7 +407,7 @@ public class ClienteServiceTests
     {
         var cliente = new Cliente("Antigo Nome","12345678909","11888888888","antigo@teste.com");
 
-        var updateDto = new UpdateClienteDto
+        var updateDto = new AtualizarClienteRequest
         {
             Nome = "Novo Nome",
             Telefone = "11999999999",

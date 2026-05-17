@@ -1,14 +1,15 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Tests.Unit.DTOs;
 
-public class LoginDtoTests
+public class LoginRequestTests
 {
     [Fact]
     public void LoginDto_DeveCriarComEmailESenha()
     {
         // Arrange & Act
-        var loginDto = new LoginDto("usuario@email.com", "senha123");
+        var loginDto = new LoginRequest("usuario@email.com", "senha123");
 
         // Assert
         Assert.Equal("usuario@email.com", loginDto.Email);
@@ -19,8 +20,8 @@ public class LoginDtoTests
     public void LoginDto_DeveSerIgualQuandoValoresSaoIguais()
     {
         // Arrange
-        var login1 = new LoginDto("usuario@email.com", "senha123");
-        var login2 = new LoginDto("usuario@email.com", "senha123");
+        var login1 = new LoginRequest("usuario@email.com", "senha123");
+        var login2 = new LoginRequest("usuario@email.com", "senha123");
 
         // Act & Assert
         Assert.Equal(login1, login2);
@@ -30,8 +31,8 @@ public class LoginDtoTests
     public void LoginDto_DeveSerDiferenteQuandoEmailsDiferem()
     {
         // Arrange
-        var login1 = new LoginDto("usuario1@email.com", "senha123");
-        var login2 = new LoginDto("usuario2@email.com", "senha123");
+        var login1 = new LoginRequest("usuario1@email.com", "senha123");
+        var login2 = new LoginRequest("usuario2@email.com", "senha123");
 
         // Act & Assert
         Assert.NotEqual(login1, login2);
@@ -41,8 +42,8 @@ public class LoginDtoTests
     public void LoginDto_DeveSerDiferenteQuandoSenhasDiferem()
     {
         // Arrange
-        var login1 = new LoginDto("usuario@email.com", "senha123");
-        var login2 = new LoginDto("usuario@email.com", "senha456");
+        var login1 = new LoginRequest("usuario@email.com", "senha123");
+        var login2 = new LoginRequest("usuario@email.com", "senha456");
 
         // Act & Assert
         Assert.NotEqual(login1, login2);
@@ -52,7 +53,7 @@ public class LoginDtoTests
     public void LoginDto_DeveGerarToStringCorreto()
     {
         // Arrange
-        var login = new LoginDto("usuario@email.com", "senha123");
+        var login = new LoginRequest("usuario@email.com", "senha123");
 
         // Act
         var result = login.ToString();
@@ -67,7 +68,7 @@ public class LoginDtoTests
     public void LoginDto_DeveDesconstruirCorretamente()
     {
         // Arrange
-        var login = new LoginDto("usuario@email.com", "senha123");
+        var login = new LoginRequest("usuario@email.com", "senha123");
 
         // Act
         var (email, senha) = login;

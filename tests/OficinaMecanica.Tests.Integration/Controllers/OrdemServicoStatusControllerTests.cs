@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
@@ -98,7 +99,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         (await admin.PatchAsync($"/api/ordens-servico/{osId}/entregar", null)).EnsureSuccessStatusCode();
 
         // Verificar histórico completo
-        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSDto>>($"/api/ordens-servico/{osId}/historico");
+        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSResponse>>($"/api/ordens-servico/{osId}/historico");
         hist.Should().NotBeNull();
         hist!.Should().HaveCount(6); // criação + 5 transições
         hist.Last().StatusNovo.Should().Be("Entregue");
@@ -120,7 +121,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var admin = ClientCom("Admin");
-        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSDto>>($"/api/ordens-servico/{osId}/historico");
+        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSResponse>>($"/api/ordens-servico/{osId}/historico");
         hist!.Last().StatusNovo.Should().Be("Finalizada");
     }
 
@@ -136,12 +137,12 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await client.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/rejeitar",
-            new RejeitarOSDto("preço acima do orçado"));
+            new RejeitarOSRequest("preço acima do orçado"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var admin = ClientCom("Admin");
-        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSDto>>($"/api/ordens-servico/{osId}/historico");
+        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSResponse>>($"/api/ordens-servico/{osId}/historico");
         hist!.Last().StatusNovo.Should().Be("Rejeitada");
         hist!.Last().Motivo.Should().Contain("preço acima");
     }
@@ -158,7 +159,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await client.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/rejeitar",
-            new RejeitarOSDto(""));
+            new RejeitarOSRequest(""));
 
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -171,7 +172,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await admin.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/status",
-            new TransicaoStatusOSDto(EnumStatusOS.Finalizada, "correção pós-incidente"));
+            new TransicaoStatusOSRequest(EnumStatusOS.Finalizada, "correção pós-incidente"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -184,7 +185,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await mecanico.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/status",
-            new TransicaoStatusOSDto(EnumStatusOS.Finalizada, "tentativa indevida"));
+            new TransicaoStatusOSRequest(EnumStatusOS.Finalizada, "tentativa indevida"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

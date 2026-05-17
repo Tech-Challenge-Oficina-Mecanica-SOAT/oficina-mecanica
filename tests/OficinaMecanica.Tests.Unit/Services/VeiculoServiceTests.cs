@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -26,7 +27,7 @@ public class VeiculoServiceTests
         // Arrange
         var clienteId = Guid.NewGuid();
         var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
-        var createDto = new CreateVeiculoDto
+        var createDto = new CriarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "ABC1234",
@@ -59,7 +60,7 @@ public class VeiculoServiceTests
         // Arrange
         var clienteId = Guid.NewGuid();
         var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
-        var createDto = new CreateVeiculoDto
+        var createDto = new CriarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "ABC1D23",
@@ -89,7 +90,7 @@ public class VeiculoServiceTests
         // Arrange
         var clienteId = Guid.NewGuid();
         var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
-        var createDto = new CreateVeiculoDto
+        var createDto = new CriarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "1234567",  // Placa inválida
@@ -112,7 +113,7 @@ public class VeiculoServiceTests
         // Arrange
         var clienteId = Guid.NewGuid();
         var cliente = new Cliente("João Silva", "12345678909", "(11) 99999-9999", "joao@email.com");
-        var createDto = new CreateVeiculoDto
+        var createDto = new CriarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "ABC1234",
@@ -135,7 +136,7 @@ public class VeiculoServiceTests
     {
         // Arrange
         var clienteId = Guid.NewGuid();
-        var createDto = new CreateVeiculoDto
+        var createDto = new CriarVeiculoRequest
         {
             ClienteId = clienteId,
             Placa = "ABC1234",
@@ -276,7 +277,7 @@ public class VeiculoServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        var updateDto = new UpdateVeiculoDto { Placa = "ABC1234" };
+        var updateDto = new AtualizarVeiculoRequest { Placa = "ABC1234" };
 
         _veiculoRepositoryMock
             .Setup(r => r.GetByIdAsync(id))
@@ -294,7 +295,7 @@ public class VeiculoServiceTests
     public async Task UpdateAsync_DeveLancarExcecao_QuandoClienteNaoExiste()
     {
         var veiculo = new Veiculo(Guid.NewGuid(), "ABC1234", "Fiat", "Uno", 2020);
-        var updateDto = new UpdateVeiculoDto
+        var updateDto = new AtualizarVeiculoRequest
         {
             ClienteId = Guid.NewGuid(),
             Placa = "BBB2222"
@@ -321,7 +322,7 @@ public class VeiculoServiceTests
     {
         
         var veiculo = new Veiculo(Guid.NewGuid(), "ABC1234", "Fiat", "Uno", 2020);
-        var updateDto = new UpdateVeiculoDto { Placa = "CCC3333" };
+        var updateDto = new AtualizarVeiculoRequest { Placa = "CCC3333" };
 
         _veiculoRepositoryMock
             .Setup(r => r.GetByIdAsync(veiculo.Id))
@@ -343,7 +344,7 @@ public class VeiculoServiceTests
     public async Task UpdateAsync_DeveAtualizarVeiculo_QuandoDadosValidos()
     {
         var veiculo = new Veiculo(Guid.NewGuid(), "ABC1234", "Fiat", "Uno", 2020);
-        var updateDto = new UpdateVeiculoDto
+        var updateDto = new AtualizarVeiculoRequest
         {
             Placa = "DDD4444",
             Marca = "Ford",

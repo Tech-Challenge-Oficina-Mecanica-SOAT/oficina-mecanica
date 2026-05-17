@@ -1,4 +1,5 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -16,7 +17,7 @@ public class VeiculoService : IVeiculoService
         _clienteRepository = clienteRepository;
     }
 
-    public async Task<VeiculoDto?> GetByIdAsync(Guid id)
+    public async Task<VeiculoResponse?> GetByIdAsync(Guid id)
     {
         var veiculo = await _veiculoRepository.GetByIdAsync(id);
         if (veiculo == null) return null;
@@ -24,7 +25,7 @@ public class VeiculoService : IVeiculoService
         return MapToDto(veiculo);
     }
 
-    public async Task<VeiculoDto?> GetByPlacaAsync(string placa)
+    public async Task<VeiculoResponse?> GetByPlacaAsync(string placa)
     {
         var veiculo = await _veiculoRepository.GetByPlacaAsync(placa);
         if (veiculo == null) return null;
@@ -32,19 +33,19 @@ public class VeiculoService : IVeiculoService
         return MapToDto(veiculo);
     }
 
-    public async Task<IEnumerable<VeiculoDto>> GetAllAsync()
+    public async Task<IEnumerable<VeiculoResponse>> GetAllAsync()
     {
         var veiculos = await _veiculoRepository.GetAllAsync();
         return veiculos.Select(MapToDto);
     }
 
-    public async Task<IEnumerable<VeiculoDto>> GetByClienteIdAsync(Guid clienteId)
+    public async Task<IEnumerable<VeiculoResponse>> GetByClienteIdAsync(Guid clienteId)
     {
         var veiculos = await _veiculoRepository.GetByClienteIdAsync(clienteId);
         return veiculos.Select(MapToDto);
     }
 
-    public async Task<VeiculoDto> CreateAsync(CreateVeiculoDto createDto)
+    public async Task<VeiculoResponse> CreateAsync(CriarVeiculoRequest createDto)
     {
         // Validar se o cliente existe
         var cliente = await _clienteRepository.GetByIdAsync(createDto.ClienteId);
@@ -61,7 +62,7 @@ public class VeiculoService : IVeiculoService
         return MapToDto(created);
     }
 
-    public async Task<VeiculoDto> UpdateAsync(Guid id, UpdateVeiculoDto updateDto)
+    public async Task<VeiculoResponse> UpdateAsync(Guid id, AtualizarVeiculoRequest updateDto)
     {
         var veiculo = await _veiculoRepository.GetByIdAsync(id);
         if (veiculo == null)
@@ -96,9 +97,9 @@ public class VeiculoService : IVeiculoService
         await _veiculoRepository.DeleteAsync(id);
     }
 
-    private static VeiculoDto MapToDto(Veiculo veiculo)
+    private static VeiculoResponse MapToDto(Veiculo veiculo)
     {
-        return new VeiculoDto
+        return new VeiculoResponse
         {
             Id = veiculo.Id,
             ClienteId = veiculo.ClienteId,

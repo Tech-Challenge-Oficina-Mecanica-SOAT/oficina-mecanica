@@ -1,5 +1,6 @@
 using Moq;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
@@ -36,7 +37,7 @@ public class UsuarioServiceTests
     [Fact]
     public async Task Autenticar_ComCredenciaisValidas_RetornaUsuario()
     {
-        var dto = new RegistrarUsuarioDto("admin@oficina.com", "Senha@123", Perfil.Admin);
+        var dto = new RegistrarUsuarioRequest("admin@oficina.com", "Senha@123", Perfil.Admin);
         var usuario = await _sut.RegistrarAsync(dto);
 
         _repositoryMock.Setup(r => r.ObterPorEmailAsync("admin@oficina.com"))
@@ -51,7 +52,7 @@ public class UsuarioServiceTests
     [Fact]
     public async Task Autenticar_ComSenhaErrada_RetornaNull()
     {
-        var dto = new RegistrarUsuarioDto("user@oficina.com", "SenhaCorreta@1", Perfil.Admin);
+        var dto = new RegistrarUsuarioRequest("user@oficina.com", "SenhaCorreta@1", Perfil.Admin);
         var usuario = await _sut.RegistrarAsync(dto);
 
         _repositoryMock.Setup(r => r.ObterPorEmailAsync("user@oficina.com"))
@@ -81,7 +82,7 @@ public class UsuarioServiceTests
         _repositoryMock.Setup(r => r.AdicionarAsync(It.IsAny<Usuario>()))
             .Returns(Task.CompletedTask);
 
-        var dto = new RegistrarUsuarioDto("novo@oficina.com", "Senha@123", Perfil.Admin);
+        var dto = new RegistrarUsuarioRequest("novo@oficina.com", "Senha@123", Perfil.Admin);
         var usuario = await _sut.RegistrarAsync(dto);
 
         Assert.NotNull(usuario);
@@ -98,8 +99,8 @@ public class UsuarioServiceTests
         _repositoryMock.Setup(r => r.AdicionarAsync(It.IsAny<Usuario>()))
             .Returns(Task.CompletedTask);
 
-        var u1 = await _sut.RegistrarAsync(new RegistrarUsuarioDto("a@test.com", "Senha@123"));
-        var u2 = await _sut.RegistrarAsync(new RegistrarUsuarioDto("b@test.com", "Senha@123"));
+        var u1 = await _sut.RegistrarAsync(new RegistrarUsuarioRequest("a@test.com", "Senha@123"));
+        var u2 = await _sut.RegistrarAsync(new RegistrarUsuarioRequest("b@test.com", "Senha@123"));
 
         Assert.NotEqual(u1.SenhaHash, u2.SenhaHash);
     }
@@ -112,7 +113,7 @@ public class UsuarioServiceTests
             .ReturnsAsync(usuarioExistente);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _sut.RegistrarAsync(new RegistrarUsuarioDto("dup@oficina.com", "Senha@123")));
+            () => _sut.RegistrarAsync(new RegistrarUsuarioRequest("dup@oficina.com", "Senha@123")));
     }
 
     [Fact]
@@ -123,7 +124,7 @@ public class UsuarioServiceTests
         _repositoryMock.Setup(r => r.AdicionarAsync(It.IsAny<Usuario>()))
             .Returns(Task.CompletedTask);
 
-        var usuario = await _sut.RegistrarAsync(new RegistrarUsuarioDto("ADMIN@OFICINA.COM", "Senha@123"));
+        var usuario = await _sut.RegistrarAsync(new RegistrarUsuarioRequest("ADMIN@OFICINA.COM", "Senha@123"));
 
         Assert.Equal("admin@oficina.com", usuario.Email);
     }

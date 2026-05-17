@@ -1,13 +1,14 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Application.Interfaces;
 
 public interface IOrdemServicoService
 {
-    Task<OrdemServicoDto> CreateAsync(CreateOrdemServicoDto createDto);
-    Task<OrdemServicoDto?> GetByIdAsync(Guid id);
-    Task<IEnumerable<OrdemServicoResumoDto>> GetAllAsync();
-    Task<IEnumerable<OrdemServicoItemDto>> AddItensAsync(Guid ordemServicoId, List<CreateOrdemServicoItemDto> itensDto);
+    Task<OrdemServicoResponse> CreateAsync(AbrirOrdemServicoRequest createDto);
+    Task<OrdemServicoResponse?> GetByIdAsync(Guid id);
+    Task<IEnumerable<OrdemServicoResumoResponse>> GetAllAsync();
+    Task<IEnumerable<OrdemServicoItemResponse>> AddItensAsync(Guid ordemServicoId, List<AdicionarOSItemRequest> itensDto);
     Task RemoveItemAsync(Guid ordemServicoId, Guid itemId);
     Task<double> GetTempoMedioExecucaoAsync(); // em horas
 }

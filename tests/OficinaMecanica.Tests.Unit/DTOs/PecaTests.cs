@@ -1,13 +1,14 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Tests.Unit.DTOs;
 
-public class PecaDtoTests
+public class PecaResponseTests
 {
     [Fact]
     public void PecaDto_DeveInicializarComValoresPadrao()
     {
-        var peca = new PecaDto();
+        var peca = new PecaResponse();
 
         Assert.Equal(Guid.Empty, peca.Id);
         Assert.Equal(string.Empty, peca.Nome);
@@ -25,7 +26,7 @@ public class PecaDtoTests
         var criadoEm = DateTime.UtcNow;
         var atualizadoEm = DateTime.UtcNow.AddHours(1);
 
-        var peca = new PecaDto
+        var peca = new PecaResponse
         {
             Id = id,
             Nome = "Óleo Motor",
@@ -50,12 +51,12 @@ public class PecaDtoTests
     }
 }
 
-public class CreatePecaDtoTests
+public class CreatePecaResponseTests
 {
     [Fact]
     public void CreatePecaDto_DeveInicializarComValoresPadrao()
     {
-        var createPeca = new CreatePecaDto();
+        var createPeca = new CriarPecaRequest();
 
         Assert.Equal(string.Empty, createPeca.Nome);
         Assert.Equal(string.Empty, createPeca.Codigo);
@@ -67,7 +68,7 @@ public class CreatePecaDtoTests
     [Fact]
     public void CreatePecaDto_DeveAtribuirValoresCorretamente()
     {
-        var createPeca = new CreatePecaDto
+        var createPeca = new CriarPecaRequest
         {
             Nome = "Filtro Óleo",
             Codigo = "FO-001",
@@ -84,12 +85,12 @@ public class CreatePecaDtoTests
     }
 }
 
-public class UpdatePecaDtoTests
+public class UpdatePecaResponseTests
 {
     [Fact]
     public void UpdatePecaDto_DeveInicializarComValoresPadrao()
     {
-        var updatePeca = new UpdatePecaDto();
+        var updatePeca = new AtualizarPecaRequest();
 
         Assert.Equal(string.Empty, updatePeca.Nome);
         Assert.Equal(string.Empty, updatePeca.Descricao);
@@ -100,7 +101,7 @@ public class UpdatePecaDtoTests
     [Fact]
     public void UpdatePecaDto_DeveAtribuirValoresCorretamente()
     {
-        var updatePeca = new UpdatePecaDto
+        var updatePeca = new AtualizarPecaRequest
         {
             Nome = "Correia Serpentina",
             Descricao = "Correia de transmissão atualizada",
@@ -115,12 +116,12 @@ public class UpdatePecaDtoTests
     }
 }
 
-public class UpdateEstoqueDtoTests
+public class AtualizarEstoqueRequestTests
 {
     [Fact]
     public void UpdateEstoqueDto_DeveInicializarComValoresPadrao()
     {
-        var updateEstoque = new UpdateEstoqueDto();
+        var updateEstoque = new AtualizarEstoqueRequest();
 
         Assert.Equal(0, updateEstoque.Quantidade);
         Assert.Equal(string.Empty, updateEstoque.TipoOperacao);
@@ -129,7 +130,7 @@ public class UpdateEstoqueDtoTests
     [Fact]
     public void UpdateEstoqueDto_DeveAtribuirValoresCorretamente()
     {
-        var updateEstoque = new UpdateEstoqueDto
+        var updateEstoque = new AtualizarEstoqueRequest
         {
             Quantidade = 10,
             TipoOperacao = "Entrada"
@@ -145,7 +146,7 @@ public class UpdateEstoqueDtoTests
     [InlineData(1, "Ajuste")]
     public void UpdateEstoqueDto_DeveSuportarDiferentesTiposOperacao(int quantidade, string tipoOperacao)
     {
-        var updateEstoque = new UpdateEstoqueDto
+        var updateEstoque = new AtualizarEstoqueRequest
         {
             Quantidade = quantidade,
             TipoOperacao = tipoOperacao

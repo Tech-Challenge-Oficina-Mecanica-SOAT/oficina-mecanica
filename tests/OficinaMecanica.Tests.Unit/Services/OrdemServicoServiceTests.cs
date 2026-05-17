@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Moq;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
@@ -47,7 +48,7 @@ public class OrdemServicoServiceTests
         var veiculoId = Guid.NewGuid();
         var osId = Guid.NewGuid();
 
-        var createDto = new CreateOrdemServicoDto
+        var createDto = new AbrirOrdemServicoRequest
         {
             ClienteId = clienteId,
             VeiculoId = veiculoId,
@@ -79,7 +80,7 @@ public class OrdemServicoServiceTests
     public async Task CreateAsync_WithEmptyClienteId_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreateOrdemServicoDto
+        var createDto = new AbrirOrdemServicoRequest
         {
             ClienteId = Guid.Empty,
             VeiculoId = Guid.NewGuid()
@@ -93,7 +94,7 @@ public class OrdemServicoServiceTests
     public async Task CreateAsync_WithEmptyVeiculoId_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreateOrdemServicoDto
+        var createDto = new AbrirOrdemServicoRequest
         {
             ClienteId = Guid.NewGuid(),
             VeiculoId = Guid.Empty
@@ -152,7 +153,7 @@ public class OrdemServicoServiceTests
 
         var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
 
-        var itemDto = new CreateOrdemServicoItemDto
+        var itemDto = new AdicionarOSItemRequest
         {
             Tipo = "servico",
             ReferenciaId = referenciaId,
@@ -175,7 +176,7 @@ public class OrdemServicoServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { itemDto });
+        var result = await _service.AddItensAsync(osId, new List<AdicionarOSItemRequest> { itemDto });
 
         // Assert
         var itemResult = result.Should().ContainSingle().Subject;
@@ -202,7 +203,7 @@ public class OrdemServicoServiceTests
         var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
         os.Itens.Add(item1);
 
-        var novoItemDto = new CreateOrdemServicoItemDto
+        var novoItemDto = new AdicionarOSItemRequest
         {
             Tipo = "peca",
             ReferenciaId = Guid.NewGuid(),
@@ -223,7 +224,7 @@ public class OrdemServicoServiceTests
             .Returns(Task.CompletedTask);
 
         // Act
-        await _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { novoItemDto });
+        await _service.AddItensAsync(osId, new List<AdicionarOSItemRequest> { novoItemDto });
 
         // Assert: total = 150 + (2 x 35) = 220
         _repositoryMock.Verify(x => x.AtualizarTotalAsync(osId, 220.00m), Times.Once);
@@ -240,7 +241,7 @@ public class OrdemServicoServiceTests
 
         var os = CriarOsEmExecucao(clienteId, Guid.NewGuid());
 
-        var itemDto = new CreateOrdemServicoItemDto
+        var itemDto = new AdicionarOSItemRequest
         {
             Tipo = "tipoInvalido",
             ReferenciaId = Guid.NewGuid(),
@@ -253,7 +254,7 @@ public class OrdemServicoServiceTests
             .ReturnsAsync(os);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { itemDto }));
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.AddItensAsync(osId, new List<AdicionarOSItemRequest> { itemDto }));
     }
 
     [Fact]
@@ -264,7 +265,7 @@ public class OrdemServicoServiceTests
         _repositoryMock.Setup(x => x.ObterPorIdComItensAsync(osId))
             .ReturnsAsync((OrdemServico?)null);
 
-        var itemDto = new CreateOrdemServicoItemDto
+        var itemDto = new AdicionarOSItemRequest
         {
             Tipo = "servico",
             ReferenciaId = Guid.NewGuid(),
@@ -274,7 +275,7 @@ public class OrdemServicoServiceTests
         };
 
         // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AddItensAsync(osId, new List<CreateOrdemServicoItemDto> { itemDto }));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.AddItensAsync(osId, new List<AdicionarOSItemRequest> { itemDto }));
     }
 
     // ─── RemoveItemAsync ─────────────────────────────────────

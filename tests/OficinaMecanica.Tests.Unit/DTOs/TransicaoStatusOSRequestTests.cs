@@ -1,9 +1,10 @@
-﻿using OficinaMecanica.Application.DTOs;
+﻿using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
 
 namespace OficinaMecanica.Tests.Unit.DTOs;
 
-public class TransicaoStatusOSDtoTests
+public class TransicaoStatusOSRequestTests
 {
     [Fact]
     public void Construtor_DeveC_CriarComParametrosValidos()
@@ -13,7 +14,7 @@ public class TransicaoStatusOSDtoTests
         var motivo = "Diagnostico completo - Em Execução";
 
         // Act
-        var dto = new TransicaoStatusOSDto(novoStatus, motivo);
+        var dto = new TransicaoStatusOSRequest(novoStatus, motivo);
 
         // Assert
         Assert.Equal(novoStatus, dto.NovoStatus);
@@ -28,8 +29,8 @@ public class TransicaoStatusOSDtoTests
         var motivo = "Iniciando reparo";
 
         // Act
-        var dto1 = new TransicaoStatusOSDto(novoStatus, motivo);
-        var dto2 = new TransicaoStatusOSDto(novoStatus, motivo);
+        var dto1 = new TransicaoStatusOSRequest(novoStatus, motivo);
+        var dto2 = new TransicaoStatusOSRequest(novoStatus, motivo);
 
         // Assert
         Assert.Equal(dto1, dto2);
@@ -39,8 +40,8 @@ public class TransicaoStatusOSDtoTests
     public void Igualdade_DeveRetornarFalso_QuandoDtosTemDadosDiferentes()
     {
         // Arrange
-        var dto1 = new TransicaoStatusOSDto(EnumStatusOS.EmDiagnostico, "Diagnostico");
-        var dto2 = new TransicaoStatusOSDto(EnumStatusOS.EmExecucao, "Reparação");
+        var dto1 = new TransicaoStatusOSRequest(EnumStatusOS.EmDiagnostico, "Diagnostico");
+        var dto2 = new TransicaoStatusOSRequest(EnumStatusOS.EmExecucao, "Reparação");
 
         // Assert
         Assert.NotEqual(dto1, dto2);
@@ -54,7 +55,7 @@ public class TransicaoStatusOSDtoTests
         var motivo = string.Empty;
 
         // Act
-        var dto = new TransicaoStatusOSDto(novoStatus, motivo);
+        var dto = new TransicaoStatusOSRequest(novoStatus, motivo);
 
         // Assert
         Assert.Equal(string.Empty, dto.Motivo);
@@ -66,7 +67,7 @@ public class TransicaoStatusOSDtoTests
         // Arrange
         var novoStatus = EnumStatusOS.Rejeitada;
         var motivo = "Cliente solicitou cancelamento";
-        var dto = new TransicaoStatusOSDto(novoStatus, motivo);
+        var dto = new TransicaoStatusOSRequest(novoStatus, motivo);
 
         // Act
         var (status, motivoObtido) = dto;

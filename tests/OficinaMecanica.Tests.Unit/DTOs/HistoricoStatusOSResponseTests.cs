@@ -1,9 +1,10 @@
 using FluentAssertions;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Tests.Unit.DTOs;
 
-public class HistoricoStatusOSDtoTests
+public class HistoricoStatusOSResponseTests
 {
     [Fact]
     public void Constructor_ShouldCreateInstance_WithValidData()
@@ -18,7 +19,7 @@ public class HistoricoStatusOSDtoTests
         var motivo = "Iniciou o trabalho";
 
         // Act
-        var dto = new HistoricoStatusOSDto(id, ordemServicoId, statusAnterior, statusNovo, alteradoEm, alteradoPor, motivo);
+        var dto = new HistoricoStatusOSResponse(id, ordemServicoId, statusAnterior, statusNovo, alteradoEm, alteradoPor, motivo);
 
         // Assert
         dto.Id.Should().Be(id);
@@ -38,7 +39,7 @@ public class HistoricoStatusOSDtoTests
         var ordemServicoId = Guid.NewGuid();
 
         // Act
-        var dto = new HistoricoStatusOSDto(id, ordemServicoId, null, "Pendente", DateTime.Now, "usuario", "Motivo");
+        var dto = new HistoricoStatusOSResponse(id, ordemServicoId, null, "Pendente", DateTime.Now, "usuario", "Motivo");
 
         // Assert
         dto.StatusAnterior.Should().BeNull();
@@ -53,8 +54,8 @@ public class HistoricoStatusOSDtoTests
         var ordemServicoId = Guid.NewGuid();
         var alteradoEm = DateTime.Now;
 
-        var dto1 = new HistoricoStatusOSDto(id, ordemServicoId, "Pendente", "Em Progresso", alteradoEm, "usuario", "Motivo");
-        var dto2 = new HistoricoStatusOSDto(id, ordemServicoId, "Pendente", "Em Progresso", alteradoEm, "usuario", "Motivo");
+        var dto1 = new HistoricoStatusOSResponse(id, ordemServicoId, "Pendente", "Em Progresso", alteradoEm, "usuario", "Motivo");
+        var dto2 = new HistoricoStatusOSResponse(id, ordemServicoId, "Pendente", "Em Progresso", alteradoEm, "usuario", "Motivo");
 
         // Act & Assert
         dto1.Should().Be(dto2);
@@ -68,8 +69,8 @@ public class HistoricoStatusOSDtoTests
         var ordemServicoId = Guid.NewGuid();
         var alteradoEm = DateTime.Now;
 
-        var dto1 = new HistoricoStatusOSDto(id, ordemServicoId, "Pendente", "Em Progresso", alteradoEm, "usuario1", "Motivo");
-        var dto2 = new HistoricoStatusOSDto(id, ordemServicoId, "Pendente", "Concluído", alteradoEm, "usuario2", "Motivo");
+        var dto1 = new HistoricoStatusOSResponse(id, ordemServicoId, "Pendente", "Em Progresso", alteradoEm, "usuario1", "Motivo");
+        var dto2 = new HistoricoStatusOSResponse(id, ordemServicoId, "Pendente", "Concluído", alteradoEm, "usuario2", "Motivo");
 
         // Act & Assert
         dto1.Should().NotBe(dto2);
@@ -87,7 +88,7 @@ public class HistoricoStatusOSDtoTests
         var alteradoPor = "usuario@teste.com";
         var motivo = "Iniciou o trabalho";
 
-        var dto = new HistoricoStatusOSDto(id, ordemServicoId, statusAnterior, statusNovo, alteradoEm, alteradoPor, motivo);
+        var dto = new HistoricoStatusOSResponse(id, ordemServicoId, statusAnterior, statusNovo, alteradoEm, alteradoPor, motivo);
 
         // Act
         var (dtoId, dtoOrdemServicoId, dtoStatusAnterior, dtoStatusNovo, dtoAlteradoEm, dtoAlteradoPor, dtoMotivo) = dto;

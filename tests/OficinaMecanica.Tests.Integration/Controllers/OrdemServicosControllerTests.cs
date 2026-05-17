@@ -2,7 +2,8 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Infrastructure.Data;
@@ -55,7 +56,7 @@ public class OrdemServicosControllerTests
         var client = factory.CreateClient().ComToken("Admin");
         var osId = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
 
-        var itens = new List<CreateOrdemServicoItemDto>
+        var itens = new List<AdicionarOSItemRequest>
         {
             new()
             {
@@ -105,7 +106,7 @@ public class OrdemServicosControllerTests
         public Task NotificarConclusaoAsync(Guid osId, string alteradoPor) => Task.CompletedTask;
         public Task EntregarAsync(Guid osId, string alteradoPor) => Task.CompletedTask;
         public Task ForcarStatusAsync(Guid osId, EnumStatusOS novoStatus, string alteradoPor, string motivo) => Task.CompletedTask;
-        public Task<IEnumerable<HistoricoStatusOSDto>> ObterHistoricoAsync(Guid osId) => Task.FromResult<IEnumerable<HistoricoStatusOSDto>>([]);
+        public Task<IEnumerable<HistoricoStatusOSResponse>> ObterHistoricoAsync(Guid osId) => Task.FromResult<IEnumerable<HistoricoStatusOSResponse>>([]);
     }
 
     private sealed class NotificacaoSpy : INotificacaoService

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 
 namespace OficinaMecanica.API.Controllers;
@@ -22,7 +23,7 @@ public class PecasController : ControllerBase
     /// Lista todas as peças e insumos do estoque
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<PecaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<PecaResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
         var pecas = await _pecaService.GetAllAsync();
@@ -33,7 +34,7 @@ public class PecasController : ControllerBase
     /// Obtém uma peça por ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -48,7 +49,7 @@ public class PecasController : ControllerBase
     /// Busca uma peça pelo código interno (SKU)
     /// </summary>
     [HttpGet("codigo/{codigo}")]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCodigo(string codigo)
     {
@@ -69,7 +70,7 @@ public class PecasController : ControllerBase
     /// O parâmetro `limite` tem valor padrão `10` quando não informado.
     /// </remarks>
     [HttpGet("estoque-baixo")]
-    [ProducesResponseType(typeof(IEnumerable<PecaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<PecaResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetEstoqueBaixo([FromQuery] int limite = 10)
     {
         var pecas = await _pecaService.GetByEstoqueBaixoAsync(limite);
@@ -99,9 +100,9 @@ public class PecasController : ControllerBase
     /// O `codigo` deve ser único. O estoque inicial pode ser zero; use `PATCH /{id}/estoque` para movimentar.
     /// </remarks>
     [HttpPost]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreatePecaDto createDto)
+    public async Task<IActionResult> Create([FromBody] CriarPecaRequest createDto)
     {
         try
         {
@@ -118,10 +119,10 @@ public class PecasController : ControllerBase
     /// Atualiza os dados cadastrais de uma peça (nome, código, preço)
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePecaDto updateDto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarPecaRequest updateDto)
     {
         try
         {
@@ -148,7 +149,7 @@ public class PecasController : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateEstoque(Guid id, [FromBody] UpdateEstoqueDto updateEstoqueDto)
+    public async Task<IActionResult> UpdateEstoque(Guid id, [FromBody] AtualizarEstoqueRequest updateEstoqueDto)
     {
         try
         {

@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -22,7 +23,7 @@ public class ServicoServiceTests
     public async Task CreateAsync_WithValidData_ShouldCreateServico()
     {
         // Arrange
-        var createDto = new CreateServicoDto
+        var createDto = new CriarServicoRequest
         {
             Nome = "Troca de Óleo",
             Descricao = "Troca de óleo do motor",
@@ -47,7 +48,7 @@ public class ServicoServiceTests
     public async Task CreateAsync_WithInvalidValor_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreateServicoDto
+        var createDto = new CriarServicoRequest
         {
             Nome = "Serviço Teste",
             Descricao = "Descrição",
@@ -62,7 +63,7 @@ public class ServicoServiceTests
     public async Task CreateAsync_WithEmptyNome_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreateServicoDto
+        var createDto = new CriarServicoRequest
         {
             Nome = "",
             Descricao = "Descrição",
@@ -77,7 +78,7 @@ public class ServicoServiceTests
     public async Task CreateAsync_WithDuplicateNome_ShouldThrowException()
     {
         // Arrange
-        var createDto = new CreateServicoDto
+        var createDto = new CriarServicoRequest
         {
             Nome = "Troca de Óleo",
             Descricao = "Troca de óleo do motor",
@@ -156,7 +157,7 @@ public class ServicoServiceTests
         // Arrange
         var servicoId = Guid.NewGuid();
         var servico = new Servico("Troca de Óleo", "Troca de óleo", 150.00m);
-        var updateDto = new UpdateServicoDto
+        var updateDto = new AtualizarServicoRequest
         {
             Nome = "Troca de Óleo Sintético",
             Descricao = "Troca de óleo sintético",
@@ -229,7 +230,7 @@ public class ServicoServiceTests
         _servicoRepositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<Guid>()))
             .ReturnsAsync((Servico?)null);
 
-        var act = () => _servicoService.UpdateAsync(Guid.NewGuid(), new UpdateServicoDto
+        var act = () => _servicoService.UpdateAsync(Guid.NewGuid(), new AtualizarServicoRequest
         {
             Nome = "Novo", Descricao = "Desc", Valor = 100m
         });

@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -62,7 +63,7 @@ public class OrdemServicoStatusService : IOrdemServicoStatusService
     public Task ForcarStatusAsync(Guid osId, EnumStatusOS novoStatus, string alteradoPor, string motivo) =>
         AplicarTransicaoAsync(osId, os => os.ForcarStatus(novoStatus, alteradoPor, motivo));
 
-    public async Task<IEnumerable<HistoricoStatusOSDto>> ObterHistoricoAsync(Guid osId)
+    public async Task<IEnumerable<HistoricoStatusOSResponse>> ObterHistoricoAsync(Guid osId)
     {
         var os = await _osRepository.ObterPorIdComHistoricoAsync(osId)
             ?? throw new KeyNotFoundException($"Ordem de serviço {osId} não encontrada.");
@@ -79,7 +80,7 @@ public class OrdemServicoStatusService : IOrdemServicoStatusService
         await _osRepository.UpdateAsync(os);
     }
 
-    private static HistoricoStatusOSDto MapToDto(HistoricoStatusOS h) => new(
+    private static HistoricoStatusOSResponse MapToDto(HistoricoStatusOS h) => new(
         h.Id,
         h.OrdemServicoId,
         h.StatusAnterior?.ToString(),

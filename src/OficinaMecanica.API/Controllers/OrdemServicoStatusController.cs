@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 
 namespace OficinaMecanica.API.Controllers;
@@ -54,7 +55,7 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Rejeitar(Guid id, [FromBody] RejeitarOSDto dto) =>
+    public async Task<IActionResult> Rejeitar(Guid id, [FromBody] RejeitarOSRequest dto) =>
         await TryRunAsync(() => _service.RejeitarAsync(id, UsuarioAtual(), dto?.Motivo ?? string.Empty));
 
     /// <summary>
@@ -92,7 +93,7 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ForcarStatus(Guid id, [FromBody] TransicaoStatusOSDto dto) =>
+    public async Task<IActionResult> ForcarStatus(Guid id, [FromBody] TransicaoStatusOSRequest dto) =>
         await TryRunAsync(() => _service.ForcarStatusAsync(id, dto.NovoStatus, UsuarioAtual(), dto?.Motivo ?? string.Empty));
 
     /// <summary>
@@ -100,7 +101,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// </summary>
     [HttpGet("{id:guid}/historico")]
     [Authorize(Roles = "Admin,Mecanico,Cliente")]
-    [ProducesResponseType(typeof(IEnumerable<HistoricoStatusOSDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<HistoricoStatusOSResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Historico(Guid id)
     {

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 
 namespace OficinaMecanica.API.Controllers;
@@ -22,7 +23,7 @@ public class OrdemServicosController : ControllerBase
     /// Lista todas as ordens de serviço
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<OrdemServicoResumoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<OrdemServicoResumoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
         var lista = await _service.GetAllAsync();
@@ -33,7 +34,7 @@ public class OrdemServicosController : ControllerBase
     /// Obtém uma ordem de serviço por ID com todos os itens
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(OrdemServicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OrdemServicoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -47,9 +48,9 @@ public class OrdemServicosController : ControllerBase
     /// Cria uma nova ordem de serviço vinculando cliente e veículo
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(OrdemServicoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(OrdemServicoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateOrdemServicoDto createDto)
+    public async Task<IActionResult> Create([FromBody] AbrirOrdemServicoRequest createDto)
     {
         try
         {
@@ -70,10 +71,10 @@ public class OrdemServicosController : ControllerBase
     /// O campo **tipo** aceita: `servico`, `peca` ou `insumo`
     /// </remarks>
     [HttpPost("{id:guid}/itens")]
-    [ProducesResponseType(typeof(IEnumerable<OrdemServicoItemDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(IEnumerable<OrdemServicoItemResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AddItem(Guid id, [FromBody] List<CreateOrdemServicoItemDto> itensDto)
+    public async Task<IActionResult> AddItem(Guid id, [FromBody] List<AdicionarOSItemRequest> itensDto)
     {
         try
         {
