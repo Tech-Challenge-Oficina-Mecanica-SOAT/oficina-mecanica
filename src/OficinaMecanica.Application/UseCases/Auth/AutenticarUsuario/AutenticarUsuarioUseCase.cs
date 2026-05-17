@@ -28,7 +28,7 @@ public class AutenticarUsuarioUseCase : IAutenticarUsuarioUseCase
         if (usuario is null)
             return Result<TokenResponse>.Unauthorized("Credenciais inválidas.");
 
-        if (!_hasher.Verificar(request.Senha, usuario.SenhaHash))
+        if (!_hasher.Verify(request.Senha, usuario.SenhaHash))
             return Result<TokenResponse>.Unauthorized("Credenciais inválidas.");
 
         return Result<TokenResponse>.Success(_tokenGenerator.GerarParaUsuario(usuario));
