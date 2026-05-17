@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using OficinaMecanica.Application.Common;
+using OficinaMecanica.Domain.Common;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.ValueObjects;
 
@@ -6,7 +8,37 @@ namespace OficinaMecanica.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
+    private readonly IDomainEventDispatcher? _dispatcher;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        IDomainEventDispatcher dispatcher) : base(options)
+    {
+        _dispatcher = dispatcher;
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var entitiesComEventos = ChangeTracker.Entries<Entity>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .Select(e => e.Entity)
+            .ToList();
+
+        var eventos = entitiesComEventos.SelectMany(e => e.DomainEvents).ToList();
+
+        var resultado = await base.SaveChangesAsync(cancellationToken);
+
+        if (_dispatcher is not null && eventos.Count > 0)
+        {
+            await _dispatcher.DispatchAsync(eventos);
+            foreach (var entity in entitiesComEventos)
+                entity.ClearEvents();
+        }
+
+        return resultado;
+    }
 
     public DbSet<Usuario> Usuarios { get; set; }
     public DbSet<Cliente> Clientes { get; set; }
