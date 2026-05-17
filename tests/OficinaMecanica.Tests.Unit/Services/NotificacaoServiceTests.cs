@@ -1,12 +1,12 @@
-using Microsoft.Extensions.Logging;
 using Moq;
-using OficinaMecanica.Application.Services;
+using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Infrastructure.Notifications;
 
 namespace OficinaMecanica.Tests.Unit.Services;
 
 public class NotificacaoServiceTests
 {
-    private readonly Mock<ILogger<NotificacaoService>> _loggerMock = new();
+    private readonly Mock<IAppLogger<NotificacaoService>> _loggerMock = new();
     private readonly NotificacaoService _sut;
 
     public NotificacaoServiceTests()

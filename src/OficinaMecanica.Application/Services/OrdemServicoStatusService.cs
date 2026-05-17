@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
@@ -10,12 +9,12 @@ public class OrdemServicoStatusService : IOrdemServicoStatusService
 {
     private readonly IOrdemServicoRepository _osRepository;
     private readonly INotificacaoService _notificacaoService;
-    private readonly ILogger<OrdemServicoStatusService> _logger;
+    private readonly IAppLogger<OrdemServicoStatusService> _logger;
 
     public OrdemServicoStatusService(
         IOrdemServicoRepository osRepository,
         INotificacaoService notificacaoService,
-        ILogger<OrdemServicoStatusService> logger)
+        IAppLogger<OrdemServicoStatusService> logger)
     {
         _osRepository = osRepository;
         _notificacaoService = notificacaoService;
@@ -48,8 +47,9 @@ public class OrdemServicoStatusService : IOrdemServicoStatusService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex,
+            _logger.Warning(
                 "Falha ao enviar notificação de conclusão para OS {OsId}. Status será atualizado mesmo assim.",
+                ex,
                 osId);
         }
 

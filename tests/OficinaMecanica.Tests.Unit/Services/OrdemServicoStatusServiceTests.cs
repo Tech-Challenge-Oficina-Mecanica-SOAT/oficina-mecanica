@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Moq;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
@@ -12,7 +11,7 @@ public class OrdemServicoStatusServiceTests
 {
     private readonly Mock<IOrdemServicoRepository> _osRepo = new();
     private readonly Mock<INotificacaoService> _notificacao = new();
-    private readonly Mock<ILogger<OrdemServicoStatusService>> _logger = new();
+    private readonly Mock<IAppLogger<OrdemServicoStatusService>> _logger = new();
     private readonly OrdemServicoStatusService _service;
 
     public OrdemServicoStatusServiceTests()

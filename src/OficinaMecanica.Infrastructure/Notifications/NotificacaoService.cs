@@ -1,29 +1,26 @@
-using Microsoft.Extensions.Logging;
 using OficinaMecanica.Application.Interfaces;
 
-namespace OficinaMecanica.Application.Services;
+namespace OficinaMecanica.Infrastructure.Notifications;
 
 public class NotificacaoService : INotificacaoService
 {
-    private readonly ILogger<NotificacaoService> _logger;
+    private readonly IAppLogger<NotificacaoService> _logger;
 
-    public NotificacaoService(ILogger<NotificacaoService> logger) => _logger = logger;
+    public NotificacaoService(IAppLogger<NotificacaoService> logger) => _logger = logger;
 
     public Task EnviarOrcamentoAsync(Guid osId, string emailCliente, decimal totalOrcamento)
     {
-        _logger.LogInformation(
+        _logger.Info(
             "Orcamento enviado. OS: {OsId}, Cliente: {Email}, Total: {Total}",
             osId, emailCliente, totalOrcamento);
-
         return Task.CompletedTask;
     }
 
     public Task EnviarConclusaoAsync(Guid osId, string emailCliente)
     {
-        _logger.LogInformation(
+        _logger.Info(
             "Notificacao de conclusao enviada. OS: {OsId}, Cliente: {Email}",
             osId, emailCliente);
-
         return Task.CompletedTask;
     }
 }

@@ -10,6 +10,8 @@ using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
 using OficinaMecanica.Infrastructure.Auth;
 using OficinaMecanica.Infrastructure.Data;
+using OficinaMecanica.Infrastructure.Logging;
+using OficinaMecanica.Infrastructure.Notifications;
 using OficinaMecanica.Infrastructure.Repositories;
 using OficinaMecanica.Infrastructure.Security;
 using Scalar.AspNetCore;
@@ -58,6 +60,9 @@ builder.Services.AddScoped<IOrdemServicoService, OrdemServicoService>();
 builder.Services.AddScoped<IHistoricoStatusOSRepository, HistoricoStatusOSRepository>();
 builder.Services.AddScoped<IOrdemServicoStatusService, OrdemServicoStatusService>();
 builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
+
+// DI - Logging
+builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // Autenticação JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
