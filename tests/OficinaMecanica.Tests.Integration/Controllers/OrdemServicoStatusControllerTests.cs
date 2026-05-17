@@ -29,7 +29,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 
-        var veiculo = new Veiculo(cliente.Id, "ABC1D23", "Marca", "Modelo", 2020);
+        var veiculo = new Veiculo(cliente.Id, new Placa("ABC1D23"), "Marca", "Modelo", 2020);
         db.Veiculos.Add(veiculo);
         await db.SaveChangesAsync();
 

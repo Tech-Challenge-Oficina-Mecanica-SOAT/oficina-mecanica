@@ -29,7 +29,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
             new Email($"vei_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
 
-        var veiculo = new Veiculo(cliente.Id, placa, "Toyota", "Corolla", 2022);
+        var veiculo = new Veiculo(cliente.Id, new Placa(placa), "Toyota", "Corolla", 2022);
         db.Veiculos.Add(veiculo);
 
         await db.SaveChangesAsync();
