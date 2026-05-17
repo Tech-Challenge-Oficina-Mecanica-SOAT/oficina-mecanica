@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using OficinaMecanica.API.Configuration;
 using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Application;
+using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Mappers;
@@ -59,6 +60,7 @@ using OficinaMecanica.Application.UseCases.Veiculo.RemoverVeiculo;
 using OficinaMecanica.Domain.Interfaces;
 using OficinaMecanica.Infrastructure.Auth;
 using OficinaMecanica.Infrastructure.Data;
+using OficinaMecanica.Infrastructure.Events;
 using OficinaMecanica.Infrastructure.Logging;
 using OficinaMecanica.Infrastructure.Notifications;
 using OficinaMecanica.Infrastructure.Repositories;
@@ -94,6 +96,9 @@ builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 
 // DI - Notificacoes
 builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
+
+// DI - Domain Events
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
 // DI - Logging
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
