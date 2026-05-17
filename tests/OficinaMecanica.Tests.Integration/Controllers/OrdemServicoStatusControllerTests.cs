@@ -25,7 +25,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Teste", new Documento("12345678909"), "(11) 99999-0000", new Email("t@t.com"));
+        var cliente = new Cliente("Teste", new Documento("12345678909"), new Telefone("(11) 99999-0000"), new Email("t@t.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 

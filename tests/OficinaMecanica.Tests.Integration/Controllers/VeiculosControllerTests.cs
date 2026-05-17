@@ -25,7 +25,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Seed Veículo", new Documento("52998224725"), "(11) 91234-5678",
+        var cliente = new Cliente("Seed Veículo", new Documento("52998224725"), new Telefone("(11) 91234-5678"),
             new Email($"vei_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
 
@@ -40,7 +40,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     {
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Cliente Vei", new Documento("19131243000197"), "(11) 91234-0000",
+        var cliente = new Cliente("Cliente Vei", new Documento("19131243000197"), new Telefone("(11) 91234-0000"),
             new Email($"cli_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();

@@ -54,7 +54,12 @@ public class ApplicationDbContext : DbContext
                     v => new Documento(v))
                 .IsRequired()
                 .HasMaxLength(14);
-            entity.Property(e => e.Telefone).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Telefone)
+                .HasConversion(
+                    v => v.Valor,
+                    v => new Telefone(v))
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.Email)
                 .HasConversion(
                     v => v.Valor,
