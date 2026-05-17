@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OficinaMecanica.API.Configuration;
 using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Application;
+using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Interfaces;
@@ -19,6 +21,10 @@ builder.Services.AddEndpointsApiExplorer();
 // Configurar Banco de Dados Postgrees
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Settings
+builder.Services.AddSingleton<IJwtSettings, JwtSettings>();
+builder.Services.AddSingleton<IPasswordSettings, PasswordSettings>();
 
 // DI - Cliente
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();

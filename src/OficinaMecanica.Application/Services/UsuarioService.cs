@@ -1,5 +1,5 @@
 using Konscious.Security.Cryptography;
-using Microsoft.Extensions.Configuration;
+using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
@@ -20,12 +20,10 @@ public class UsuarioService : IUsuarioService
     private readonly IUsuarioRepository _repository;
     private readonly byte[] _passwordKey;
 
-    public UsuarioService(IUsuarioRepository repository, IConfiguration configuration)
+    public UsuarioService(IUsuarioRepository repository, IPasswordSettings passwordSettings)
     {
         _repository = repository;
-        var key = configuration["Seguranca:PasswordKey"]
-            ?? throw new InvalidOperationException("Seguranca:PasswordKey não configurada.");
-        _passwordKey = Encoding.UTF8.GetBytes(key);
+        _passwordKey = Encoding.UTF8.GetBytes(passwordSettings.PasswordKey);
     }
 
     public async Task<Usuario?> AutenticarAsync(string email, string senha)

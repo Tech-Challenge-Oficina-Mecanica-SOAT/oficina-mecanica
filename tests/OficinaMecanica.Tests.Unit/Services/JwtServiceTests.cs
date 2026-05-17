@@ -1,4 +1,5 @@
-using Microsoft.Extensions.Configuration;
+using Moq;
+using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Enums;
@@ -13,18 +14,13 @@ public class JwtServiceTests
 
     public JwtServiceTests()
     {
-        var configValues = new Dictionary<string, string?>
-        {
-            ["Jwt:SecretKey"] = "mecanica-jwt-secret-key-minimo-32-chars!!",
-            ["Jwt:Issuer"] = "mecanica-api",
-            ["Jwt:Audience"] = "mecanica-cliente",
-            ["Jwt:ExpiracaoMinutos"] = "5"
-        };
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(configValues)
-            .Build();
+        var settings = new Mock<IJwtSettings>();
+        settings.Setup(s => s.SecretKey).Returns("mecanica-jwt-secret-key-minimo-32-chars!!");
+        settings.Setup(s => s.Issuer).Returns("mecanica-api");
+        settings.Setup(s => s.Audience).Returns("mecanica-cliente");
+        settings.Setup(s => s.ExpiracaoMinutos).Returns(5);
 
-        _sut = new JwtService(config);
+        _sut = new JwtService(settings.Object);
     }
 
     [Fact]

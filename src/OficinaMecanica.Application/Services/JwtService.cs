@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
@@ -11,23 +11,13 @@ namespace OficinaMecanica.Application.Services;
 
 public class JwtService : IJwtService
 {
-    private readonly string _secretKey;
-    private readonly string _issuer;
-    private readonly string _audience;
-    private readonly int _expiracaoMinutos;
+    private readonly IJwtSettings _settings;
 
-    public JwtService(IConfiguration configuration)
-    {
-        _secretKey = configuration["Jwt:SecretKey"]
-            ?? throw new InvalidOperationException("Jwt:SecretKey não configurada.");
-        _issuer = configuration["Jwt:Issuer"] ?? "mecanica-api";
-        _audience = configuration["Jwt:Audience"] ?? "mecanica-cliente";
-        _expiracaoMinutos = int.TryParse(configuration["Jwt:ExpiracaoMinutos"], out var min) ? min : 5;
-    }
+    public JwtService(IJwtSettings settings) => _settings = settings;
 
     public TokenDto GerarToken(Usuario usuario)
     {
-        var expiracao = DateTime.UtcNow.AddMinutes(_expiracaoMinutos);
+        var expiracao = DateTime.UtcNow.AddMinutes(_settings.ExpiracaoMinutos);
 
         var claims = new[]
         {
@@ -37,12 +27,12 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SecretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _issuer,
-            audience: _audience,
+            issuer: _settings.Issuer,
+            audience: _settings.Audience,
             claims: claims,
             expires: expiracao,
             signingCredentials: creds);

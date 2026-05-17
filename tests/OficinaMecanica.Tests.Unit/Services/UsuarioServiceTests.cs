@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Configuration;
 using Moq;
+using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.DTOs;
 using OficinaMecanica.Application.Services;
 using OficinaMecanica.Domain.Entities;
@@ -11,22 +11,16 @@ namespace OficinaMecanica.Tests.Unit.Services;
 public class UsuarioServiceTests
 {
     private readonly Mock<IUsuarioRepository> _repositoryMock;
-    private readonly IConfiguration _configuration;
     private readonly UsuarioService _sut;
 
     public UsuarioServiceTests()
     {
         _repositoryMock = new Mock<IUsuarioRepository>();
 
-        var configValues = new Dictionary<string, string?>
-        {
-            ["Seguranca:PasswordKey"] = "K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF"
-        };
-        _configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(configValues)
-            .Build();
+        var passwordSettings = new Mock<IPasswordSettings>();
+        passwordSettings.Setup(s => s.PasswordKey).Returns("K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF");
 
-        _sut = new UsuarioService(_repositoryMock.Object, _configuration);
+        _sut = new UsuarioService(_repositoryMock.Object, passwordSettings.Object);
     }
 
     [Fact]
