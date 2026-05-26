@@ -29,13 +29,22 @@ public class OrdemServicoRepository : IOrdemServicoRepository
             .Include(os => os.Itens)
             .FirstOrDefaultAsync(os => os.Id == id);
 
-    public async Task<IEnumerable<OrdemServico>> ListarTodosAsync() =>
-        await _context.OrdensServico
+    public async Task<IEnumerable<OrdemServico>> ListarTodosAsync()
+    {
+        var query = _context.OrdensServico
             .Include(os => os.Cliente)
             .Include(os => os.Veiculo)
             .Include(os => os.Itens)
-            .OrderByDescending(os => os.DataAbertura)
-            .ToListAsync();
+            .Where(os => os.StatusOS != EnumStatusOS.Finalizada && 
+                        os.StatusOS != EnumStatusOS.Entregue)
+            .OrderBy(os => os.StatusOS == EnumStatusOS.EmExecucao ? 1 :
+                        os.StatusOS == EnumStatusOS.AguardandoAprovacao ? 2 :
+                        os.StatusOS == EnumStatusOS.EmDiagnostico ? 3 :
+                        os.StatusOS == EnumStatusOS.Recebida ? 4 : 5)
+            .ThenBy(os => os.DataAbertura);
+
+        return await query.ToListAsync();
+    }
 
     public async Task<Guid> CriarAsync(OrdemServico ordemServico)
     {
