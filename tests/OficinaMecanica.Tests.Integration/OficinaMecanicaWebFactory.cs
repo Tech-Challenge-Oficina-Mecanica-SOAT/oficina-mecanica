@@ -11,7 +11,13 @@ public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>, IAsyncL
         .WithImage("postgres:16-alpine")
         .Build();
 
-    public async Task InitializeAsync() => await _db.StartAsync();
+    private Task? _startTask;
+
+    public async Task InitializeAsync()
+    {
+        _startTask = _db.StartAsync();
+        await _startTask;
+    }
 
     public new async Task DisposeAsync()
     {
@@ -21,6 +27,17 @@ public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>, IAsyncL
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // If InitializeAsync was not called (manual factory creation), start the container now
+        if (_startTask is null)
+        {
+            _startTask = _db.StartAsync();
+            _startTask.GetAwaiter().GetResult();
+        }
+        else
+        {
+            _startTask.GetAwaiter().GetResult();
+        }
+
         builder.ConfigureAppConfiguration(config =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>

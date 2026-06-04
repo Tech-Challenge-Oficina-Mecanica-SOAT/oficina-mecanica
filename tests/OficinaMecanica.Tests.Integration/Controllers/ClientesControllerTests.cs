@@ -24,8 +24,8 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     {
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Seed Silva", new Documento("52998224725"), new Telefone("(11) 91234-5678"),
-            new Email(email ?? $"seed_{Guid.NewGuid():N}@oficina.com"));
+        var cliente = new Cliente("Seed Silva", new Documento(TestDataGenerator.NextCpf()), new Telefone("(11) 91234-5678"),
+            new Email(email ?? TestDataGenerator.NextEmail()));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
         return cliente.Id;
