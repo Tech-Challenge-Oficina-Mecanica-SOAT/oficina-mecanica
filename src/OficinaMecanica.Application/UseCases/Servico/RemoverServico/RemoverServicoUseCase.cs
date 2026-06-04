@@ -14,6 +14,10 @@ public class RemoverServicoUseCase : IRemoverServicoUseCase
 
     public async Task<Result<bool>> ExecutarAsync(Guid id)
     {
+        var servico = await _repository.GetByIdAsync(id);
+        if (servico is null)
+            return Result<bool>.NotFound($"Serviço com ID {id} não encontrado.");
+
         await _repository.DeleteAsync(id);
         return Result<bool>.Success(true);
     }
