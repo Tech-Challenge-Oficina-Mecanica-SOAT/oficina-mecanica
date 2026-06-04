@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using System.Net.Mail;
 
 namespace OficinaMecanica.Domain.ValueObjects;
 
@@ -8,10 +8,14 @@ public sealed record Email
 
     public Email(string valor)
     {
-        if (string.IsNullOrWhiteSpace(valor) ||
-            !Regex.IsMatch(valor.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-            throw new ArgumentException("Email inválido.", nameof(valor));
-        Valor = valor.Trim().ToLower();
+        if (string.IsNullOrWhiteSpace(valor))
+            throw new ArgumentException("Email invalido.", nameof(valor));
+
+        var trimmed = valor.Trim();
+        if (!MailAddress.TryCreate(trimmed, out _))
+            throw new ArgumentException("Email invalido.", nameof(valor));
+
+        Valor = trimmed.ToLower();
     }
 
     public override string ToString() => Valor;

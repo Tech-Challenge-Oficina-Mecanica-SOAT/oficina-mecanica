@@ -80,7 +80,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Settings
-builder.Services.AddSingleton<IJwtSettings, JwtSettings>();
+var jwtSettings = new JwtSettings(builder.Configuration);
+builder.Services.AddSingleton<IJwtSettings>(jwtSettings);
 builder.Services.AddSingleton<IPasswordSettings, PasswordSettings>();
 
 // DI - Repositories
@@ -93,18 +94,22 @@ builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 builder.Services.AddScoped<IHistoricoStatusOSRepository, HistoricoStatusOSRepository>();
 
 // DI - Segurança
-builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
-builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
+builder.Services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
+builder.Services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
 
 // DI - Notificacoes
 builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
 
 // DI - Domain Events
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
-builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, EnviarEmailOrcamentoHandler>();
+builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, NotificarOrcamentoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemAprovadaEvent>, NotificarAprovacaoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemRejeitadaEvent>, NotificarRejeicaoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemConcluidaEvent>, NotificarConclusaoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemEntregueEvent>, NotificarEntregaHandler>();
 
 // DI - Logging
-builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // DI - Mappers
 builder.Services.AddSingleton<OrdemServicoMapper>();
@@ -187,10 +192,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+                Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
         };
     });
 

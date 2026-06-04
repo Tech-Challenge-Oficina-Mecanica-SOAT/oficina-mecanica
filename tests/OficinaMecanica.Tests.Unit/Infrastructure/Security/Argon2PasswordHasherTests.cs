@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Moq;
-using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Infrastructure.Security;
 
 namespace OficinaMecanica.Tests.Unit.Infrastructure.Security;
@@ -36,19 +35,19 @@ public class Argon2PasswordHasherTests
     public void Verificar_RetornaTrueParaSenhaCorreta()
     {
         var hash = _sut.Hash("senha-correta");
-        _sut.Verificar("senha-correta", hash).Should().BeTrue();
+        _sut.Verify("senha-correta", hash).Should().BeTrue();
     }
 
     [Fact]
     public void Verificar_RetornaFalseParaSenhaErrada()
     {
         var hash = _sut.Hash("senha-correta");
-        _sut.Verificar("senha-errada", hash).Should().BeFalse();
+        _sut.Verify("senha-errada", hash).Should().BeFalse();
     }
 
     [Fact]
     public void Verificar_RetornaFalseParaHashMalformado()
     {
-        _sut.Verificar("qualquer", "lixo-invalido").Should().BeFalse();
+        _sut.Verify("qualquer", "lixo-invalido").Should().BeFalse();
     }
 }
