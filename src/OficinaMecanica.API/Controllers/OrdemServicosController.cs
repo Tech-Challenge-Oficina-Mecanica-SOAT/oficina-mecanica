@@ -54,6 +54,17 @@ public class OrdemServicosController : ControllerBase
     }
 
     /// <summary>
+    /// Lista todas as ordens de serviço ordenadas
+    /// </summary>
+    [HttpGet("ordenadas")]
+    [ProducesResponseType(typeof(IEnumerable<OrdemServicoResumoResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllOrdenadas()
+    {
+        var result = await _listar.ListarAtivasOrdenadasAsync(Unit.Value);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
+    }
+
+    /// <summary>
     /// Obtém uma ordem de serviço por ID com todos os itens
     /// </summary>
     [HttpGet("{id:guid}")]

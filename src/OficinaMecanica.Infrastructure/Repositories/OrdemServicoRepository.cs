@@ -46,6 +46,35 @@ public class OrdemServicoRepository : IOrdemServicoRepository
         return await query.ToListAsync();
     }
 
+    public async Task<IEnumerable<OrdemServico>> ListarAtivasOrdenadasAsync()
+    {
+        // Mapeamento dos status para prioridade
+        // EmExecucao (4) = 1ª prioridade
+        // AguardandoAprovacao (3) = 2ª prioridade
+        // EmDiagnostico (2) = 3ª prioridade
+        // Recebida (1) = 4ª prioridade
+        
+        var query = _context.OrdensServico
+            .Include(os => os.Cliente)
+            .Include(os => os.Veiculo)
+            .Include(os => os.Itens)
+            .Where(os => os.StatusOS != EnumStatusOS.Finalizada && 
+                        os.StatusOS != EnumStatusOS.Entregue &&
+                        os.StatusOS != EnumStatusOS.Rejeitada)
+            .ToList()
+            .OrderBy(os => os.StatusOS switch
+            {
+                EnumStatusOS.EmExecucao => 1,
+                EnumStatusOS.AguardandoAprovacao => 2,
+                EnumStatusOS.EmDiagnostico => 3,
+                EnumStatusOS.Recebida => 4,
+                _ => 5
+            })
+            .ThenBy(os => os.DataAbertura);
+
+        return query;
+    }
+
     public async Task<Guid> CriarAsync(OrdemServico ordemServico)
     {
         _context.OrdensServico.Add(ordemServico);
@@ -104,5 +133,11 @@ public class OrdemServicoRepository : IOrdemServicoRepository
         }
 
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<OrdemServico?> ObterPorTokenAsync(string token)
+    {
+        return await _context.OrdensServico
+            .FirstOrDefaultAsync(os => os.TokenAprovacao == token);
     }
 }
