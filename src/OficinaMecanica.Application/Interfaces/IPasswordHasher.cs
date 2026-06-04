@@ -3,5 +3,5 @@ namespace OficinaMecanica.Application.Interfaces;
 public interface IPasswordHasher
 {
     string Hash(string senha);
-    bool Verificar(string senha, string hash);
+    bool Verify(string senha, string hash);
 }
