@@ -1,4 +1,3 @@
-using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Entities;
 

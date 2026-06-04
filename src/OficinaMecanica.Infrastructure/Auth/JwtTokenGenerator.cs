@@ -1,6 +1,5 @@
 using Microsoft.IdentityModel.Tokens;
 using OficinaMecanica.Application.Configuration;
-using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Entities;
