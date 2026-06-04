@@ -101,7 +101,11 @@ builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
 
 // DI - Domain Events
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
-builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, EnviarEmailOrcamentoHandler>();
+builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, NotificarOrcamentoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemAprovadaEvent>, NotificarAprovacaoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemRejeitadaEvent>, NotificarRejeicaoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemConcluidaEvent>, NotificarConclusaoHandler>();
+builder.Services.AddScoped<IEventHandler<OrdemEntregueEvent>, NotificarEntregaHandler>();
 
 // DI - Logging
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
