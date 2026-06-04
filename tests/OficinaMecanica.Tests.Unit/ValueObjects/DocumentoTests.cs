@@ -25,6 +25,7 @@ public class DocumentoTests
     [InlineData("abc")]
     [InlineData("11111111111")]
     [InlineData("123")]
+    [InlineData("ABCDEFGHIJK")] // 11 letras: não lança FormatException, cai em ArgumentException
     public void Construtor_DocumentoInvalido_LancaArgumentException(string entrada)
     {
         Action act = () => _ = new Documento(entrada);

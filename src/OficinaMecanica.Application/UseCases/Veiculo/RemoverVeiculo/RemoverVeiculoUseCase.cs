@@ -14,6 +14,10 @@ public class RemoverVeiculoUseCase : IRemoverVeiculoUseCase
 
     public async Task<Result<bool>> ExecutarAsync(Guid id)
     {
+        var veiculo = await _repository.GetByIdAsync(id);
+        if (veiculo is null)
+            return Result<bool>.NotFound($"Veículo com ID {id} não encontrado.");
+
         await _repository.DeleteAsync(id);
         return Result<bool>.Success(true);
     }

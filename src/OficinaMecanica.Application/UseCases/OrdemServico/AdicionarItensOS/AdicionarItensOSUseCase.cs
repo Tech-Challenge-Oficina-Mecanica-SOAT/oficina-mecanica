@@ -56,7 +56,8 @@ public class AdicionarItensOSUseCase : IAdicionarItensOSUseCase
         var marcarResult = await _marcarAguardandoAprovacao.ExecutarAsync(
             new MarcarAguardandoAprovacaoRequest(request.OrdemServicoId, "sistema"));
         if (!marcarResult.IsSuccess)
-            return Result<IEnumerable<OrdemServicoItemResponse>>.Validation(marcarResult.Error ?? "Falha na transição de status.");
+            return Result<IEnumerable<OrdemServicoItemResponse>>.Fail(
+                marcarResult.ErrorType, marcarResult.Error ?? "Falha na transição de status.");
 
         return Result<IEnumerable<OrdemServicoItemResponse>>.Success(salvos.Select(_mapper.MapToItemResponse));
     }
