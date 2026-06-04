@@ -156,11 +156,10 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Delete_ComIdInexistente_Retorna204()
+    public async Task Delete_ComIdInexistente_Retorna404()
     {
-        // O repositório usa delete idempotente (silencia IDs inexistentes), portanto retorna 204
         var resp = await AdminClient().DeleteAsync($"/api/clientes/{Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
 
     [Fact]
