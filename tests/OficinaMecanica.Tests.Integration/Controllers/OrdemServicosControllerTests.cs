@@ -155,7 +155,10 @@ public class OrdemServicosControllerTests
             return Task.CompletedTask;
         }
 
+        public Task EnviarAprovacaoAsync(Guid osId, string emailCliente) => Task.CompletedTask;
+        public Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo) => Task.CompletedTask;
         public Task EnviarConclusaoAsync(Guid osId, string emailCliente) => Task.CompletedTask;
+        public Task EnviarEntregaAsync(Guid osId, string emailCliente) => Task.CompletedTask;
     }
 
     private sealed class OrdemServicosWebFactory : OficinaMecanicaWebFactory

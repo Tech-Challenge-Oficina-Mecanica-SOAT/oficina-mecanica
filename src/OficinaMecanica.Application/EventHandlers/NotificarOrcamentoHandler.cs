@@ -4,11 +4,11 @@ using OficinaMecanica.Domain.Events;
 
 namespace OficinaMecanica.Application.EventHandlers;
 
-public class EnviarEmailOrcamentoHandler : IEventHandler<OrcamentoEnviadoEvent>
+public class NotificarOrcamentoHandler : IEventHandler<OrcamentoEnviadoEvent>
 {
     private readonly INotificacaoService _notificacao;
 
-    public EnviarEmailOrcamentoHandler(INotificacaoService notificacao) =>
+    public NotificarOrcamentoHandler(INotificacaoService notificacao) =>
         _notificacao = notificacao;
 
     public Task HandleAsync(OrcamentoEnviadoEvent evt) =>
