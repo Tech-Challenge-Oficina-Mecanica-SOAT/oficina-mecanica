@@ -10,7 +10,7 @@ public sealed record Documento
     public Documento(string valor)
     {
         var limpo = Limpar(valor ?? string.Empty);
-        if (limpo.Length == 11 && ValidarCpf(limpo))
+        if (limpo.Length == 11 && limpo.All(char.IsDigit) && ValidarCpf(limpo))
         {
             Tipo = TipoDocumento.Cpf;
             Valor = limpo;
