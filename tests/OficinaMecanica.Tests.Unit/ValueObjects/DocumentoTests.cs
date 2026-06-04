@@ -31,4 +31,12 @@ public class DocumentoTests
         Action act = () => _ = new Documento(entrada);
         act.Should().Throw<ArgumentException>();
     }
+
+    [Theory]
+    [InlineData("12.ABC.345/01DE-XX")]
+    public void Construtor_CnpjAlfanumericoComDigitoInvalido_LancaArgumentException(string entrada)
+    {
+        Action act = () => _ = new Documento(entrada);
+        act.Should().Throw<ArgumentException>();
+    }
 }
