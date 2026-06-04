@@ -1,7 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
-using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.API.Common;
+using OficinaMecanica.Application.Common;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
+using OficinaMecanica.Application.UseCases.Peca.AtualizarEstoque;
+using OficinaMecanica.Application.UseCases.Peca.AtualizarPeca;
+using OficinaMecanica.Application.UseCases.Peca.ConsultarPeca;
+using OficinaMecanica.Application.UseCases.Peca.CriarPeca;
+using OficinaMecanica.Application.UseCases.Peca.ListarPecas;
+using OficinaMecanica.Application.UseCases.Peca.ListarPecasEstoqueBaixo;
+using OficinaMecanica.Application.UseCases.Peca.ObterEstoque;
+using OficinaMecanica.Application.UseCases.Peca.RemoverPeca;
 
 namespace OficinaMecanica.API.Controllers;
 
@@ -11,51 +21,72 @@ namespace OficinaMecanica.API.Controllers;
 [Authorize(Roles = "Admin")]
 public class PecasController : ControllerBase
 {
-    private readonly IPecaService _pecaService;
+    private readonly ICriarPecaUseCase _criar;
+    private readonly IAtualizarPecaUseCase _atualizar;
+    private readonly IAtualizarEstoqueUseCase _atualizarEstoque;
+    private readonly IConsultarPecaUseCase _consultar;
+    private readonly IListarPecasUseCase _listar;
+    private readonly IListarPecasEstoqueBaixoUseCase _listarEstoqueBaixo;
+    private readonly IObterEstoqueUseCase _obterEstoque;
+    private readonly IRemoverPecaUseCase _remover;
 
-    public PecasController(IPecaService pecaService)
+    public PecasController(
+        ICriarPecaUseCase criar,
+        IAtualizarPecaUseCase atualizar,
+        IAtualizarEstoqueUseCase atualizarEstoque,
+        IConsultarPecaUseCase consultar,
+        IListarPecasUseCase listar,
+        IListarPecasEstoqueBaixoUseCase listarEstoqueBaixo,
+        IObterEstoqueUseCase obterEstoque,
+        IRemoverPecaUseCase remover)
     {
-        _pecaService = pecaService;
+        _criar = criar;
+        _atualizar = atualizar;
+        _atualizarEstoque = atualizarEstoque;
+        _consultar = consultar;
+        _listar = listar;
+        _listarEstoqueBaixo = listarEstoqueBaixo;
+        _obterEstoque = obterEstoque;
+        _remover = remover;
     }
 
     /// <summary>
     /// Lista todas as peças e insumos do estoque
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<PecaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<PecaResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
-        var pecas = await _pecaService.GetAllAsync();
-        return Ok(pecas);
+        var result = await _listar.ExecutarAsync(Unit.Value);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
     /// Obtém uma peça por ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var peca = await _pecaService.GetByIdAsync(id);
-        if (peca == null)
-            return NotFound(new { message = $"Peça com ID {id} não encontrada" });
-
-        return Ok(peca);
+        var result = await _consultar.ExecutarAsync(id);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
     /// Busca uma peça pelo código interno (SKU)
     /// </summary>
     [HttpGet("codigo/{codigo}")]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCodigo(string codigo)
     {
-        var todasPecas = await _pecaService.GetAllAsync();
-        var peca = todasPecas.FirstOrDefault(p => p.Codigo == codigo);
+        var result = await _listar.ExecutarAsync(Unit.Value);
+        if (!result.IsSuccess)
+            return this.MapError(result);
 
-        if (peca == null)
+        var peca = result.Value!.FirstOrDefault(p => p.Codigo == codigo);
+        if (peca is null)
             return NotFound(new { message = $"Peça com código '{codigo}' não encontrada" });
 
         return Ok(peca);
@@ -69,11 +100,11 @@ public class PecasController : ControllerBase
     /// O parâmetro `limite` tem valor padrão `10` quando não informado.
     /// </remarks>
     [HttpGet("estoque-baixo")]
-    [ProducesResponseType(typeof(IEnumerable<PecaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<PecaResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetEstoqueBaixo([FromQuery] int limite = 10)
     {
-        var pecas = await _pecaService.GetByEstoqueBaixoAsync(limite);
-        return Ok(pecas);
+        var result = await _listarEstoqueBaixo.ExecutarAsync(limite);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -84,12 +115,10 @@ public class PecasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetEstoque(Guid id)
     {
-        var existe = await _pecaService.GetByIdAsync(id);
-        if (existe == null)
-            return NotFound(new { message = $"Peça com ID {id} não encontrada" });
-
-        var estoque = await _pecaService.GetEstoqueAsync(id);
-        return Ok(new { pecaId = id, estoque });
+        var result = await _obterEstoque.ExecutarAsync(id);
+        return result.IsSuccess
+            ? Ok(new { pecaId = id, estoque = result.Value })
+            : this.MapError(result);
     }
 
     /// <summary>
@@ -99,42 +128,28 @@ public class PecasController : ControllerBase
     /// O `codigo` deve ser único. O estoque inicial pode ser zero; use `PATCH /{id}/estoque` para movimentar.
     /// </remarks>
     [HttpPost]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreatePecaDto createDto)
+    public async Task<IActionResult> Create([FromBody] CriarPecaRequest request)
     {
-        try
-        {
-            var peca = await _pecaService.CreateAsync(createDto);
-            return CreatedAtAction(nameof(GetById), new { id = peca.Id }, peca);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _criar.ExecutarAsync(request);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+            : this.MapError(result);
     }
 
     /// <summary>
     /// Atualiza os dados cadastrais de uma peça (nome, código, preço)
     /// </summary>
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(PecaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PecaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePecaDto updateDto)
+    public async Task<IActionResult> Update(Guid id, [FromBody] AtualizarPecaRequest dto)
     {
-        try
-        {
-            var peca = await _pecaService.UpdateAsync(id, updateDto);
-            if (peca == null)
-                return NotFound(new { message = $"Peça com ID {id} não encontrada" });
-
-            return Ok(peca);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _atualizar.ExecutarAsync(
+            new AtualizarPecaUseCaseRequest(id, dto.Nome, dto.Descricao, dto.PrecoUnitario, dto.Estoque));
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
@@ -148,32 +163,19 @@ public class PecasController : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateEstoque(Guid id, [FromBody] UpdateEstoqueDto updateEstoqueDto)
+    public async Task<IActionResult> UpdateEstoque(Guid id, [FromBody] AtualizarEstoqueRequest dto)
     {
-        try
-        {
-            var existe = await _pecaService.GetByIdAsync(id);
-            if (existe == null)
-                return NotFound(new { message = $"Peça com ID {id} não encontrada" });
+        var result = await _atualizarEstoque.ExecutarAsync(
+            new AtualizarEstoqueUseCaseRequest(id, dto.Quantidade, dto.TipoOperacao));
+        if (!result.IsSuccess)
+            return this.MapError(result);
 
-            await _pecaService.UpdateEstoqueAsync(id, updateEstoqueDto);
-            var novoEstoque = await _pecaService.GetEstoqueAsync(id);
-
-            return Ok(new
-            {
-                success = true,
-                message = $"Estoque {(updateEstoqueDto.TipoOperacao == "incrementar" ? "incrementado" : "decrementado")} com sucesso",
-                novoEstoque
-            });
-        }
-        catch (InvalidOperationException ex)
+        return Ok(new
         {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+            success = true,
+            message = $"Estoque {(dto.TipoOperacao == "incrementar" ? "incrementado" : "decrementado")} com sucesso",
+            novoEstoque = result.Value!.Estoque
+        });
     }
 
     /// <summary>
@@ -184,11 +186,7 @@ public class PecasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var existe = await _pecaService.GetByIdAsync(id);
-        if (existe == null)
-            return NotFound(new { message = $"Peça com ID {id} não encontrada" });
-
-        await _pecaService.DeleteAsync(id);
-        return NoContent();
+        var result = await _remover.ExecutarAsync(id);
+        return result.IsSuccess ? NoContent() : this.MapError(result);
     }
 }

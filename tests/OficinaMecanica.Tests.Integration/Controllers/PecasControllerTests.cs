@@ -1,4 +1,5 @@
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Tests.Integration.TestHelpers;
 using System.Net;
 using System.Net.Http.Json;
@@ -17,7 +18,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
 
     private async Task<Guid> SeedPecaAsync(string? codigo = null, int estoque = 10)
     {
-        var dto = new CreatePecaDto
+        var dto = new CriarPecaRequest
         {
             Nome = $"Peça {Guid.NewGuid():N}",
             Codigo = codigo ?? $"COD-{Guid.NewGuid():N}"[..12],
@@ -27,7 +28,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         };
         var resp = await AdminClient().PostAsJsonAsync("/api/pecas", dto);
         resp.EnsureSuccessStatusCode();
-        var result = await resp.Content.ReadFromJsonAsync<PecaDto>();
+        var result = await resp.Content.ReadFromJsonAsync<PecaResponse>();
         return result!.Id;
     }
 
@@ -102,7 +103,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Create_ComDadosValidos_Retorna201()
     {
-        var dto = new CreatePecaDto
+        var dto = new CriarPecaRequest
         {
             Nome = "Filtro de Ar",
             Codigo = $"FAR-{Guid.NewGuid():N}"[..10],
@@ -116,25 +117,25 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Create_ComCodigoDuplicado_Retorna400()
+    public async Task Create_ComCodigoDuplicado_Retorna409()
     {
         var codigo = $"DUP-{Guid.NewGuid():N}"[..10];
         await SeedPecaAsync(codigo);
 
-        var resp = await AdminClient().PostAsJsonAsync("/api/pecas", new CreatePecaDto
+        var resp = await AdminClient().PostAsJsonAsync("/api/pecas", new CriarPecaRequest
         {
             Nome = "Outra Peça", Codigo = codigo,
             Descricao = "Desc", PrecoUnitario = 10m, Estoque = 1
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
 
     [Fact]
     public async Task Update_ComIdExistente_Retorna200()
     {
         var id = await SeedPecaAsync();
-        var dto = new UpdatePecaDto
+        var dto = new AtualizarPecaRequest
         {
             Nome = "Nome Atualizado",
             Descricao = "Nova descrição",
@@ -149,7 +150,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task Update_ComIdInexistente_Retorna404()
     {
-        var dto = new UpdatePecaDto { Nome = "X", Descricao = "Y", PrecoUnitario = 1m, Estoque = 0 };
+        var dto = new AtualizarPecaRequest { Nome = "X", Descricao = "Y", PrecoUnitario = 1m, Estoque = 0 };
         var resp = await AdminClient().PutAsJsonAsync($"/api/pecas/{Guid.NewGuid()}", dto);
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
@@ -158,7 +159,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     public async Task UpdateEstoque_Incrementar_Retorna200()
     {
         var id = await SeedPecaAsync(estoque: 5);
-        var dto = new UpdateEstoqueDto { Quantidade = 10, TipoOperacao = "incrementar" };
+        var dto = new AtualizarEstoqueRequest { Quantidade = 10, TipoOperacao = "incrementar" };
 
         var resp = await AdminClient().PatchAsJsonAsync($"/api/pecas/{id}/estoque", dto);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
@@ -168,7 +169,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     public async Task UpdateEstoque_Decrementar_Retorna200()
     {
         var id = await SeedPecaAsync(estoque: 10);
-        var dto = new UpdateEstoqueDto { Quantidade = 3, TipoOperacao = "decrementar" };
+        var dto = new AtualizarEstoqueRequest { Quantidade = 3, TipoOperacao = "decrementar" };
 
         var resp = await AdminClient().PatchAsJsonAsync($"/api/pecas/{id}/estoque", dto);
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
@@ -177,7 +178,7 @@ public class PecasControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     [Fact]
     public async Task UpdateEstoque_ComIdInexistente_Retorna404()
     {
-        var dto = new UpdateEstoqueDto { Quantidade = 1, TipoOperacao = "incrementar" };
+        var dto = new AtualizarEstoqueRequest { Quantidade = 1, TipoOperacao = "incrementar" };
         var resp = await AdminClient().PatchAsJsonAsync($"/api/pecas/{Guid.NewGuid()}/estoque", dto);
         Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }

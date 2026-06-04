@@ -1,7 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
-using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.API.Common;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOS;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.EntregarOS;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.ForcarStatusOS;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.IniciarDiagnostico;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConclusao;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.ObterHistoricoOS;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.RejeitarOS;
 
 namespace OficinaMecanica.API.Controllers;
 
@@ -11,10 +19,31 @@ namespace OficinaMecanica.API.Controllers;
 [Authorize]
 public class OrdemServicoStatusController : ControllerBase
 {
-    private readonly IOrdemServicoStatusService _service;
+    private readonly IIniciarDiagnosticoUseCase _iniciar;
+    private readonly IAprovarOSUseCase _aprovar;
+    private readonly IRejeitarOSUseCase _rejeitar;
+    private readonly INotificarConclusaoUseCase _notificar;
+    private readonly IEntregarOSUseCase _entregar;
+    private readonly IForcarStatusOSUseCase _forcar;
+    private readonly IObterHistoricoOSUseCase _historico;
 
-    public OrdemServicoStatusController(IOrdemServicoStatusService service) =>
-        _service = service;
+    public OrdemServicoStatusController(
+        IIniciarDiagnosticoUseCase iniciar,
+        IAprovarOSUseCase aprovar,
+        IRejeitarOSUseCase rejeitar,
+        INotificarConclusaoUseCase notificar,
+        IEntregarOSUseCase entregar,
+        IForcarStatusOSUseCase forcar,
+        IObterHistoricoOSUseCase historico)
+    {
+        _iniciar = iniciar;
+        _aprovar = aprovar;
+        _rejeitar = rejeitar;
+        _notificar = notificar;
+        _entregar = entregar;
+        _forcar = forcar;
+        _historico = historico;
+    }
 
     private string UsuarioAtual() =>
         User?.FindFirst("email")?.Value
@@ -29,8 +58,11 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> IniciarDiagnostico(Guid id) =>
-        await TryRunAsync(() => _service.IniciarDiagnosticoAsync(id, UsuarioAtual()));
+    public async Task<IActionResult> IniciarDiagnostico(Guid id)
+    {
+        var result = await _iniciar.ExecutarAsync(new IniciarDiagnosticoRequest(id, UsuarioAtual()));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
+    }
 
     /// <summary>
     /// Aprova o orçamento da OS, avançando de AguardandoAprovacao para EmExecucao
@@ -40,8 +72,11 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Aprovar(Guid id) =>
-        await TryRunAsync(() => _service.AprovarAsync(id, UsuarioAtual()));
+    public async Task<IActionResult> Aprovar(Guid id)
+    {
+        var result = await _aprovar.ExecutarAsync(new AprovarOSRequest(id, UsuarioAtual()));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
+    }
 
     /// <summary>
     /// Rejeita o orçamento da OS, encerrando o fluxo com status Rejeitada
@@ -54,8 +89,12 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Rejeitar(Guid id, [FromBody] RejeitarOSDto dto) =>
-        await TryRunAsync(() => _service.RejeitarAsync(id, UsuarioAtual(), dto?.Motivo ?? string.Empty));
+    public async Task<IActionResult> Rejeitar(Guid id, [FromBody] RejeitarOSRequest dto)
+    {
+        var result = await _rejeitar.ExecutarAsync(
+            new RejeitarOSUseCaseRequest(id, UsuarioAtual(), dto?.Motivo ?? string.Empty));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
+    }
 
     /// <summary>
     /// Notifica a conclusão do serviço, avançando a OS de EmExecucao para Finalizada
@@ -65,8 +104,11 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> NotificarConclusao(Guid id) =>
-        await TryRunAsync(() => _service.NotificarConclusaoAsync(id, UsuarioAtual()));
+    public async Task<IActionResult> NotificarConclusao(Guid id)
+    {
+        var result = await _notificar.ExecutarAsync(new NotificarConclusaoRequest(id, UsuarioAtual()));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
+    }
 
     /// <summary>
     /// Registra a entrega do veículo ao cliente, encerrando a OS com status Entregue
@@ -76,8 +118,11 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Entregar(Guid id) =>
-        await TryRunAsync(() => _service.EntregarAsync(id, UsuarioAtual()));
+    public async Task<IActionResult> Entregar(Guid id)
+    {
+        var result = await _entregar.ExecutarAsync(new EntregarOSUseCaseRequest(id, UsuarioAtual()));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
+    }
 
     /// <summary>
     /// Força a OS para um status arbitrário, ignorando as regras de transição do fluxo normal
@@ -92,47 +137,23 @@ public class OrdemServicoStatusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ForcarStatus(Guid id, [FromBody] TransicaoStatusOSDto dto) =>
-        await TryRunAsync(() => _service.ForcarStatusAsync(id, dto.NovoStatus, UsuarioAtual(), dto?.Motivo ?? string.Empty));
+    public async Task<IActionResult> ForcarStatus(Guid id, [FromBody] TransicaoStatusOSRequest dto)
+    {
+        var result = await _forcar.ExecutarAsync(
+            new ForcarStatusOSRequest(id, dto.NovoStatus, UsuarioAtual(), dto?.Motivo ?? string.Empty));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
+    }
 
     /// <summary>
     /// Retorna o histórico completo de transições de status de uma OS
     /// </summary>
     [HttpGet("{id:guid}/historico")]
     [Authorize(Roles = "Admin,Mecanico,Cliente")]
-    [ProducesResponseType(typeof(IEnumerable<HistoricoStatusOSDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<HistoricoStatusOSResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Historico(Guid id)
     {
-        try
-        {
-            var historico = await _service.ObterHistoricoAsync(id);
-            return Ok(historico);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-    }
-
-    private async Task<IActionResult> TryRunAsync(Func<Task> action)
-    {
-        try
-        {
-            await action();
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _historico.ExecutarAsync(id);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 }

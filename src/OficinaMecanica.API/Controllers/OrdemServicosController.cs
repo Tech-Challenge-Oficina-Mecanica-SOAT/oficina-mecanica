@@ -1,7 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
-using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.API.Common;
+using OficinaMecanica.Application.Common;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
+using OficinaMecanica.Application.UseCases.OrdemServico.AbrirOrdemServico;
+using OficinaMecanica.Application.UseCases.OrdemServico.AdicionarItensOS;
+using OficinaMecanica.Application.UseCases.OrdemServico.ConsultarOrdemServico;
+using OficinaMecanica.Application.UseCases.OrdemServico.ListarOrdensServico;
+using OficinaMecanica.Application.UseCases.OrdemServico.ObterTempoMedioExecucao;
+using OficinaMecanica.Application.UseCases.OrdemServico.RemoverItemOS;
 
 namespace OficinaMecanica.API.Controllers;
 
@@ -11,55 +19,64 @@ namespace OficinaMecanica.API.Controllers;
 [Authorize(Roles = "Admin")]
 public class OrdemServicosController : ControllerBase
 {
-    private readonly IOrdemServicoService _service;
+    private readonly IAbrirOrdemServicoUseCase _abrir;
+    private readonly IConsultarOrdemServicoUseCase _consultar;
+    private readonly IListarOrdensServicoUseCase _listar;
+    private readonly IAdicionarItensOSUseCase _adicionarItens;
+    private readonly IRemoverItemOSUseCase _removerItem;
+    private readonly IObterTempoMedioExecucaoUseCase _tempoMedio;
 
-    public OrdemServicosController(IOrdemServicoService service)
+    public OrdemServicosController(
+        IAbrirOrdemServicoUseCase abrir,
+        IConsultarOrdemServicoUseCase consultar,
+        IListarOrdensServicoUseCase listar,
+        IAdicionarItensOSUseCase adicionarItens,
+        IRemoverItemOSUseCase removerItem,
+        IObterTempoMedioExecucaoUseCase tempoMedio)
     {
-        _service = service;
+        _abrir = abrir;
+        _consultar = consultar;
+        _listar = listar;
+        _adicionarItens = adicionarItens;
+        _removerItem = removerItem;
+        _tempoMedio = tempoMedio;
     }
 
     /// <summary>
     /// Lista todas as ordens de serviço
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<OrdemServicoResumoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<OrdemServicoResumoResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll()
     {
-        var lista = await _service.GetAllAsync();
-        return Ok(lista);
+        var result = await _listar.ExecutarAsync(Unit.Value);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
     /// Obtém uma ordem de serviço por ID com todos os itens
     /// </summary>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(OrdemServicoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OrdemServicoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var os = await _service.GetByIdAsync(id);
-        if (os == null)
-            return NotFound(new { message = "Ordem de serviço não encontrada" });
-        return Ok(os);
+        var result = await _consultar.ExecutarAsync(id);
+        return result.IsSuccess ? Ok(result.Value) : this.MapError(result);
     }
 
     /// <summary>
     /// Cria uma nova ordem de serviço vinculando cliente e veículo
     /// </summary>
     [HttpPost]
-    [ProducesResponseType(typeof(OrdemServicoDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(OrdemServicoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CreateOrdemServicoDto createDto)
+    public async Task<IActionResult> Create([FromBody] AbrirOrdemServicoRequest request)
     {
-        try
-        {
-            var os = await _service.CreateAsync(createDto);
-            return CreatedAtAction(nameof(GetById), new { id = os.Id }, os);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var result = await _abrir.ExecutarAsync(request);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+            : this.MapError(result);
     }
 
     /// <summary>
@@ -70,24 +87,16 @@ public class OrdemServicosController : ControllerBase
     /// O campo **tipo** aceita: `servico`, `peca` ou `insumo`
     /// </remarks>
     [HttpPost("{id:guid}/itens")]
-    [ProducesResponseType(typeof(IEnumerable<OrdemServicoItemDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(IEnumerable<OrdemServicoItemResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AddItem(Guid id, [FromBody] List<CreateOrdemServicoItemDto> itensDto)
+    public async Task<IActionResult> AddItem(Guid id, [FromBody] List<AdicionarOSItemRequest> itens)
     {
-        try
-        {
-            var itens = await _service.AddItensAsync(id, itensDto);
-            return CreatedAtAction(nameof(GetById), new { id }, itens);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        var request = new AdicionarItensOSRequest { OrdemServicoId = id, Itens = itens };
+        var result = await _adicionarItens.ExecutarAsync(request);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id }, result.Value)
+            : this.MapError(result);
     }
 
     /// <summary>
@@ -99,15 +108,8 @@ public class OrdemServicosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveItem(Guid id, Guid itemId)
     {
-        try
-        {
-            await _service.RemoveItemAsync(id, itemId);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var result = await _removerItem.ExecutarAsync(new RemoverItemOSRequest(id, itemId));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
     }
 
     /// <summary>
@@ -117,7 +119,9 @@ public class OrdemServicosController : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTempoMedioExecucao()
     {
-        var horas = await _service.GetTempoMedioExecucaoAsync();
-        return Ok(new { tempoMedioHoras = horas });
+        var result = await _tempoMedio.ExecutarAsync(Unit.Value);
+        return result.IsSuccess
+            ? Ok(new { tempoMedioHoras = result.Value })
+            : this.MapError(result);
     }
 }

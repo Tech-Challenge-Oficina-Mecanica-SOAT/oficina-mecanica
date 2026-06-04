@@ -1,8 +1,11 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Interfaces;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 using OficinaMecanica.Infrastructure.Data;
 using OficinaMecanica.Tests.Integration.TestHelpers;
 using System.Net;
@@ -22,7 +25,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Teste", "12345678909", "(11) 99999-0000", "t@t.com");
+        var cliente = new Cliente("Teste", new Documento("12345678909"), "(11) 99999-0000", new Email("t@t.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 
@@ -84,8 +87,8 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         // EmDiagnostico → AguardandoAprovacao (via service direto, simula gancho M4)
         using (var scope = _factory.Services.CreateScope())
         {
-            var statusService = scope.ServiceProvider.GetRequiredService<IOrdemServicoStatusService>();
-            await statusService.MarcarAguardandoAprovacaoAsync(osId, "M4-simulado");
+            var marcarAguardando = scope.ServiceProvider.GetRequiredService<IMarcarAguardandoAprovacaoUseCase>();
+            await marcarAguardando.ExecutarAsync(new MarcarAguardandoAprovacaoRequest(osId, "M4-simulado"));
         }
 
         // AguardandoAprovacao → EmExecucao
@@ -98,7 +101,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         (await admin.PatchAsync($"/api/ordens-servico/{osId}/entregar", null)).EnsureSuccessStatusCode();
 
         // Verificar histórico completo
-        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSDto>>($"/api/ordens-servico/{osId}/historico");
+        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSResponse>>($"/api/ordens-servico/{osId}/historico");
         hist.Should().NotBeNull();
         hist!.Should().HaveCount(6); // criação + 5 transições
         hist.Last().StatusNovo.Should().Be("Entregue");
@@ -120,7 +123,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var admin = ClientCom("Admin");
-        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSDto>>($"/api/ordens-servico/{osId}/historico");
+        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSResponse>>($"/api/ordens-servico/{osId}/historico");
         hist!.Last().StatusNovo.Should().Be("Finalizada");
     }
 
@@ -136,12 +139,12 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await client.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/rejeitar",
-            new RejeitarOSDto("preço acima do orçado"));
+            new RejeitarOSRequest("preço acima do orçado"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var admin = ClientCom("Admin");
-        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSDto>>($"/api/ordens-servico/{osId}/historico");
+        var hist = await admin.GetFromJsonAsync<List<HistoricoStatusOSResponse>>($"/api/ordens-servico/{osId}/historico");
         hist!.Last().StatusNovo.Should().Be("Rejeitada");
         hist!.Last().Motivo.Should().Contain("preço acima");
     }
@@ -158,7 +161,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await client.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/rejeitar",
-            new RejeitarOSDto(""));
+            new RejeitarOSRequest(""));
 
         resp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -171,7 +174,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await admin.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/status",
-            new TransicaoStatusOSDto(EnumStatusOS.Finalizada, "correção pós-incidente"));
+            new TransicaoStatusOSRequest(EnumStatusOS.Finalizada, "correção pós-incidente"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
@@ -184,7 +187,7 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
 
         var resp = await mecanico.PatchAsJsonAsync(
             $"/api/ordens-servico/{osId}/status",
-            new TransicaoStatusOSDto(EnumStatusOS.Finalizada, "tentativa indevida"));
+            new TransicaoStatusOSRequest(EnumStatusOS.Finalizada, "tentativa indevida"));
 
         resp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }

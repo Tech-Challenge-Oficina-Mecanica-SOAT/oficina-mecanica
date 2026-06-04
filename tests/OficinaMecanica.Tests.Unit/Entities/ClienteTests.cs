@@ -1,25 +1,28 @@
-﻿using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Tests.Unit.Entities;
 
 
 public class ClienteTests
 {
+    private static Documento Doc(string s = "12345678909") => new(s);
+    private static Email Mail(string s = "teste@email.com") => new(s);
+
     [Fact]
     public void Construtor_DeveCriarCliente_QuandoDadosValidos()
     {
         var nome = "João da Silva";
-        var documento = "123.456.789-09"; // CPF válido
+        var documento = new Documento("123.456.789-09"); // CPF válido
         var telefone = "11999999999";
-        var email = "joao@email.com";
+        var email = new Email("joao@email.com");
 
         var cliente = new Cliente(nome, documento, telefone, email);
 
         Assert.Equal(nome, cliente.Nome);
-        Assert.True(Cliente.ValidarDocumento(documento));
-        Assert.True(Cliente.ValidarDocumento(cliente.Documento));
+        Assert.Equal("12345678909", cliente.Documento.Valor);
         Assert.Equal(telefone, cliente.Telefone);
-        Assert.Equal(email.ToLower(), cliente.Email);
+        Assert.Equal("joao@email.com", cliente.Email.Valor);
         Assert.True(cliente.Ativo);
         Assert.NotEqual(Guid.Empty, cliente.Id);
         Assert.True((DateTime.UtcNow - cliente.CriadoEm).TotalSeconds < 5);
@@ -32,21 +35,17 @@ public class ClienteTests
     public void Construtor_DeveLancarExcecao_QuandoNomeInvalido(string? nome)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Cliente(nome!, "12345678909", "11999999999", "teste@email.com"));
+            new Cliente(nome!, Doc(), "11999999999", Mail()));
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
     [InlineData("123")]
     [InlineData("11111111111")]
     [InlineData("00000000000000")]
     [InlineData("1234567890123")]
-    public void Construtor_DeveLancarExcecao_QuandoDocumentoInvalido(string? documento)
+    public void Documento_DeveLancarExcecao_QuandoValorInvalido(string documento)
     {
-        Assert.Throws<ArgumentException>(() =>
-            new Cliente("Nome", documento!, "11999999999", "teste@email.com"));
+        Assert.Throws<ArgumentException>(() => new Documento(documento));
     }
 
     [Theory]
@@ -56,32 +55,28 @@ public class ClienteTests
     public void Construtor_DeveLancarExcecao_QuandoTelefoneInvalido(string? telefone)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Cliente("Nome", "12345678909", telefone!, "teste@email.com"));
+            new Cliente("Nome", Doc(), telefone!, Mail()));
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
     [InlineData("emailinvalido")]
     [InlineData("email@")]
     [InlineData("@email.com")]
     [InlineData("email@email")]
-    public void Construtor_DeveLancarExcecao_QuandoEmailInvalido(string? email)
+    public void Email_DeveLancarExcecao_QuandoValorInvalido(string email)
     {
-        Assert.Throws<ArgumentException>(() =>
-            new Cliente("Nome", "12345678909", "11999999999", email!));
+        Assert.Throws<ArgumentException>(() => new Email(email));
     }
 
     [Fact]
     public void Atualizar_DeveAlterarDados_QuandoValidos()
     {
-        var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
-        cliente.Atualizar("Novo Nome", "11888888888", "novo@email.com");
+        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
+        cliente.Atualizar("Novo Nome", "11888888888", new Email("novo@email.com"));
 
         Assert.Equal("Novo Nome", cliente.Nome);
         Assert.Equal("11888888888", cliente.Telefone);
-        Assert.Equal("novo@email.com", cliente.Email);
+        Assert.Equal("novo@email.com", cliente.Email.Valor);
     }
 
     [Theory]
@@ -90,9 +85,9 @@ public class ClienteTests
     [InlineData("   ")]
     public void Atualizar_DeveLancarExcecao_QuandoNomeInvalido(string? nome)
     {
-        var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
+        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
         Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar(nome!, "11999999999", "teste@email.com"));
+            cliente.Atualizar(nome!, "11999999999", Mail()));
     }
 
     [Theory]
@@ -101,30 +96,15 @@ public class ClienteTests
     [InlineData("   ")]
     public void Atualizar_DeveLancarExcecao_QuandoTelefoneInvalido(string? telefone)
     {
-        var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
+        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
         Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar("Nome", telefone!, "teste@email.com"));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("emailinvalido")]
-    [InlineData("email@")]
-    [InlineData("@email.com")]
-    [InlineData("email@email")]
-    public void Atualizar_DeveLancarExcecao_QuandoEmailInvalido(string? email)
-    {
-        var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
-        Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar("Nome", "11999999999", email!));
+            cliente.Atualizar("Nome", telefone!, Mail()));
     }
 
     [Fact]
     public void Desativar_DeveDefinirAtivoComoFalse()
     {
-        var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
+        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
         cliente.Desativar();
         Assert.False(cliente.Ativo);
     }
@@ -132,7 +112,7 @@ public class ClienteTests
     [Fact]
     public void Ativar_DeveDefinirAtivoComoTrue()
     {
-        var cliente = new Cliente("Nome", "12345678909", "11999999999", "teste@email.com");
+        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
         cliente.Desativar();
         cliente.Ativar();
         Assert.True(cliente.Ativo);
@@ -141,68 +121,59 @@ public class ClienteTests
     [Theory]
     [InlineData("12345678909")] // CPF válido
     [InlineData("52998224725")] // CPF válido
-    public void ValidarDocumento_DeveRetornarTrue_ParaCpfValido(string cpf)
+    public void Documento_DeveCriar_ParaCpfValido(string cpf)
     {
-        Assert.True(Cliente.ValidarDocumento(cpf));
+        var d = new Documento(cpf);
+        Assert.Equal(TipoDocumento.Cpf, d.Tipo);
     }
 
     [Theory]
     [InlineData("12345678901")] // CPF inválido
     [InlineData("11111111111")] // CPF inválido
-    public void ValidarDocumento_DeveRetornarFalse_ParaCpfInvalido(string cpf)
+    public void Documento_DeveLancar_ParaCpfInvalido(string cpf)
     {
-        Assert.False(Cliente.ValidarDocumento(cpf));
+        Assert.Throws<ArgumentException>(() => new Documento(cpf));
     }
 
     [Theory]
     [InlineData("11222333000181")] // CNPJ válido
     [InlineData("19131243000197")] // CNPJ válido
-    public void ValidarDocumento_DeveRetornarTrue_ParaCnpjValido(string cnpj)
+    public void Documento_DeveCriar_ParaCnpjValido(string cnpj)
     {
-        Assert.True(Cliente.ValidarDocumento(cnpj));
+        var d = new Documento(cnpj);
+        Assert.Equal(TipoDocumento.Cnpj, d.Tipo);
     }
 
     [Theory]
     [InlineData("11222333000180")] // CNPJ inválido
     [InlineData("00000000000000")] // CNPJ inválido
-    public void ValidarDocumento_DeveRetornarFalse_ParaCnpjInvalido(string cnpj)
+    public void Documento_DeveLancar_ParaCnpjInvalido(string cnpj)
     {
-        Assert.False(Cliente.ValidarDocumento(cnpj));
+        Assert.Throws<ArgumentException>(() => new Documento(cnpj));
     }
 
     [Theory]
-    //[InlineData("A1222333000123")] // CNPJ alfanumérico válido (A=0)
     [InlineData("B1222333000181")] // CNPJ alfanumérico válido (B=1)
-    public void ValidarDocumento_DeveRetornarTrue_ParaCnpjAlfanumericoValido(string cnpjAlfa)
+    public void Documento_DeveCriar_ParaCnpjAlfanumericoValido(string cnpjAlfa)
     {
-        Assert.True(Cliente.ValidarDocumento(cnpjAlfa));
+        var d = new Documento(cnpjAlfa);
+        Assert.Equal(TipoDocumento.Cnpj, d.Tipo);
     }
 
     [Theory]
     [InlineData("K1222333000181")] // Letra inválida (K=10)
     [InlineData("A1222333000180")] // Dígito verificador inválido
-    public void ValidarDocumento_DeveRetornarFalse_ParaCnpjAlfanumericoInvalido(string cnpjAlfa)
+    public void Documento_DeveLancar_ParaCnpjAlfanumericoInvalido(string cnpjAlfa)
     {
-        Assert.False(Cliente.ValidarDocumento(cnpjAlfa));
+        Assert.Throws<ArgumentException>(() => new Documento(cnpjAlfa));
     }
 
     [Theory]
     [InlineData("email@email.com")]
     [InlineData("teste.teste@dominio.com.br")]
-    public void ValidarEmail_DeveRetornarTrue_ParaEmailValido(string email)
+    public void Email_DeveCriar_ParaValorValido(string email)
     {
-        var metodo = typeof(Cliente).GetMethod("ValidarEmail", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
-        Assert.True((bool)metodo.Invoke(null, new object[] { email })!);
-    }
-
-    [Theory]
-    [InlineData("emailinvalido")]
-    [InlineData("email@")]
-    [InlineData("@email.com")]
-    [InlineData("email@email")]
-    public void ValidarEmail_DeveRetornarFalse_ParaEmailInvalido(string email)
-    {
-        var metodo = typeof(Cliente).GetMethod("ValidarEmail", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!;
-        Assert.False((bool)metodo.Invoke(null, new object[] { email })!);
+        var e = new Email(email);
+        Assert.Equal(email.ToLower(), e.Valor);
     }
 }

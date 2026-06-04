@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.Application.DTOs;
+using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Interfaces;
 
 namespace OficinaMecanica.API.Controllers;
@@ -24,7 +25,7 @@ public class PublicoController : ControllerBase
     /// nenhum dado pessoal ou financeiro é exposto. Ideal para integração com portais e apps de rastreamento.
     /// </remarks>
     [HttpGet("os/{id:guid}/status")]
-    [ProducesResponseType(typeof(PainelStatusOSDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PainelStatusOSResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetStatusOS(Guid id)
     {
@@ -32,7 +33,7 @@ public class PublicoController : ControllerBase
         if (os is null)
             return NotFound(new { mensagem = $"Ordem de serviço {id} não encontrada." });
 
-        var dto = new PainelStatusOSDto(
+        var dto = new PainelStatusOSResponse(
             OsId: os.Id,
             Status: os.StatusOS.ToString(),
             AtualizadoEm: os.DataFechamento ?? os.DataAbertura
