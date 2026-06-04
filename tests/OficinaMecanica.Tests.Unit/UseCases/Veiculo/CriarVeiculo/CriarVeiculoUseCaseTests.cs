@@ -38,7 +38,7 @@ public class CriarVeiculoUseCaseTests
     [Fact]
     public async Task ExecutarAsync_PlacaDuplicada_RetornaConflict()
     {
-        var cli = new Domain.Entities.Cliente("J", new Documento("12345678909"), "1", new Email("a@b.com"));
+        var cli = new Domain.Entities.Cliente("J", new Documento("12345678909"), new Telefone("11911223344"), new Email("a@b.com"));
         _clienteRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(cli);
         _veiculoRepo.Setup(r => r.ExistsByPlacaAsync(It.IsAny<string>())).ReturnsAsync(true);
 
@@ -50,7 +50,7 @@ public class CriarVeiculoUseCaseTests
     [Fact]
     public async Task ExecutarAsync_Valido_CriaVeiculo()
     {
-        var cli = new Domain.Entities.Cliente("J", new Documento("12345678909"), "1", new Email("a@b.com"));
+        var cli = new Domain.Entities.Cliente("J", new Documento("12345678909"), new Telefone("11911223344"), new Email("a@b.com"));
         _clienteRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync(cli);
         _veiculoRepo.Setup(r => r.ExistsByPlacaAsync(It.IsAny<string>())).ReturnsAsync(false);
         _veiculoRepo.Setup(r => r.AddAsync(It.IsAny<Domain.Entities.Veiculo>()))

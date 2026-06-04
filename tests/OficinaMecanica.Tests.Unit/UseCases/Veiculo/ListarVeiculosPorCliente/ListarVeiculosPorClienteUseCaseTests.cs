@@ -3,6 +3,7 @@ using Moq;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Application.UseCases.Veiculo.ListarVeiculosPorCliente;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Tests.Unit.UseCases.Veiculo.ListarVeiculosPorCliente;
 
@@ -15,7 +16,7 @@ public class ListarVeiculosPorClienteUseCaseTests
         var repo = new Mock<IVeiculoRepository>();
         repo.Setup(r => r.GetByClienteIdAsync(clienteId)).ReturnsAsync(new[]
         {
-            new Domain.Entities.Veiculo(clienteId, "ABC1234", "Fiat", "Uno", 2020)
+            new Domain.Entities.Veiculo(clienteId, new Placa("ABC1234"), "Fiat", "Uno", 2020)
         });
         var sut = new ListarVeiculosPorClienteUseCase(repo.Object, new VeiculoMapper());
 
