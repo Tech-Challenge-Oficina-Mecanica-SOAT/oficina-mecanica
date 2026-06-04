@@ -1,11 +1,11 @@
-﻿using System.Text.RegularExpressions;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Domain.Entities;
 
 public class Veiculo
 {
     public Guid Id { get; private set; }
-    public string Placa { get; private set; } = null!;
+    public Placa Placa { get; private set; } = null!;
     public string Marca { get; private set; } = null!;
     public string Modelo { get; private set; } = null!;
     public int Ano { get; private set; }
@@ -15,13 +15,13 @@ public class Veiculo
     public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
     private Veiculo() { }
 
-    public Veiculo(Guid clienteId, string placa, string marca, string modelo, int ano)
+    public Veiculo(Guid clienteId, Placa placa, string marca, string modelo, int ano)
     {
         if (clienteId == Guid.Empty)
             throw new ArgumentException("ClienteId é obrigatório");
 
-        if (!ValidarPlaca(placa))
-            throw new ArgumentException("Placa inválida. Formato: ABC1234 ou ABC1D23");
+        if (placa is null)
+            throw new ArgumentException("Placa é obrigatória");
 
         if (string.IsNullOrWhiteSpace(marca))
             throw new ArgumentException("Marca é obrigatória");
@@ -34,17 +34,17 @@ public class Veiculo
 
         Id = Guid.NewGuid();
         ClienteId = clienteId;
-        Placa = NormalizarPlaca(placa);
+        Placa = placa;
         Marca = marca;
         Modelo = modelo;
         Ano = ano;
         CriadoEm = DateTime.UtcNow;
     }
 
-    public void Atualizar(Guid? clienteId, string placa, string marca, string modelo, int ano)
+    public void Atualizar(Guid? clienteId, Placa placa, string marca, string modelo, int ano)
     {
-        if (!ValidarPlaca(placa))
-            throw new ArgumentException("Placa inválida. Formato: ABC1234 ou ABC1D23");
+        if (placa is null)
+            throw new ArgumentException("Placa é obrigatória");
 
         if (string.IsNullOrWhiteSpace(marca))
             throw new ArgumentException("Marca é obrigatória");
@@ -58,29 +58,9 @@ public class Veiculo
         if (clienteId.HasValue && clienteId.Value != Guid.Empty)
             ClienteId = clienteId.Value;
 
-        Placa = NormalizarPlaca(placa);
+        Placa = placa;
         Marca = marca;
         Modelo = modelo;
         Ano = ano;
-    }
-
-    private static string NormalizarPlaca(string placa)
-    {
-        return new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpper();
-    }
-
-    private static bool ValidarPlaca(string placa)
-    {
-        if (string.IsNullOrWhiteSpace(placa))
-            return false;
-
-        var placaLimpa = NormalizarPlaca(placa);
-
-        // Formato antigo: ABC1234
-        var padraoAntigo = @"^[A-Z]{3}[0-9]{4}$";
-        // Formato Mercosul: ABC1D23
-        var padraoMercosul = @"^[A-Z]{3}[0-9][A-Z][0-9]{2}$";
-
-        return Regex.IsMatch(placaLimpa, padraoAntigo) || Regex.IsMatch(placaLimpa, padraoMercosul);
     }
 }

@@ -14,7 +14,7 @@ public class ListarClientesUseCaseTests
     public async Task ExecutarAsync_RetornaListaMapeada()
     {
         var repo = new Mock<IClienteRepository>();
-        var c = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), "111", new Email("a@b.com"));
+        var c = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), new Telefone("11911223344"), new Email("a@b.com"));
         repo.Setup(r => r.GetAllAsync()).ReturnsAsync(new[] { c });
         var sut = new ListarClientesUseCase(repo.Object, new ClienteMapper());
 

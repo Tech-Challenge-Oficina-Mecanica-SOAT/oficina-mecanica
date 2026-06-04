@@ -25,7 +25,7 @@ public class DesativarClienteUseCaseTests
     [Fact]
     public async Task ExecutarAsync_Encontrado_DesativaCliente()
     {
-        var c = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), "111", new Email("a@b.com"));
+        var c = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), new Telefone("11911223344"), new Email("a@b.com"));
         _repo.Setup(r => r.GetByIdAsync(c.Id)).ReturnsAsync(c);
 
         var result = await _sut.ExecutarAsync(c.Id);

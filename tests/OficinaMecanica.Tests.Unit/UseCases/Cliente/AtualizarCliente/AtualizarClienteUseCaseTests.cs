@@ -30,10 +30,10 @@ public class AtualizarClienteUseCaseTests
     [Fact]
     public async Task ExecutarAsync_DadosValidos_AtualizaCliente()
     {
-        var cliente = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), "111", new Email("a@b.com"));
+        var cliente = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), new Telefone("11911223344"), new Email("a@b.com"));
         _repo.Setup(r => r.GetByIdAsync(cliente.Id)).ReturnsAsync(cliente);
 
-        var result = await _sut.ExecutarAsync(new AtualizarClienteUseCaseRequest(cliente.Id, "Joao Silva", "222", "b@c.com"));
+        var result = await _sut.ExecutarAsync(new AtualizarClienteUseCaseRequest(cliente.Id, "Joao Silva", "11988776655", "b@c.com"));
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Nome.Should().Be("Joao Silva");

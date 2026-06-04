@@ -3,6 +3,7 @@ using Moq;
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.UseCases.Cliente.RemoverCliente;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Tests.Unit.UseCases.Cliente.RemoverCliente;
 
@@ -36,7 +37,7 @@ public class RemoverClienteUseCaseTests
         var cliente = new Domain.Entities.Cliente(
             "João Silva",
             new Domain.ValueObjects.Documento("123.456.789-09"),
-            "11999999999",
+            new Telefone("11999999999"),
             new Domain.ValueObjects.Email("joao@email.com"));
         _repo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(cliente);
         _repo.Setup(r => r.DeleteAsync(id)).Returns(Task.CompletedTask);

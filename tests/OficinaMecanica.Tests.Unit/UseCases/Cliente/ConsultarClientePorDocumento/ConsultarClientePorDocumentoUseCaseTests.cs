@@ -36,7 +36,7 @@ public class ConsultarClientePorDocumentoUseCaseTests
     [Fact]
     public async Task ExecutarAsync_Encontrado_RetornaSuccess()
     {
-        var cliente = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), "111", new Email("a@b.com"));
+        var cliente = new Domain.Entities.Cliente("Joao", new Documento("12345678909"), new Telefone("11911223344"), new Email("a@b.com"));
         _repo.Setup(r => r.GetByDocumentoAsync("12345678909")).ReturnsAsync(cliente);
 
         var result = await _sut.ExecutarAsync("12345678909");

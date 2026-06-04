@@ -8,20 +8,21 @@ public class ClienteTests
 {
     private static Documento Doc(string s = "12345678909") => new(s);
     private static Email Mail(string s = "teste@email.com") => new(s);
+    private static Telefone Tel(string s = "11999999999") => new(s);
 
     [Fact]
     public void Construtor_DeveCriarCliente_QuandoDadosValidos()
     {
         var nome = "João da Silva";
         var documento = new Documento("123.456.789-09"); // CPF válido
-        var telefone = "11999999999";
+        var telefone = new Telefone("11999999999");
         var email = new Email("joao@email.com");
 
         var cliente = new Cliente(nome, documento, telefone, email);
 
         Assert.Equal(nome, cliente.Nome);
         Assert.Equal("12345678909", cliente.Documento.Valor);
-        Assert.Equal(telefone, cliente.Telefone);
+        Assert.Equal("11999999999", cliente.Telefone.Valor);
         Assert.Equal("joao@email.com", cliente.Email.Valor);
         Assert.True(cliente.Ativo);
         Assert.NotEqual(Guid.Empty, cliente.Id);
@@ -35,7 +36,7 @@ public class ClienteTests
     public void Construtor_DeveLancarExcecao_QuandoNomeInvalido(string? nome)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Cliente(nome!, Doc(), "11999999999", Mail()));
+            new Cliente(nome!, Doc(), Tel(), Mail()));
     }
 
     [Theory]
@@ -52,10 +53,10 @@ public class ClienteTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Construtor_DeveLancarExcecao_QuandoTelefoneInvalido(string? telefone)
+    [InlineData("123")]
+    public void Telefone_DeveLancarExcecao_QuandoValorInvalido(string? telefone)
     {
-        Assert.Throws<ArgumentException>(() =>
-            new Cliente("Nome", Doc(), telefone!, Mail()));
+        Assert.Throws<ArgumentException>(() => new Telefone(telefone!));
     }
 
     [Theory]
@@ -70,11 +71,11 @@ public class ClienteTests
     [Fact]
     public void Atualizar_DeveAlterarDados_QuandoValidos()
     {
-        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
-        cliente.Atualizar("Novo Nome", "11888888888", new Email("novo@email.com"));
+        var cliente = new Cliente("Nome", Doc(), Tel(), Mail());
+        cliente.Atualizar("Novo Nome", new Telefone("11888888888"), new Email("novo@email.com"));
 
         Assert.Equal("Novo Nome", cliente.Nome);
-        Assert.Equal("11888888888", cliente.Telefone);
+        Assert.Equal("11888888888", cliente.Telefone.Valor);
         Assert.Equal("novo@email.com", cliente.Email.Valor);
     }
 
@@ -84,26 +85,15 @@ public class ClienteTests
     [InlineData("   ")]
     public void Atualizar_DeveLancarExcecao_QuandoNomeInvalido(string? nome)
     {
-        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
+        var cliente = new Cliente("Nome", Doc(), Tel(), Mail());
         Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar(nome!, "11999999999", Mail()));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Atualizar_DeveLancarExcecao_QuandoTelefoneInvalido(string? telefone)
-    {
-        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
-        Assert.Throws<ArgumentException>(() =>
-            cliente.Atualizar("Nome", telefone!, Mail()));
+            cliente.Atualizar(nome!, Tel(), Mail()));
     }
 
     [Fact]
     public void Desativar_DeveDefinirAtivoComoFalse()
     {
-        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
+        var cliente = new Cliente("Nome", Doc(), Tel(), Mail());
         cliente.Desativar();
         Assert.False(cliente.Ativo);
     }
@@ -111,7 +101,7 @@ public class ClienteTests
     [Fact]
     public void Ativar_DeveDefinirAtivoComoTrue()
     {
-        var cliente = new Cliente("Nome", Doc(), "11999999999", Mail());
+        var cliente = new Cliente("Nome", Doc(), Tel(), Mail());
         cliente.Desativar();
         cliente.Ativar();
         Assert.True(cliente.Ativo);

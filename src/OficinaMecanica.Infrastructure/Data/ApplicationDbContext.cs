@@ -86,7 +86,12 @@ public class ApplicationDbContext : DbContext
                     v => new Documento(v))
                 .IsRequired()
                 .HasMaxLength(14);
-            entity.Property(e => e.Telefone).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Telefone)
+                .HasConversion(
+                    v => v.Valor,
+                    v => new Telefone(v))
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.Email)
                 .HasConversion(
                     v => v.Valor,
@@ -102,7 +107,12 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("Veiculos");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Placa).IsUnique();
-            entity.Property(e => e.Placa).IsRequired().HasMaxLength(8);
+            entity.Property(e => e.Placa)
+                .HasConversion(
+                    v => v.Valor,
+                    v => new Placa(v))
+                .IsRequired()
+                .HasMaxLength(10);
             entity.Property(e => e.Marca).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Modelo).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Ano).IsRequired();

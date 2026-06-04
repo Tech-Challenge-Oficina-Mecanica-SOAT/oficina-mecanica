@@ -4,6 +4,7 @@ using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Application.UseCases.Veiculo.AtualizarVeiculo;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Tests.Unit.UseCases.Veiculo.AtualizarVeiculo;
 
@@ -28,7 +29,7 @@ public class AtualizarVeiculoUseCaseTests
     public async Task ExecutarAsync_Valido_Atualiza()
     {
         var clienteId = Guid.NewGuid();
-        var veiculo = new Domain.Entities.Veiculo(clienteId, "ABC1234", "Fiat", "Uno", 2020);
+        var veiculo = new Domain.Entities.Veiculo(clienteId, new Placa("ABC1234"), "Fiat", "Uno", 2020);
         _veiculoRepo.Setup(r => r.GetByIdAsync(veiculo.Id)).ReturnsAsync(veiculo);
         _veiculoRepo.Setup(r => r.ExistsByPlacaForOtherVeiculoAsync(It.IsAny<string>(), veiculo.Id)).ReturnsAsync(false);
         _veiculoRepo.Setup(r => r.UpdateAsync(veiculo)).ReturnsAsync(veiculo);

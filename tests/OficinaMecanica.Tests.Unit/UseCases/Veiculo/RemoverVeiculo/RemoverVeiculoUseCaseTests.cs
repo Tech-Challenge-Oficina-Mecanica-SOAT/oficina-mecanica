@@ -3,6 +3,7 @@ using Moq;
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.UseCases.Veiculo.RemoverVeiculo;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Tests.Unit.UseCases.Veiculo.RemoverVeiculo;
 
@@ -33,7 +34,7 @@ public class RemoverVeiculoUseCaseTests
     public async Task ExecutarAsync_QuandoVeiculoExiste_DeletaERetornaSucesso()
     {
         var id = Guid.NewGuid();
-        var veiculo = new Domain.Entities.Veiculo(Guid.NewGuid(), "ABC1234", "Ford", "Ka", 2020);
+        var veiculo = new Domain.Entities.Veiculo(Guid.NewGuid(), new Placa("ABC1234"), "Ford", "Ka", 2020);
         _repo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(veiculo);
         _repo.Setup(r => r.DeleteAsync(id)).Returns(Task.CompletedTask);
 

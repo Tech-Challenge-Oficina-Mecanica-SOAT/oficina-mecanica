@@ -24,9 +24,11 @@ public class AtualizarClienteUseCase : IAtualizarClienteUseCase
             return Result<ClienteResponse>.NotFound("Cliente não encontrado.");
 
         Email email;
+        Telefone telefone;
         try
         {
             email = new Email(request.Email);
+            telefone = new Telefone(request.Telefone);
         }
         catch (ArgumentException ex)
         {
@@ -35,7 +37,7 @@ public class AtualizarClienteUseCase : IAtualizarClienteUseCase
 
         try
         {
-            cliente.Atualizar(request.Nome, request.Telefone, email);
+            cliente.Atualizar(request.Nome, telefone, email);
         }
         catch (ArgumentException ex)
         {

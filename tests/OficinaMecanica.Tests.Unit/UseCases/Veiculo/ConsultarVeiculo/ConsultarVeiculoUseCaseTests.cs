@@ -4,6 +4,7 @@ using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Application.UseCases.Veiculo.ConsultarVeiculo;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Tests.Unit.UseCases.Veiculo.ConsultarVeiculo;
 
@@ -25,7 +26,7 @@ public class ConsultarVeiculoUseCaseTests
     [Fact]
     public async Task ExecutarAsync_Encontrado_RetornaSuccess()
     {
-        var v = new Domain.Entities.Veiculo(Guid.NewGuid(), "ABC1234", "Fiat", "Uno", 2020);
+        var v = new Domain.Entities.Veiculo(Guid.NewGuid(), new Placa("ABC1234"), "Fiat", "Uno", 2020);
         _repo.Setup(r => r.GetByIdAsync(v.Id)).ReturnsAsync(v);
 
         var result = await _sut.ExecutarAsync(v.Id);
