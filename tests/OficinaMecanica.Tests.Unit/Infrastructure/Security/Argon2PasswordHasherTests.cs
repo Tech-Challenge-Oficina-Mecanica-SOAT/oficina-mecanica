@@ -58,6 +58,6 @@ public class Argon2PasswordHasherTests
     [InlineData("$argon2id$v=19$m=9216,t=4,p=1$YWJjMTIz$###")]
     public void Verificar_RetornaFalseParaHashMalformadoVariadosCasos(string hashInvalido)
     {
-        _sut.Verificar("qualquer", hashInvalido).Should().BeFalse();
+        _sut.Verify("qualquer", hashInvalido).Should().BeFalse();
     }
 }

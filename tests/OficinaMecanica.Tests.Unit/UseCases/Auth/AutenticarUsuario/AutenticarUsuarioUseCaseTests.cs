@@ -34,7 +34,7 @@ public class AutenticarUsuarioUseCaseTests
     {
         var u = new Usuario("a@b.com", "hash", Perfil.Admin);
         _repo.Setup(r => r.ObterPorEmailAsync(It.IsAny<string>())).ReturnsAsync(u);
-        _hasher.Setup(h => h.Verificar("x", "hash")).Returns(false);
+        _hasher.Setup(h => h.Verify("x", "hash")).Returns(false);
 
         var result = await _sut.ExecutarAsync(new LoginRequest("a@b.com", "x"));
 
@@ -46,7 +46,7 @@ public class AutenticarUsuarioUseCaseTests
     {
         var u = new Usuario("a@b.com", "hash", Perfil.Admin);
         _repo.Setup(r => r.ObterPorEmailAsync(It.IsAny<string>())).ReturnsAsync(u);
-        _hasher.Setup(h => h.Verificar("senha", "hash")).Returns(true);
+        _hasher.Setup(h => h.Verify("senha", "hash")).Returns(true);
         var tok = new TokenResponse("token", DateTime.UtcNow.AddHours(1));
         _token.Setup(t => t.GerarParaUsuario(u)).Returns(tok);
 

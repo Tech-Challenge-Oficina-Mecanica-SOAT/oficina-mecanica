@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Moq;
 using OficinaMecanica.Application.Common;
-using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConclusao;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -11,12 +10,11 @@ namespace OficinaMecanica.Tests.Unit.UseCases.OrdemServicoStatus.NotificarConclu
 public class NotificarConclusaoUseCaseTests
 {
     private readonly Mock<IOrdemServicoRepository> _repo = new();
-    private readonly Mock<INotificacaoService> _notificacao = new();
-    private readonly Mock<IAppLogger<NotificarConclusaoUseCase>> _logger = new();
+    private readonly Mock<IDomainEventDispatcher> _dispatcher = new();
     private readonly NotificarConclusaoUseCase _sut;
 
     public NotificarConclusaoUseCaseTests() =>
-        _sut = new NotificarConclusaoUseCase(_repo.Object, _notificacao.Object, _logger.Object);
+        _sut = new NotificarConclusaoUseCase(_repo.Object, _dispatcher.Object);
 
     [Fact]
     public async Task ExecutarAsync_OSNaoEncontrada_RetornaNotFound()
