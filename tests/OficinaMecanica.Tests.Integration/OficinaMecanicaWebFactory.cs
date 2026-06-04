@@ -1,16 +1,23 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using OficinaMecanica.Infrastructure.Data;
+using Testcontainers.PostgreSql;
 
 namespace OficinaMecanica.Tests.Integration;
 
-public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>
+public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    // Um nome fixo por instância de factory — todos os requests da mesma factory compartilham o mesmo banco InMemory
-    private readonly string _dbName = "TestDb_" + Guid.NewGuid();
+    private readonly PostgreSqlContainer _db = new PostgreSqlBuilder()
+        .WithImage("postgres:16-alpine")
+        .Build();
+
+    public async Task InitializeAsync() => await _db.StartAsync();
+
+    public new async Task DisposeAsync()
+    {
+        await base.DisposeAsync();
+        await _db.DisposeAsync();
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -23,25 +30,8 @@ public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>
                 ["Jwt:Audience"] = "mecanica-cliente",
                 ["Jwt:ExpiracaoMinutos"] = "5",
                 ["Seguranca:PasswordKey"] = "K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF",
-                ["ConnectionStrings:DefaultConnection"] = ""
+                ["ConnectionStrings:DefaultConnection"] = _db.GetConnectionString()
             });
-        });
-
-        builder.ConfigureServices(services =>
-        {
-            var toRemove = services
-                .Where(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>)
-                         || d.ServiceType == typeof(ApplicationDbContext)
-                         || (d.ServiceType.IsGenericType
-                             && d.ServiceType.GetGenericTypeDefinition().Name.StartsWith("IDbContextOptionsConfiguration")
-                             && d.ServiceType.GenericTypeArguments[0] == typeof(ApplicationDbContext)))
-                .ToList();
-            foreach (var d in toRemove)
-                services.Remove(d);
-
-            var dbName = _dbName;
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseInMemoryDatabase(dbName));
         });
     }
 }
