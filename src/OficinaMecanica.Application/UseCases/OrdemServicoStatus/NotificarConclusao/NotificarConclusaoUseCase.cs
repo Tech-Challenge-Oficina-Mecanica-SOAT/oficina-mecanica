@@ -6,10 +6,12 @@ namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConcl
 public class NotificarConclusaoUseCase : INotificarConclusaoUseCase
 {
     private readonly IOrdemServicoRepository _repository;
+    private readonly IDomainEventDispatcher _dispatcher;
 
-    public NotificarConclusaoUseCase(IOrdemServicoRepository repository)
+    public NotificarConclusaoUseCase(IOrdemServicoRepository repository, IDomainEventDispatcher dispatcher)
     {
         _repository = repository;
+        _dispatcher = dispatcher;
     }
 
     public async Task<Result<bool>> ExecutarAsync(NotificarConclusaoRequest request)
@@ -22,6 +24,7 @@ public class NotificarConclusaoUseCase : INotificarConclusaoUseCase
         catch (InvalidOperationException ex) { return Result<bool>.Validation(ex.Message); }
 
         await _repository.UpdateAsync(os);
+        await _dispatcher.DispatchAsync(os.DomainEvents);
         return Result<bool>.Success(true);
     }
 }
