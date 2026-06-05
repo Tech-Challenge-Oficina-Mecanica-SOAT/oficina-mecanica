@@ -69,6 +69,8 @@ using OficinaMecanica.Infrastructure.Repositories;
 using OficinaMecanica.Infrastructure.Security;
 using Scalar.AspNetCore;
 using System.Text;
+using OficinaMecanica.Infrastructure.Configuration;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOrcamentoPorEmail;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,14 +99,13 @@ builder.Services.AddScoped<ITokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
 
 // DI - Notificacoes
-builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
+builder.Services.AddScoped<INotificacaoService, EmailNotificacaoService>();
+builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+builder.Services.AddScoped<IAprovarOrcamentoPorEmailUseCase, AprovarOrcamentoPorEmailUseCase>();
 
 // DI - Domain Events
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, EnviarEmailOrcamentoHandler>();
-
-// DI - Logging
-builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // DI - Mappers
 builder.Services.AddSingleton<OrdemServicoMapper>();
@@ -206,6 +207,10 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<JwtBearerDocumentTransformer>();
     options.AddSchemaTransformer<ExampleSchemaTransformer>();
 });
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<INotificacaoService, EmailNotificacaoService>();
+
 
 var app = builder.Build();
 

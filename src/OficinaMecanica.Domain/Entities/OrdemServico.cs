@@ -22,6 +22,8 @@ public class OrdemServico : Entity
     public EnumStatusOS StatusOS { get; private set; }
     public string Observacoes { get; private set; } = string.Empty;
     public decimal Total { get; set; }
+    public string? TokenAprovacao { get; set; }
+    public bool TokenUsado { get; set; }
 
     public Guid ClienteId { get; private set; }
     public Cliente Cliente { get; set; } = null!;
