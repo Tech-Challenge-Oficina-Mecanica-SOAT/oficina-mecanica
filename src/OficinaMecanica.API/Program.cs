@@ -111,7 +111,6 @@ builder.Services.AddScoped<IEventHandler<OrdemAprovadaEvent>, NotificarAprovacao
 builder.Services.AddScoped<IEventHandler<OrdemRejeitadaEvent>, NotificarRejeicaoHandler>();
 builder.Services.AddScoped<IEventHandler<OrdemConcluidaEvent>, NotificarConclusaoHandler>();
 builder.Services.AddScoped<IEventHandler<OrdemEntregueEvent>, NotificarEntregaHandler>();
-builder.Services.AddScoped<IEventHandler<OrcamentoEnviadoEvent>, EnviarEmailOrcamentoHandler>();
 
 // DI - Logging
 builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));

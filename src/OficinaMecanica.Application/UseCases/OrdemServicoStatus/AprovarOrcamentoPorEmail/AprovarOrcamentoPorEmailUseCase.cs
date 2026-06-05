@@ -48,7 +48,7 @@ public class AprovarOrcamentoPorEmailUseCase : IAprovarOrcamentoPorEmailUseCase
         {
             var result = await _aprovarUseCase.ExecutarAsync(new AprovarOSRequest(os.Id, "ClienteEmail"));
             if (!result.IsSuccess)
-                return Result<string>.Validation(result.Error);
+                return Result<string>.Validation(result.Error ?? "Erro desconhecido ao aprovar");
             
             os.TokenUsado = true;
             await _repository.UpdateAsync(os);
@@ -59,7 +59,7 @@ public class AprovarOrcamentoPorEmailUseCase : IAprovarOrcamentoPorEmailUseCase
         {
             var result = await _rejeitarUseCase.ExecutarAsync(new RejeitarOSUseCaseRequest(os.Id, "ClienteEmail", "Recusado via e-mail"));
             if (!result.IsSuccess)
-                return Result<string>.Validation(result.Error);
+                return Result<string>.Validation(result.Error ?? "Erro desconhecido ao rejeitar");
             
             os.TokenUsado = true;
             await _repository.UpdateAsync(os);

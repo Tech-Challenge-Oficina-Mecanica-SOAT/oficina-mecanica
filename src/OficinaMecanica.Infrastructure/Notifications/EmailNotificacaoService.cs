@@ -11,13 +11,16 @@ public class EmailNotificacaoService : INotificacaoService
 {
     private readonly EmailSettings _emailSettings;
     private readonly IOrdemServicoRepository _ordemServicoRepository;
+    private readonly IAppLogger<EmailNotificacaoService> _logger;
 
     public EmailNotificacaoService(
         IOptions<EmailSettings> emailSettings,
-        IOrdemServicoRepository ordemServicoRepository)
+        IOrdemServicoRepository ordemServicoRepository,
+        IAppLogger<EmailNotificacaoService> logger)
     {
         _emailSettings = emailSettings.Value;
         _ordemServicoRepository = ordemServicoRepository;
+        _logger = logger;
     }
 
     private async Task EnviarEmailAsync(string para, string assunto, string corpoHtml)
@@ -84,19 +87,25 @@ public class EmailNotificacaoService : INotificacaoService
 
     public async Task EnviarConclusaoAsync(Guid osId, string emailCliente)
     {
-        var assunto = $"✅ Serviço Concluído - OS #{osId.ToString().Substring(0, 8)}";
-        var corpoHtml = $@"
-            <html>
-            <body>
-                <h2>Ordem de Serviço Concluída</h2>
-                <p><strong>OS #:</strong> {osId}</p>
-                <p><strong>Status:</strong> Finalizada</p>
-                <p>Seu veículo está pronto para retirada!</p>
-                <hr/>
-                <p>Entre em contato com a oficina para agendar a retirada.</p>
-            </body>
-            </html>";
-        
-        await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
+        _logger.Info($"Notificação de conclusão - OS: {osId}, Cliente: {emailCliente}");
+        await Task.CompletedTask;
+    }
+
+    public async Task EnviarAprovacaoAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info($"Orçamento aprovado - OS: {osId}, Cliente: {emailCliente}");
+        await Task.CompletedTask;
+    }
+
+    public async Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo)
+    {
+        _logger.Info($"Orçamento rejeitado - OS: {osId}, Cliente: {emailCliente}, Motivo: {motivo}");
+        await Task.CompletedTask;
+    }
+
+    public async Task EnviarEntregaAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info($"Veículo entregue - OS: {osId}, Cliente: {emailCliente}");
+        await Task.CompletedTask;
     }
 }

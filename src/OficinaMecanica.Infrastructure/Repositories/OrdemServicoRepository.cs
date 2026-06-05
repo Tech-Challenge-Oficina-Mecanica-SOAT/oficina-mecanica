@@ -134,4 +134,10 @@ public class OrdemServicoRepository : IOrdemServicoRepository
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task<OrdemServico?> ObterPorTokenAsync(string token)
+    {
+        return await _context.OrdensServico
+            .FirstOrDefaultAsync(os => os.TokenAprovacao == token);
+    }
 }
