@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 using OficinaMecanica.Infrastructure.Data;
 
 namespace OficinaMecanica.Infrastructure.Repositories;
@@ -23,10 +24,10 @@ public class VeiculoRepository : IVeiculoRepository
 
     public async Task<Veiculo?> GetByPlacaAsync(string placa)
     {
-        var placaNormalizada = NormalizarPlaca(placa);
+        var placaVO = new Placa(placa);
         return await _context.Veiculos
             .Include(v => v.Cliente)
-            .FirstOrDefaultAsync(v => v.Placa == placaNormalizada);
+            .FirstOrDefaultAsync(v => v.Placa == placaVO);
     }
 
     public async Task<IEnumerable<Veiculo>> GetAllAsync()
@@ -71,23 +72,18 @@ public class VeiculoRepository : IVeiculoRepository
 
     public async Task<bool> ExistsByPlacaAsync(string placa)
     {
-        var placaNormalizada = NormalizarPlaca(placa);
-        return await _context.Veiculos.AnyAsync(v => v.Placa == placaNormalizada);
+        var placaVO = new Placa(placa);
+        return await _context.Veiculos.AnyAsync(v => v.Placa == placaVO);
     }
 
     public async Task<bool> ExistsByPlacaForOtherVeiculoAsync(string placa, Guid veiculoId)
     {
-        var placaNormalizada = NormalizarPlaca(placa);
-        return await _context.Veiculos.AnyAsync(v => v.Placa == placaNormalizada && v.Id != veiculoId);
+        var placaVO = new Placa(placa);
+        return await _context.Veiculos.AnyAsync(v => v.Placa == placaVO && v.Id != veiculoId);
     }
 
     public async Task<bool> ClienteExistsAsync(Guid clienteId)
     {
         return await _context.Clientes.AnyAsync(c => c.Id == clienteId);
-    }
-
-    private static string NormalizarPlaca(string placa)
-    {
-        return new string(placa.Where(c => !char.IsWhiteSpace(c) && c != '-').ToArray()).ToUpper();
     }
 }

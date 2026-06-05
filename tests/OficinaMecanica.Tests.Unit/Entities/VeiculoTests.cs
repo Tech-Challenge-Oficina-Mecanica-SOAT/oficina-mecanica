@@ -1,4 +1,5 @@
 using OficinaMecanica.Domain.Entities;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Tests.Unit.Entities;
 
@@ -6,23 +7,22 @@ public class VeiculoTests
 {
     private readonly Guid _clienteIdValido = Guid.NewGuid();
 
+    private static Placa P(string s = "ABC1234") => new(s);
+
     #region Constructor
 
     [Fact]
     public void Constructor_ComDadosValidos_DevecriarVeiculo()
     {
-        // Arrange
-        var placa = "ABC1234";
+        var placa = new Placa("ABC1234");
         var marca = "Toyota";
         var modelo = "Corolla";
         var ano = 2023;
 
-        // Act
         var veiculo = new Veiculo(_clienteIdValido, placa, marca, modelo, ano);
 
-        // Assert
         Assert.NotEqual(Guid.Empty, veiculo.Id);
-        Assert.Equal("ABC1234", veiculo.Placa);
+        Assert.Equal("ABC1234", veiculo.Placa.Valor);
         Assert.Equal(marca, veiculo.Marca);
         Assert.Equal(modelo, veiculo.Modelo);
         Assert.Equal(ano, veiculo.Ano);
@@ -33,9 +33,8 @@ public class VeiculoTests
     [Fact]
     public void Constructor_ComClienteIdVazio_DevelancarException()
     {
-        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(Guid.Empty, "ABC1234", "Toyota", "Corolla", 2023));
+            new Veiculo(Guid.Empty, P(), "Toyota", "Corolla", 2023));
 
         Assert.Equal("ClienteId é obrigatório", ex.Message);
     }
@@ -48,13 +47,9 @@ public class VeiculoTests
     [InlineData("ABC")]
     [InlineData("1234567")]
     [InlineData("ABC12D4")]
-    public void Constructor_ComPlacaInvalida_DevelancarException(string placa)
+    public void Placa_ComFormatoInvalido_DevelancarException(string placa)
     {
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, placa, "Toyota", "Corolla", 2023));
-
-        Assert.Equal("Placa inválida. Formato: ABC1234 ou ABC1D23", ex.Message);
+        Assert.Throws<ArgumentException>(() => new Placa(placa));
     }
 
     [Theory]
@@ -64,10 +59,8 @@ public class VeiculoTests
     [InlineData("ABC 1 D 23")]
     public void Constructor_ComPlacaValidaMasFormatada_DeveNormalizarecriarVeiculo(string placa)
     {
-        // Act
-        var veiculo = new Veiculo(_clienteIdValido, placa, "Toyota", "Corolla", 2023);
+        var veiculo = new Veiculo(_clienteIdValido, new Placa(placa), "Toyota", "Corolla", 2023);
 
-        // Assert
         Assert.NotNull(veiculo);
     }
 
@@ -77,9 +70,8 @@ public class VeiculoTests
     [InlineData(null)]
     public void Constructor_ComMarcaInvalida_DevelancarException(string? marca)
     {
-        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", marca!, "Corolla", 2023));
+            new Veiculo(_clienteIdValido, P(), marca!, "Corolla", 2023));
 
         Assert.Equal("Marca é obrigatória", ex.Message);
     }
@@ -90,9 +82,8 @@ public class VeiculoTests
     [InlineData(null)]
     public void Constructor_ComModeloInvalido_DevelancarException(string? modelo)
     {
-        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", "Toyota", modelo!, 2023));
+            new Veiculo(_clienteIdValido, P(), "Toyota", modelo!, 2023));
 
         Assert.Equal("Modelo é obrigatório", ex.Message);
     }
@@ -102,9 +93,8 @@ public class VeiculoTests
     [InlineData(1000)]
     public void Constructor_ComAnoMuitoAntigo_DevelancarException(int ano)
     {
-        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", "Toyota", "Corolla", ano));
+            new Veiculo(_clienteIdValido, P(), "Toyota", "Corolla", ano));
 
         Assert.Equal("Ano inválido", ex.Message);
     }
@@ -112,25 +102,20 @@ public class VeiculoTests
     [Fact]
     public void Constructor_ComAnoFuturoPermitido_DevecriarVeiculo()
     {
-        // Arrange
         var anoFuturo = DateTime.Now.Year + 1;
 
-        // Act
-        var veiculo = new Veiculo(_clienteIdValido, "ABC1234", "Toyota", "Corolla", anoFuturo);
+        var veiculo = new Veiculo(_clienteIdValido, P(), "Toyota", "Corolla", anoFuturo);
 
-        // Assert
         Assert.Equal(anoFuturo, veiculo.Ano);
     }
 
     [Fact]
     public void Constructor_ComAnoMuitoFuturo_DevelancarException()
     {
-        // Arrange
         var anoInvalido = DateTime.Now.Year + 2;
 
-        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", "Toyota", "Corolla", anoInvalido));
+            new Veiculo(_clienteIdValido, P(), "Toyota", "Corolla", anoInvalido));
 
         Assert.Equal("Ano inválido", ex.Message);
     }
@@ -142,20 +127,17 @@ public class VeiculoTests
     [Fact]
     public void Atualizar_ComDadosValidos_DeveAtualizarVeiculo()
     {
-        // Arrange
-        var veiculo = new Veiculo(_clienteIdValido, "ABC1234", "Toyota", "Corolla", 2023);
+        var veiculo = new Veiculo(_clienteIdValido, P(), "Toyota", "Corolla", 2023);
         var novoClienteId = Guid.NewGuid();
-        var novaPlaca = "XYZ5678";
+        var novaPlaca = new Placa("XYZ5678");
         var novaMarca = "Honda";
         var novoModelo = "Civic";
         var novoAno = 2024;
 
-        // Act
         veiculo.Atualizar(novoClienteId, novaPlaca, novaMarca, novoModelo, novoAno);
 
-        // Assert
         Assert.Equal(novoClienteId, veiculo.ClienteId);
-        Assert.Equal("XYZ5678", veiculo.Placa);
+        Assert.Equal("XYZ5678", veiculo.Placa.Valor);
         Assert.Equal(novaMarca, veiculo.Marca);
         Assert.Equal(novoModelo, veiculo.Modelo);
         Assert.Equal(novoAno, veiculo.Ano);
@@ -164,13 +146,10 @@ public class VeiculoTests
     [Fact]
     public void Atualizar_ComClienteIdNulo_NaoDeveAlterarClienteId()
     {
-        // Arrange
-        var veiculo = new Veiculo(_clienteIdValido, "ABC1234", "Toyota", "Corolla", 2023);
+        var veiculo = new Veiculo(_clienteIdValido, P(), "Toyota", "Corolla", 2023);
 
-        // Act
-        veiculo.Atualizar(null, "XYZ5678", "Honda", "Civic", 2024);
+        veiculo.Atualizar(null, new Placa("XYZ5678"), "Honda", "Civic", 2024);
 
-        // Assert
         Assert.Equal(_clienteIdValido, veiculo.ClienteId);
     }
 
@@ -180,14 +159,7 @@ public class VeiculoTests
     [InlineData("ABC12D4")]
     public void Atualizar_ComPlacaInvalida_DevelancarException(string placa)
     {
-        // Arrange
-        var veiculo = new Veiculo(_clienteIdValido, "ABC1234", "Toyota", "Corolla", 2023);
-
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() =>
-            veiculo.Atualizar(null, placa, "Honda", "Civic", 2024));
-
-        Assert.Equal("Placa inválida. Formato: ABC1234 ou ABC1D23", ex.Message);
+        Assert.Throws<ArgumentException>(() => new Placa(placa));
     }
 
     [Theory]
@@ -195,9 +167,8 @@ public class VeiculoTests
     [InlineData(null)]
     public void Atualizar_ComMarcaInvalida_DevelancarException(string? marca)
     {
-        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, "ABC1234", marca!, "Corolla", 2023));
+            new Veiculo(_clienteIdValido, P(), marca!, "Corolla", 2023));
 
         Assert.Equal("Marca é obrigatória", ex.Message);
     }
@@ -214,10 +185,8 @@ public class VeiculoTests
     [InlineData("ABC-1234")]
     public void ValidarPlaca_ComFormatoAntigoValido_DeveRetornarTrue(string placa)
     {
-        // Act
-        var veiculo = new Veiculo(_clienteIdValido, placa, "Toyota", "Corolla", 2023);
+        var veiculo = new Veiculo(_clienteIdValido, new Placa(placa), "Toyota", "Corolla", 2023);
 
-        // Assert
         Assert.NotNull(veiculo);
     }
 
@@ -229,10 +198,8 @@ public class VeiculoTests
     [InlineData("ABC-1-D-23")]
     public void ValidarPlaca_ComFormatoMercosulValido_DeveRetornarTrue(string placa)
     {
-        // Act
-        var veiculo = new Veiculo(_clienteIdValido, placa, "Toyota", "Corolla", 2023);
+        var veiculo = new Veiculo(_clienteIdValido, new Placa(placa), "Toyota", "Corolla", 2023);
 
-        // Assert
         Assert.NotNull(veiculo);
     }
 
@@ -248,11 +215,7 @@ public class VeiculoTests
     [InlineData("123ABCD")]
     public void ValidarPlaca_ComFormatoInvalido_DeveRetornarFalse(string? placa)
     {
-        // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() =>
-            new Veiculo(_clienteIdValido, placa!, "Toyota", "Corolla", 2023));
-
-        Assert.Equal("Placa inválida. Formato: ABC1234 ou ABC1D23", ex.Message);
+        Assert.Throws<ArgumentException>(() => new Placa(placa!));
     }
 
     #endregion
@@ -267,11 +230,9 @@ public class VeiculoTests
     [InlineData("a-b-c-1-2-3-4", "ABC1234")]
     public void NormalizarPlaca_DeveRemoverEspacosETracos(string placaOriginal, string placaEsperada)
     {
-        // Act
-        var veiculo = new Veiculo(_clienteIdValido, placaOriginal, "Toyota", "Corolla", 2023);
+        var veiculo = new Veiculo(_clienteIdValido, new Placa(placaOriginal), "Toyota", "Corolla", 2023);
 
-        // Assert
-        Assert.Equal(placaEsperada, veiculo.Placa);
+        Assert.Equal(placaEsperada, veiculo.Placa.Valor);
     }
 
     #endregion
@@ -281,10 +242,8 @@ public class VeiculoTests
     [Fact]
     public void Constructor_DeveInicializarOrdensServicoVazia()
     {
-        // Act
-        var veiculo = new Veiculo(_clienteIdValido, "ABC1234", "Toyota", "Corolla", 2023);
+        var veiculo = new Veiculo(_clienteIdValido, P(), "Toyota", "Corolla", 2023);
 
-        // Assert
         Assert.NotNull(veiculo.OrdensServico);
         Assert.Empty(veiculo.OrdensServico);
     }

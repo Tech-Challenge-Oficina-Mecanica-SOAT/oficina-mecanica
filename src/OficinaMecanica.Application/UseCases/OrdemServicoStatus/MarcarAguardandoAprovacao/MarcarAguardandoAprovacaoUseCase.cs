@@ -8,9 +8,7 @@ public class MarcarAguardandoAprovacaoUseCase : IMarcarAguardandoAprovacaoUseCas
     private readonly IOrdemServicoRepository _repository;
     private readonly IDomainEventDispatcher _dispatcher;
 
-    public MarcarAguardandoAprovacaoUseCase(
-        IOrdemServicoRepository repository,
-        IDomainEventDispatcher dispatcher)
+    public MarcarAguardandoAprovacaoUseCase(IOrdemServicoRepository repository, IDomainEventDispatcher dispatcher)
     {
         _repository = repository;
         _dispatcher = dispatcher;
@@ -26,13 +24,7 @@ public class MarcarAguardandoAprovacaoUseCase : IMarcarAguardandoAprovacaoUseCas
         catch (InvalidOperationException ex) { return Result<bool>.Validation(ex.Message); }
 
         await _repository.UpdateAsync(os);
-
-        if (os.DomainEvents.Any())
-        {
-            await _dispatcher.DispatchAsync(os.DomainEvents);
-            os.ClearEvents();
-        }
-
+        await _dispatcher.DispatchAsync(os.DomainEvents);
         return Result<bool>.Success(true);
     }
 }

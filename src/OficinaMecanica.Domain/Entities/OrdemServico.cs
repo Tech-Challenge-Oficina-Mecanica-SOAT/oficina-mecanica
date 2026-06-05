@@ -64,22 +64,30 @@ public class OrdemServico : Entity
     }
 
     public void Aprovar(string alteradoPor)
-        => Transitar(EnumStatusOS.AguardandoAprovacao, EnumStatusOS.EmExecucao, alteradoPor, "Orçamento aprovado");
+    {
+        Transitar(EnumStatusOS.AguardandoAprovacao, EnumStatusOS.EmExecucao, alteradoPor, "Orçamento aprovado");
+        RaiseEvent(new OrdemAprovadaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, DateTime.UtcNow));
+    }
 
     public void Rejeitar(string alteradoPor, string motivo)
     {
         if (string.IsNullOrWhiteSpace(motivo))
             throw new ArgumentException("Informe o motivo da rejeição.");
         Transitar(EnumStatusOS.AguardandoAprovacao, EnumStatusOS.Rejeitada, alteradoPor, $"Orçamento rejeitado: {motivo}");
+        RaiseEvent(new OrdemRejeitadaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, motivo, DateTime.UtcNow));
     }
 
     public void Finalizar(string alteradoPor)
-        => Transitar(EnumStatusOS.EmExecucao, EnumStatusOS.Finalizada, alteradoPor, "Execução finalizada");
+    {
+        Transitar(EnumStatusOS.EmExecucao, EnumStatusOS.Finalizada, alteradoPor, "Execução finalizada");
+        RaiseEvent(new OrdemConcluidaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, DateTime.UtcNow));
+    }
 
     public void Entregar(string alteradoPor)
     {
         Transitar(EnumStatusOS.Finalizada, EnumStatusOS.Entregue, alteradoPor, "Veículo entregue ao cliente");
         DataFechamento = DateTime.UtcNow;
+        RaiseEvent(new OrdemEntregueEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, DateTime.UtcNow));
     }
 
     public void ForcarStatus(EnumStatusOS novoStatus, string alteradoPor, string motivo)

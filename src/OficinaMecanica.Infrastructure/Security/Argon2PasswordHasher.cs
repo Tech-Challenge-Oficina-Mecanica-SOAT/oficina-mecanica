@@ -1,5 +1,4 @@
 using Konscious.Security.Cryptography;
-using OficinaMecanica.Application.Configuration;
 using OficinaMecanica.Application.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,7 +32,7 @@ public class Argon2PasswordHasher : IPasswordHasher
         return $"$argon2id$v=19$m={Argon2Memory},t={Argon2Iterations},p={Argon2Parallelism}${b64Salt}${b64Hash}";
     }
 
-    public bool Verificar(string senha, string senhaHash)
+    public bool Verify(string senha, string senhaHash)
     {
         var parts = senhaHash.Split('$', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 5 || parts[0] != "argon2id") return false;

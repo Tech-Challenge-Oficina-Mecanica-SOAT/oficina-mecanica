@@ -2,6 +2,7 @@ using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Application.UseCases.Veiculo.AtualizarVeiculo;
 
@@ -31,12 +32,22 @@ public class AtualizarVeiculoUseCase : IAtualizarVeiculoUseCase
                 return Result<VeiculoResponse>.NotFound($"Cliente com ID {request.ClienteId} não encontrado.");
         }
 
-        if (await _veiculoRepository.ExistsByPlacaForOtherVeiculoAsync(request.Placa, request.Id))
-            return Result<VeiculoResponse>.Conflict($"Veículo com placa {request.Placa} já cadastrado em outro veículo.");
+        Placa placa;
+        try
+        {
+            placa = new Placa(request.Placa);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<VeiculoResponse>.Validation(ex.Message);
+        }
+
+        if (await _veiculoRepository.ExistsByPlacaForOtherVeiculoAsync(placa.Valor, request.Id))
+            return Result<VeiculoResponse>.Conflict($"Veículo com placa {placa.Valor} já cadastrado em outro veículo.");
 
         try
         {
-            veiculo.Atualizar(request.ClienteId, request.Placa, request.Marca, request.Modelo, request.Ano);
+            veiculo.Atualizar(request.ClienteId, placa, request.Marca, request.Modelo, request.Ano);
             var updated = await _veiculoRepository.UpdateAsync(veiculo);
             return Result<VeiculoResponse>.Success(_mapper.MapToResponse(updated));
         }

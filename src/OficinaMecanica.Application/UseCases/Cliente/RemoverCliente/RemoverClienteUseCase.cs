@@ -14,6 +14,10 @@ public class RemoverClienteUseCase : IRemoverClienteUseCase
 
     public async Task<Result<bool>> ExecutarAsync(Guid id)
     {
+        var cliente = await _repository.GetByIdAsync(id);
+        if (cliente is null)
+            return Result<bool>.NotFound($"Cliente com ID {id} não encontrado.");
+
         await _repository.DeleteAsync(id);
         return Result<bool>.Success(true);
     }

@@ -25,11 +25,11 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Seed Veículo", new Documento("52998224725"), "(11) 91234-5678",
+        var cliente = new Cliente("Seed Veículo", new Documento("52998224725"), new Telefone("(11) 91234-5678"),
             new Email($"vei_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
 
-        var veiculo = new Veiculo(cliente.Id, placa, "Toyota", "Corolla", 2022);
+        var veiculo = new Veiculo(cliente.Id, new Placa(placa), "Toyota", "Corolla", 2022);
         db.Veiculos.Add(veiculo);
 
         await db.SaveChangesAsync();
@@ -40,7 +40,7 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     {
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Cliente Vei", new Documento("19131243000197"), "(11) 91234-0000",
+        var cliente = new Cliente("Cliente Vei", new Documento("19131243000197"), new Telefone("(11) 91234-0000"),
             new Email($"cli_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
@@ -186,10 +186,9 @@ public class VeiculosControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Delete_ComIdInexistente_Retorna204()
+    public async Task Delete_ComIdInexistente_Retorna404()
     {
-        // O repositório usa delete idempotente (silencia IDs inexistentes), portanto retorna 204
         var resp = await AdminClient().DeleteAsync($"/api/veiculos/{Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
 }

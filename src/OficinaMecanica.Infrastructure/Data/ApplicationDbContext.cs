@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using OficinaMecanica.Application.Common;
+using OficinaMecanica.Domain.Common;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.ValueObjects;
 
@@ -6,7 +8,37 @@ namespace OficinaMecanica.Infrastructure.Data;
 
 public class ApplicationDbContext : DbContext
 {
+    private readonly IDomainEventDispatcher? _dispatcher;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        IDomainEventDispatcher dispatcher) : base(options)
+    {
+        _dispatcher = dispatcher;
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var entitiesComEventos = ChangeTracker.Entries<Entity>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .Select(e => e.Entity)
+            .ToList();
+
+        var eventos = entitiesComEventos.SelectMany(e => e.DomainEvents).ToList();
+
+        var resultado = await base.SaveChangesAsync(cancellationToken);
+
+        if (_dispatcher is not null && eventos.Count > 0)
+        {
+            await _dispatcher.DispatchAsync(eventos);
+            foreach (var entity in entitiesComEventos)
+                entity.ClearEvents();
+        }
+
+        return resultado;
+    }
 
     public DbSet<Usuario> Usuarios { get; set; }
     public DbSet<Cliente> Clientes { get; set; }
@@ -54,7 +86,12 @@ public class ApplicationDbContext : DbContext
                     v => new Documento(v))
                 .IsRequired()
                 .HasMaxLength(14);
-            entity.Property(e => e.Telefone).IsRequired().HasMaxLength(20);
+            entity.Property(e => e.Telefone)
+                .HasConversion(
+                    v => v.Valor,
+                    v => new Telefone(v))
+                .IsRequired()
+                .HasMaxLength(20);
             entity.Property(e => e.Email)
                 .HasConversion(
                     v => v.Valor,
@@ -70,7 +107,12 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("Veiculos");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Placa).IsUnique();
-            entity.Property(e => e.Placa).IsRequired().HasMaxLength(8);
+            entity.Property(e => e.Placa)
+                .HasConversion(
+                    v => v.Valor,
+                    v => new Placa(v))
+                .IsRequired()
+                .HasMaxLength(10);
             entity.Property(e => e.Marca).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Modelo).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Ano).IsRequired();
