@@ -29,4 +29,5 @@ public class Result<T>
     public static Result<T> NotFound(string error) => new(false, default, error, ResultErrorType.NotFound);
     public static Result<T> Conflict(string error) => new(false, default, error, ResultErrorType.Conflict);
     public static Result<T> Unauthorized(string error) => new(false, default, error, ResultErrorType.Unauthorized);
+    public static Result<T> Fail(ResultErrorType errorType, string? error) => new(false, default, error, errorType);
 }

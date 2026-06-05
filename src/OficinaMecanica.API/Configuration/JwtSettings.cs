@@ -16,6 +16,19 @@ public class JwtSettings : IJwtSettings
             ?? throw new InvalidOperationException("Jwt:SecretKey não configurada.");
         Issuer = configuration["Jwt:Issuer"] ?? "mecanica-api";
         Audience = configuration["Jwt:Audience"] ?? "mecanica-cliente";
-        ExpiracaoMinutos = int.TryParse(configuration["Jwt:ExpiracaoMinutos"], out var min) ? min : 5;
+        var expiracaoStr = configuration["Jwt:ExpiracaoMinutos"];
+        if (string.IsNullOrWhiteSpace(expiracaoStr))
+        {
+            ExpiracaoMinutos = 5;
+        }
+        else if (int.TryParse(expiracaoStr, out var min) && min > 0)
+        {
+            ExpiracaoMinutos = min;
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                $"Jwt:ExpiracaoMinutos invalido: '{expiracaoStr}'. Deve ser inteiro positivo.");
+        }
     }
 }

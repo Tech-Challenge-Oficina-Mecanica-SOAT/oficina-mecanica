@@ -7,7 +7,7 @@ public class Cliente
     public Guid Id { get; private set; }
     public string Nome { get; private set; }
     public Documento Documento { get; private set; }
-    public string Telefone { get; private set; }
+    public Telefone Telefone { get; private set; }
     public Email Email { get; private set; }
     public DateTime CriadoEm { get; private set; }
     public bool Ativo { get; private set; }
@@ -16,7 +16,7 @@ public class Cliente
     public ICollection<Veiculo> Veiculos { get; set; } = new List<Veiculo>();
     public ICollection<OrdemServico> OrdensServico { get; set; } = new List<OrdemServico>();
 
-    public Cliente(string nome, Documento documento, string telefone, Email email)
+    public Cliente(string nome, Documento documento, Telefone telefone, Email email)
     {
         if (string.IsNullOrWhiteSpace(nome))
             throw new ArgumentException("Nome é obrigatório");
@@ -24,7 +24,7 @@ public class Cliente
         if (documento is null)
             throw new ArgumentException("Documento é obrigatório");
 
-        if (string.IsNullOrWhiteSpace(telefone))
+        if (telefone is null)
             throw new ArgumentException("Telefone é obrigatório");
 
         if (email is null)
@@ -43,17 +43,17 @@ public class Cliente
     private Cliente()
     {
         Nome = string.Empty;
-        Telefone = string.Empty;
+        Telefone = null!;
         Documento = null!;
         Email = null!;
     }
 
-    public void Atualizar(string nome, string telefone, Email email)
+    public void Atualizar(string nome, Telefone telefone, Email email)
     {
         if (string.IsNullOrWhiteSpace(nome))
             throw new ArgumentException("Nome é obrigatório");
 
-        if (string.IsNullOrWhiteSpace(telefone))
+        if (telefone is null)
             throw new ArgumentException("Telefone é obrigatório");
 
         if (email is null)

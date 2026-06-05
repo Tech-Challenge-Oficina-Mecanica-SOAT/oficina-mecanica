@@ -3,6 +3,7 @@ using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Domain.Interfaces;
+using OficinaMecanica.Domain.ValueObjects;
 
 namespace OficinaMecanica.Application.UseCases.Veiculo.CriarVeiculo;
 
@@ -25,12 +26,22 @@ public class CriarVeiculoUseCase : ICriarVeiculoUseCase
         if (cliente is null)
             return Result<VeiculoResponse>.NotFound($"Cliente com ID {request.ClienteId} não encontrado.");
 
-        if (await _veiculoRepository.ExistsByPlacaAsync(request.Placa))
-            return Result<VeiculoResponse>.Conflict($"Veículo com placa {request.Placa} já cadastrado.");
+        Placa placa;
+        try
+        {
+            placa = new Placa(request.Placa);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<VeiculoResponse>.Validation(ex.Message);
+        }
+
+        if (await _veiculoRepository.ExistsByPlacaAsync(placa.Valor))
+            return Result<VeiculoResponse>.Conflict($"Veículo com placa {placa.Valor} já cadastrado.");
 
         try
         {
-            var veiculo = new Domain.Entities.Veiculo(request.ClienteId, request.Placa, request.Marca, request.Modelo, request.Ano);
+            var veiculo = new Domain.Entities.Veiculo(request.ClienteId, placa, request.Marca, request.Modelo, request.Ano);
             var criado = await _veiculoRepository.AddAsync(veiculo);
             return Result<VeiculoResponse>.Success(_mapper.MapToResponse(criado));
         }

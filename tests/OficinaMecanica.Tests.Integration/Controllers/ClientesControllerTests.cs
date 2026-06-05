@@ -24,7 +24,7 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     {
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Seed Silva", new Documento("52998224725"), "(11) 91234-5678",
+        var cliente = new Cliente("Seed Silva", new Documento("52998224725"), new Telefone("(11) 91234-5678"),
             new Email(email ?? $"seed_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
@@ -66,7 +66,7 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
         var documento = "19131243000197";
         using var scope = _factory.Server.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var cliente = new Cliente("Doc Teste", new Documento(documento), "(11) 91111-2222",
+        var cliente = new Cliente("Doc Teste", new Documento(documento), new Telefone("(11) 91111-2222"),
             new Email($"doc_{Guid.NewGuid():N}@oficina.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
@@ -156,11 +156,10 @@ public class ClientesControllerTests : IClassFixture<OficinaMecanicaWebFactory>
     }
 
     [Fact]
-    public async Task Delete_ComIdInexistente_Retorna204()
+    public async Task Delete_ComIdInexistente_Retorna404()
     {
-        // O repositório usa delete idempotente (silencia IDs inexistentes), portanto retorna 204
         var resp = await AdminClient().DeleteAsync($"/api/clientes/{Guid.NewGuid()}");
-        Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
 
     [Fact]

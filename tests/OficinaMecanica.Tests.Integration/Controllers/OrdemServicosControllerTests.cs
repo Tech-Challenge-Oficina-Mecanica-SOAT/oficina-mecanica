@@ -29,11 +29,11 @@ public class OrdemServicosControllerTests
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Teste", new Documento("12345678909"), "(11) 99999-0000", new Email(email));
+        var cliente = new Cliente("Teste", new Documento("12345678909"), new Telefone("(11) 99999-0000"), new Email(email));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 
-        var veiculo = new Veiculo(cliente.Id, "ABC1D23", "Marca", "Modelo", 2020);
+        var veiculo = new Veiculo(cliente.Id, new Placa("ABC1D23"), "Marca", "Modelo", 2020);
         db.Veiculos.Add(veiculo);
         await db.SaveChangesAsync();
 
@@ -173,7 +173,10 @@ public class OrdemServicosControllerTests
             return Task.CompletedTask;
         }
 
+        public Task EnviarAprovacaoAsync(Guid osId, string emailCliente) => Task.CompletedTask;
+        public Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo) => Task.CompletedTask;
         public Task EnviarConclusaoAsync(Guid osId, string emailCliente) => Task.CompletedTask;
+        public Task EnviarEntregaAsync(Guid osId, string emailCliente) => Task.CompletedTask;
     }
 
     private sealed class OrdemServicosWebFactory : OficinaMecanicaWebFactory

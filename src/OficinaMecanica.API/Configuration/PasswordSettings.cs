@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Configuration;
-using OficinaMecanica.Application.Configuration;
+using OficinaMecanica.Infrastructure.Security;
 
 namespace OficinaMecanica.API.Configuration;
 

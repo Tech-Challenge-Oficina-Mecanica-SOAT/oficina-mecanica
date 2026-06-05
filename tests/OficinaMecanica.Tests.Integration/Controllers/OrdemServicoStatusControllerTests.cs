@@ -25,11 +25,11 @@ public class OrdemServicoStatusControllerTests : IClassFixture<OficinaMecanicaWe
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cliente = new Cliente("Teste", new Documento("12345678909"), "(11) 99999-0000", new Email("t@t.com"));
+        var cliente = new Cliente("Teste", new Documento("12345678909"), new Telefone("(11) 99999-0000"), new Email("t@t.com"));
         db.Clientes.Add(cliente);
         await db.SaveChangesAsync();
 
-        var veiculo = new Veiculo(cliente.Id, "ABC1D23", "Marca", "Modelo", 2020);
+        var veiculo = new Veiculo(cliente.Id, new Placa("ABC1D23"), "Marca", "Modelo", 2020);
         db.Veiculos.Add(veiculo);
         await db.SaveChangesAsync();
 

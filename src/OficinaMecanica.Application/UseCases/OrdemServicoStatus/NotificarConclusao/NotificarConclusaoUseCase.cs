@@ -1,5 +1,4 @@
 using OficinaMecanica.Application.Common;
-using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Interfaces;
 
 namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConclusao;
@@ -7,17 +6,12 @@ namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConcl
 public class NotificarConclusaoUseCase : INotificarConclusaoUseCase
 {
     private readonly IOrdemServicoRepository _repository;
-    private readonly INotificacaoService _notificacao;
-    private readonly IAppLogger<NotificarConclusaoUseCase> _logger;
+    private readonly IDomainEventDispatcher _dispatcher;
 
-    public NotificarConclusaoUseCase(
-        IOrdemServicoRepository repository,
-        INotificacaoService notificacao,
-        IAppLogger<NotificarConclusaoUseCase> logger)
+    public NotificarConclusaoUseCase(IOrdemServicoRepository repository, IDomainEventDispatcher dispatcher)
     {
         _repository = repository;
-        _notificacao = notificacao;
-        _logger = logger;
+        _dispatcher = dispatcher;
     }
 
     public async Task<Result<bool>> ExecutarAsync(NotificarConclusaoRequest request)
@@ -29,16 +23,8 @@ public class NotificarConclusaoUseCase : INotificarConclusaoUseCase
         try { os.Finalizar(request.AlteradoPor); }
         catch (InvalidOperationException ex) { return Result<bool>.Validation(ex.Message); }
 
-        try
-        {
-            await _notificacao.EnviarConclusaoAsync(request.OsId, os.Cliente?.Email ?? string.Empty);
-        }
-        catch (Exception ex)
-        {
-            _logger.Warning("Falha ao enviar notificação de conclusão para OS {OsId}.", ex, request.OsId);
-        }
-
         await _repository.UpdateAsync(os);
+        await _dispatcher.DispatchAsync(os.DomainEvents);
         return Result<bool>.Success(true);
     }
 }

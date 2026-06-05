@@ -1,4 +1,4 @@
-namespace OficinaMecanica.Application.Configuration;
+namespace OficinaMecanica.Infrastructure.Security;
 
 public interface IPasswordSettings
 {
