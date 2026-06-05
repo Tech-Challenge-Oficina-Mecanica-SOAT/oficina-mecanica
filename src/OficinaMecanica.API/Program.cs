@@ -69,6 +69,8 @@ using OficinaMecanica.Infrastructure.Repositories;
 using OficinaMecanica.Infrastructure.Security;
 using Scalar.AspNetCore;
 using System.Text;
+using OficinaMecanica.Infrastructure.Configuration;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOrcamentoPorEmail;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -98,7 +100,16 @@ builder.Services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
 
 // DI - Notificacoes
-builder.Services.AddScoped<INotificacaoService, NotificacaoService>();
+if (builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddScoped<INotificacaoService, EmailNotificacaoServiceFake>();
+}
+else
+{
+    builder.Services.AddScoped<INotificacaoService, EmailNotificacaoService>();
+}
+builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
+builder.Services.AddScoped<IAprovarOrcamentoPorEmailUseCase, AprovarOrcamentoPorEmailUseCase>();
 
 // DI - Domain Events
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
@@ -211,6 +222,8 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<JwtBearerDocumentTransformer>();
     options.AddSchemaTransformer<ExampleSchemaTransformer>();
 });
+
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 var app = builder.Build();
 
