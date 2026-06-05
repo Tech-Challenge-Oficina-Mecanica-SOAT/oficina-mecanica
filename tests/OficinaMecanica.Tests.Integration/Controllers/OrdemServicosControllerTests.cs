@@ -1,6 +1,5 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OficinaMecanica.Application.Common;
@@ -48,25 +47,6 @@ public class OrdemServicosControllerTests
         return os.Id;
     }
 
-    // Método para criar um serviço real no banco
-    private async Task<Guid> SeedServicoAsync(IServiceProvider services)
-    {
-        using var scope = services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        
-        // Construtor correto: (nome, descricao, valor)
-        var servico = new Servico(
-            nome: "Troca de óleo",
-            descricao: "Troca de óleo do motor",
-            valor: 100m  // Atenção: é "valor", não "preco"
-        );
-        
-        db.Servicos.Add(servico);
-        await db.SaveChangesAsync();
-        
-        return servico.Id;
-    }
-
     [Fact]
     public async Task AddItens_ChamaStatusUseCase()
     {
@@ -77,15 +57,16 @@ public class OrdemServicosControllerTests
 
         var client = factory.CreateClient().ComToken("Admin");
         var osId = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
-        var servicoId = await SeedServicoAsync(factory.Server.Services);
 
         var itens = new List<AdicionarOSItemRequest>
         {
             new()
             {
                 Tipo = "servico",
-                ReferenciaId = servicoId,
-                Quantidade = 2
+                ReferenciaId = Guid.NewGuid(),
+                Descricao = "Troca de óleo",
+                Quantidade = 2,
+                PrecoUnitario = 100m
             }
         };
 
@@ -112,7 +93,6 @@ public class OrdemServicosControllerTests
 
         var client = factory.CreateClient().ComToken("Admin");
         var osId = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
-        var servicoId = await SeedServicoAsync(factory.Server.Services);
 
         var iniciar = await client.PatchAsync($"/api/ordens-servico/{osId}/iniciar-diagnostico", null);
         iniciar.IsSuccessStatusCode.Should().BeTrue();
@@ -122,8 +102,10 @@ public class OrdemServicosControllerTests
             new()
             {
                 Tipo = "servico",
-                ReferenciaId = servicoId,
-                Quantidade = 2
+                ReferenciaId = Guid.NewGuid(),
+                Descricao = "Troca de óleo",
+                Quantidade = 2,
+                PrecoUnitario = 100m
             }
         };
 
@@ -139,7 +121,7 @@ public class OrdemServicosControllerTests
         notificacaoSpy.Calls.Should().Be(1);
         notificacaoSpy.LastOsId.Should().Be(osId);
         notificacaoSpy.LastEmail.Should().Be("cliente@teste.com");
-        notificacaoSpy.LastTotal.Should().Be(200m); // 2 * 100 = 200
+        notificacaoSpy.LastTotal.Should().Be(200m);
     }
 
     private sealed class MarcarAguardandoAprovacaoSpy : IMarcarAguardandoAprovacaoUseCase

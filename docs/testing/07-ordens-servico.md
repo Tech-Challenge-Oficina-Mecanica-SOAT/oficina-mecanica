@@ -63,7 +63,9 @@ Criação e gestão de OS: abertura, adição/remoção de itens (serviços e pe
 {
   "tipo": "servico",
   "referenciaId": "<id do serviço>",
-  "quantidade": 1
+  "descricao": "Troca de pastilha de freio",
+  "quantidade": 1,
+  "precoUnitario": 150.00
 }
 ```
 
@@ -75,7 +77,9 @@ Criação e gestão de OS: abertura, adição/remoção de itens (serviços e pe
 {
   "tipo": "peca",
   "referenciaId": "<id da peça>",
-  "quantidade": 2
+  "descricao": "Pastilha de freio dianteira",
+  "quantidade": 2,
+  "precoUnitario": 89.90
 }
 ```
 
