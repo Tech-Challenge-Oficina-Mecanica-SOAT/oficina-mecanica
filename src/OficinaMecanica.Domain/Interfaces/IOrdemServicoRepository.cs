@@ -14,5 +14,6 @@ public interface IOrdemServicoRepository
     Task AtualizarTotalAsync(Guid ordemServicoId, decimal total);
     Task<double> GetTempoMedioExecucaoHorasAsync();
     Task UpdateAsync(OrdemServico ordemServico);
+    Task<OrdemServico?> ObterPorTokenAsync(string token);
     Task<IEnumerable<OrdemServico>> ListarAtivasOrdenadasAsync();
 }

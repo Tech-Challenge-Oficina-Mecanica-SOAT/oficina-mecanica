@@ -28,11 +28,25 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     ports:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=OficinaDB;Username=postgres;Password=SuaSenha
+      - EmailSettings__SmtpServer=mailhog
+      - EmailSettings__Port=1025
+      - EmailSettings__UseSSL=false
+      - EmailSettings__From=noreply@oficinamecanica.com
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: oficina_mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Interface Web UI
     restart: unless-stopped
 
   sonarqube:
