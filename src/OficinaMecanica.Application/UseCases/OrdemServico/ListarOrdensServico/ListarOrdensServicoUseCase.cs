@@ -21,4 +21,10 @@ public class ListarOrdensServicoUseCase : IListarOrdensServicoUseCase
         var lista = await _repository.ListarTodosAsync();
         return Result<IEnumerable<OrdemServicoResumoResponse>>.Success(lista.Select(_mapper.MapToResumoResponse));
     }
+
+    public async Task<Result<IEnumerable<OrdemServicoResumoResponse>>> ListarAtivasOrdenadasAsync(Unit _)
+    {
+        var lista = await _repository.ListarAtivasOrdenadasAsync();
+        return Result<IEnumerable<OrdemServicoResumoResponse>>.Success(lista.Select(_mapper.MapToResumoResponse));
+    }
 }
