@@ -16,4 +16,6 @@ public interface IOrdemServicoRepository
     Task UpdateAsync(OrdemServico ordemServico);
     Task<OrdemServico?> ObterPorTokenAsync(string token);
     Task<IEnumerable<OrdemServico>> ListarAtivasOrdenadasAsync();
+    Task AtualizarTokenAsync(Guid osId, string token);
+
 }

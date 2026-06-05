@@ -140,4 +140,15 @@ public class OrdemServicoRepository : IOrdemServicoRepository
         return await _context.OrdensServico
             .FirstOrDefaultAsync(os => os.TokenAprovacao == token);
     }
+
+    public async Task AtualizarTokenAsync(Guid osId, string token)
+    {
+        var os = await _context.OrdensServico.FindAsync(osId);
+        if (os != null)
+        {
+            os.TokenAprovacao = token;
+            os.TokenUsado = false;
+            await _context.SaveChangesAsync();
+        }
+    }
 }

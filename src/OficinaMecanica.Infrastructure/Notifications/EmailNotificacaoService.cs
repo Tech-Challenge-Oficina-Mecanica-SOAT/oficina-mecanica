@@ -44,20 +44,24 @@ public class EmailNotificacaoService : INotificacaoService
 
     public async Task EnviarOrcamentoAsync(Guid osId, string emailCliente, decimal totalOrcamento)
     {
-        // Buscar a OS
         var os = await _ordemServicoRepository.ObterPorIdAsync(osId);
         if (os == null)
             throw new Exception($"Ordem de Serviço {osId} não encontrada");
 
-        os.TokenAprovacao = Guid.NewGuid().ToString("N").Substring(0, 32);
-        os.TokenUsado = false;
-        await _ordemServicoRepository.UpdateAsync(os);
+        string? token = os.TokenAprovacao;
+        
+        if (string.IsNullOrEmpty(token) || os.TokenUsado)
+        {
+            token = Guid.NewGuid().ToString("N").Substring(0, 32);
+            await _ordemServicoRepository.AtualizarTokenAsync(osId, token);
+        }
 
+        // Aqui 'token' não é mais null porque foi gerado se era null
         var assunto = $"Orçamento - OS #{osId.ToString().Substring(0, 8)}";
         
         var baseUrl = "http://localhost:5000";
-        var linkAprovar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{os.TokenAprovacao}?aprovado=true";
-        var linkRecusar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{os.TokenAprovacao}?aprovado=false";
+        var linkAprovar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{token}?aprovado=true";
+        var linkRecusar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{token}?aprovado=false";
         
         var corpoHtml = $@"
             <html>

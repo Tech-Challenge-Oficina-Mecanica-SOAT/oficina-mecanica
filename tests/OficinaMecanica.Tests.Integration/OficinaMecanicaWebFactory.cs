@@ -14,6 +14,8 @@ public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment("Test");
+
         builder.ConfigureAppConfiguration(config =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>

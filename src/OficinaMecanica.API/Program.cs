@@ -100,7 +100,14 @@ builder.Services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
 
 // DI - Notificacoes
-builder.Services.AddScoped<INotificacaoService, EmailNotificacaoService>();
+if (builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddScoped<INotificacaoService, EmailNotificacaoServiceFake>();
+}
+else
+{
+    builder.Services.AddScoped<INotificacaoService, EmailNotificacaoService>();
+}
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 builder.Services.AddScoped<IAprovarOrcamentoPorEmailUseCase, AprovarOrcamentoPorEmailUseCase>();
 
@@ -217,8 +224,6 @@ builder.Services.AddOpenApi(options =>
 });
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<INotificacaoService, EmailNotificacaoService>();
-
 
 var app = builder.Build();
 
