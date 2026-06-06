@@ -3,5 +3,7 @@ using OficinaMecanica.Application.DTOs.Responses;
 
 namespace OficinaMecanica.Application.UseCases.OrdemServico.ListarOrdensServico;
 
-public interface IListarOrdensServicoUseCase
-    : IUseCase<Unit, IEnumerable<OrdemServicoResumoResponse>> { }
+public interface IListarOrdensServicoUseCase : IUseCase<Unit, IEnumerable<OrdemServicoResumoResponse>>
+{
+    Task<Result<IEnumerable<OrdemServicoResumoResponse>>> ListarAtivasOrdenadasAsync(Unit _);
+}
