@@ -27,6 +27,8 @@ public class OficinaMecanicaWebFactory : WebApplicationFactory<Program>, IAsyncL
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment("Test");
+
         // If InitializeAsync was not called (manual factory creation), start the container now
         if (_startTask is null)
         {
