@@ -18,6 +18,10 @@ public class NotificacaoServiceTests
     public async Task EnviarOrcamentoAsync_CompletaSemExcecao()
     {
         await _sut.EnviarOrcamentoAsync(Guid.NewGuid(), "cliente@oficina.com", 1500.00m);
+
+        _loggerMock.Verify(
+            l => l.Info(It.IsAny<string>(), It.IsAny<object[]>()),
+            Times.Once);
     }
 
     [Fact]

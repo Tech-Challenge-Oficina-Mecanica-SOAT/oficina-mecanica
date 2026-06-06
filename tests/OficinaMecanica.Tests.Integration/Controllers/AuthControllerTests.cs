@@ -1,5 +1,6 @@
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
+using OficinaMecanica.Domain.Enums;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -70,5 +71,23 @@ public class AuthControllerTests : IClassFixture<OficinaMecanicaWebFactory>
             new LoginRequest(UniqueEmail("ghost"), "Senha@123"));
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Registrar_SemAutenticacao_ComPerfilAdmin_Retorna401()
+    {
+        var response = await _client.PostAsJsonAsync("/auth/registrar",
+            new RegistrarUsuarioRequest(UniqueEmail("hacker"), "Senha@123", Perfil.Admin));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Registrar_SemAutenticacao_ComPerfilCliente_Retorna201()
+    {
+        var response = await _client.PostAsJsonAsync("/auth/registrar",
+            new RegistrarUsuarioRequest(UniqueEmail("publico"), "Senha@123", Perfil.Cliente));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 }
