@@ -104,7 +104,7 @@ public class OrdemServicoRepository : IOrdemServicoRepository
         var os = await _context.OrdensServico.FindAsync(ordemServicoId)
             ?? throw new KeyNotFoundException("Ordem de serviço não encontrada");
 
-        os.Total = total;
+        os.AtualizarTotal(total);
         await _context.SaveChangesAsync();
     }
 

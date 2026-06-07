@@ -10,11 +10,10 @@ namespace OficinaMecanica.Tests.Unit.UseCases.OrdemServicoStatus.NotificarConclu
 public class NotificarConclusaoUseCaseTests
 {
     private readonly Mock<IOrdemServicoRepository> _repo = new();
-    private readonly Mock<IDomainEventDispatcher> _dispatcher = new();
     private readonly NotificarConclusaoUseCase _sut;
 
     public NotificarConclusaoUseCaseTests() =>
-        _sut = new NotificarConclusaoUseCase(_repo.Object, _dispatcher.Object);
+        _sut = new NotificarConclusaoUseCase(_repo.Object);
 
     [Fact]
     public async Task ExecutarAsync_OSNaoEncontrada_RetornaNotFound()

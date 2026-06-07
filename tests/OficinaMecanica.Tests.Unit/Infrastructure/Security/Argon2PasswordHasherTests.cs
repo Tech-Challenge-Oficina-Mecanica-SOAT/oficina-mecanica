@@ -52,12 +52,38 @@ public class Argon2PasswordHasherTests
     }
 
     [Theory]
-    [InlineData("$argon2i$v=19$m=9216,t=4,p=1$salt$hash")]
-    [InlineData("$argon2id$v=19$m=9216,t=4$salt$hash")]
-    [InlineData("$argon2id$v=19$m=9216,t=4,p=1$###$hash")]
-    [InlineData("$argon2id$v=19$m=9216,t=4,p=1$YWJjMTIz$###")]
-    public void Verificar_RetornaFalseParaHashMalformadoVariadosCasos(string hashInvalido)
+    [InlineData("$argon2i$v=19$m=9216,t=4,p=1$salt$hash")]           // prefixo errado (argon2i)
+    [InlineData("$argon2id$v=19$m=9216,t=4$salt$hash")]               // paramParts.Length != 3
+    [InlineData("$argon2id$v=19$m=9216,t=4,p=1$###$hash")]            // salt base64 inválido
+    [InlineData("$argon2id$v=19$m=9216,t=4,p=1$YWJjMTIz$###")]        // hash base64 inválido
+    [InlineData("$argon2id$v=19$m=9216,t=4,p=1$YWJjMTIz")]            // apenas 4 segmentos (parts.Length != 5)
+    [InlineData("$argon2id$v=19$m=9216,t=4,x=1$YWJjMTIz$YWJjMTIz")]  // chave desconhecida 'x'
+    [InlineData("$argon2id$v=19$m=9216,t=4,p=0$YWJjMTIz$YWJjMTIz")]  // p=0 (valor inválido)
+    [InlineData("$argon2id$v=19$m=0,t=4,p=1$YWJjMTIz$YWJjMTIz")]     // m=0 (valor inválido)
+    [InlineData("")]                                                    // hash vazio
+    public void Verify_RetornaFalseParaHashInvalido(string hashInvalido)
     {
         _sut.Verify("qualquer", hashInvalido).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Hash_SenhaVazia_GeraHashValido()
+    {
+        var hash = _sut.Hash(string.Empty);
+        hash.Should().StartWith("$argon2id$");
+    }
+
+    [Fact]
+    public void Verify_SenhaVaziaCorreta_RetornaTrue()
+    {
+        var hash = _sut.Hash(string.Empty);
+        _sut.Verify(string.Empty, hash).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Verify_SenhaVaziaIncorreta_RetornaFalse()
+    {
+        var hash = _sut.Hash("outra-senha");
+        _sut.Verify(string.Empty, hash).Should().BeFalse();
     }
 }

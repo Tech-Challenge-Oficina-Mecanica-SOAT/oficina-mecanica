@@ -86,7 +86,7 @@ build/
 .env.*.local
 
 */plans/
-docs/
+docs/superpowers/
 
 # Coverage
 coverage-results/

@@ -10,11 +10,10 @@ namespace OficinaMecanica.Tests.Unit.UseCases.OrdemServicoStatus.MarcarAguardand
 public class MarcarAguardandoAprovacaoUseCaseTests
 {
     private readonly Mock<IOrdemServicoRepository> _repo = new();
-    private readonly Mock<IDomainEventDispatcher> _dispatcher = new();
     private readonly MarcarAguardandoAprovacaoUseCase _sut;
 
     public MarcarAguardandoAprovacaoUseCaseTests() =>
-        _sut = new MarcarAguardandoAprovacaoUseCase(_repo.Object, _dispatcher.Object);
+        _sut = new MarcarAguardandoAprovacaoUseCase(_repo.Object);
 
     [Fact]
     public async Task ExecutarAsync_OSNaoEncontrada_RetornaNotFound()
