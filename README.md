@@ -7,6 +7,7 @@ Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviç
 
 ## Índice
 
+- [Arquitetura](#arquitetura)
 - [Pré-requisitos](#pré-requisitos)
 - [Como executar](#como-executar)
 - [Documentação interativa (Scalar)](#documentação-interativa-scalar)
@@ -17,6 +18,70 @@ Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviç
 - [Scan de qualidade (SonarQube)](#scan-de-qualidade-sonarqube)
 - [EF Core / Migrations](#ef-core--migrations)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Arquitetura
+
+O projeto segue **Clean Architecture** com quatro camadas e regra de dependência estrita (dependências só apontam para dentro):
+
+```
+API  →  Application  →  Domain
+ ↓           ↓
+Infrastructure
+```
+
+### Camadas
+
+| Camada | Projeto | Responsabilidade |
+|---|---|---|
+| **Domain** | `OficinaMecanica.Domain` | Entidades, Value Objects, Domain Events, interfaces de repositório |
+| **Application** | `OficinaMecanica.Application` | Use Cases, DTOs, interfaces de infraestrutura, Result\<T\> pattern |
+| **Infrastructure** | `OficinaMecanica.Infrastructure` | Repositórios EF Core, JWT, Argon2, logging, e-mail, dispatch de eventos |
+| **API** | `OficinaMecanica.API` | Controllers, DI composition root, configuração |
+
+### Estrutura de Application
+
+```
+Application/
+├── Common/
+│   └── Result.cs               # Result<T> — use cases não lançam exceções de negócio
+├── Configuration/
+│   └── IJwtSettings.cs         # Abstração de config (sem dependência de IConfiguration)
+├── DTOs/
+│   ├── Requests/               # Request Models (entrada dos use cases)
+│   └── Responses/              # Response Models (saída dos use cases)
+├── Interfaces/
+│   ├── ITokenGenerator.cs      # Abstração de JWT (impl. em Infrastructure)
+│   ├── IPasswordHasher.cs      # Abstração de Argon2 (impl. em Infrastructure)
+│   └── IAppLogger.cs           # Abstração de logging (impl. em Infrastructure)
+├── Mappers/
+│   └── OrdemServicoMapper.cs   # Mapeamento entidade → DTO
+└── UseCases/                   # 49 use cases, um por operação
+    ├── Auth/
+    ├── Cliente/
+    ├── OrdemServico/
+    ├── OrdemServicoStatus/
+    ├── Peca/
+    ├── Servico/
+    └── Veiculo/
+```
+
+### Value Objects (Domain)
+
+| VO | Regra |
+|---|---|
+| `Email` | Validado via `MailAddress.TryCreate`; armazenado em lowercase |
+| `Documento` | CPF (11 dígitos) ou CNPJ numérico/alfanumérico Mercosul (14 chars) com dígitos verificadores |
+| `Telefone` | 10–13 dígitos após limpeza |
+| `Placa` | Formato antigo `AAA9999` ou Mercosul `AAA9A99` |
+
+### Domain Events
+
+Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbContext.SaveChangesAsync`:
+`OrcamentoEnviadoEvent` · `OrdemAprovadaEvent` · `OrdemRejeitadaEvent` · `OrdemConcluidaEvent` · `OrdemEntregueEvent`
+
+> Decisões arquiteturais detalhadas em [`docs/adr/`](./docs/adr/).
 
 ---
 
@@ -139,7 +204,7 @@ Guias passo a passo por funcionalidade e um arquivo `.http` para uso no VS Code 
 
 ## Cobertura de testes
 
-O projeto possui **418 testes** (337 unitários + 81 de integração) cobrindo services, entidades de domínio e todos os controllers.
+O projeto possui **476 testes** (392 unitários + 84 de integração) cobrindo use cases, entidades de domínio, Value Objects e todos os controllers.
 
 ### Gerar o relatório
 
@@ -166,12 +231,12 @@ O arquivo `coverage-report/Summary.txt` contém o resumo em texto puro.
 | Application (services + DTOs) | **99.4%** |
 | Domain (entidades) | **92.7%** |
 | API (controllers) | **80.4%** |
-| Infrastructure (repositories) | **80.0%** — exercitados via testes de integração com InMemory |
+| Infrastructure (repositories) | **80.0%** — exercitados via testes de integração com Testcontainers (PostgreSQL real) |
 | **Total (linhas)** | **90.5%** |
 | **Total (branches)** | **73.7%** |
 | **Total (métodos)** | **93.9%** |
 
-> `HistoricoStatusOSRepository` está em 0% pois o fluxo de histórico é coberto indiretamente via `OrdemServicoStatusService`. `PublicoController` e `OrdemServicosController` têm endpoints não cobertos pelos testes de integração atuais por dependerem de `EF.Functions.ILike` (PostgreSQL-only, incompatível com InMemory).
+> `HistoricoStatusOSRepository` está em 0% pois o fluxo de histórico é coberto indiretamente pelos testes de integração de `OrdemServicoStatus`.
 
 ---
 

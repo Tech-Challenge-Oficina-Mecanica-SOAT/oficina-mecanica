@@ -21,7 +21,7 @@ public class OrdemServico : Entity
     public DateTime? DataFechamento { get; private set; }
     public EnumStatusOS StatusOS { get; private set; }
     public string Observacoes { get; private set; } = string.Empty;
-    public decimal Total { get; set; }
+    public decimal Total { get; private set; }
     public string? TokenAprovacao { get; set; }
     public bool TokenUsado { get; set; }
 
@@ -108,6 +108,11 @@ public class OrdemServico : Entity
     public void RecalcularTotal()
     {
         Total = Itens.Sum(i => i.Subtotal);
+    }
+
+    public void AtualizarTotal(decimal valor)
+    {
+        Total = valor;
     }
 
     private void Transitar(EnumStatusOS esperadoAtual, EnumStatusOS novo, string alteradoPor, string motivo)
