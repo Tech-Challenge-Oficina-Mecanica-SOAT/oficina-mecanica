@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oficina-api
+  namespace: oficina-mecanica
+  labels:
+    app: oficina-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oficina-api
+  template:
+    metadata:
+      labels:
+        app: oficina-api
+    spec:
+      containers:
+        - name: oficina-api
+          image: oficina_api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: oficina-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secrets
+                  key: POSTGRES_PASSWORD
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secrets
+                  key: JWT_SECRET_KEY
+            - name: Seguranca__PasswordKey
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secrets
+                  key: PASSWORD_KEY
+            - name: EmailSettings__Username
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secrets
+                  key: EMAIL_USERNAME
+            - name: EmailSettings__Password
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secrets
+                  key: EMAIL_PASSWORD
+            - name: ConnectionStrings__DefaultConnection
+              value: "Host=postgres-service;Port=5432;Database=OficinaDB;Username=postgres;Password=$(POSTGRES_PASSWORD);Trust Server Certificate=true"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
