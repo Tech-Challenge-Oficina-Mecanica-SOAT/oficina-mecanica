@@ -2,9 +2,8 @@ using OficinaMecanica.Domain.Common;
 
 namespace OficinaMecanica.Domain.Events;
 
-public record OrdemAprovadaEvent(
+public record DiagnosticoIniciadoEvent(
     Guid OrdemServicoId,
     string EmailCliente,
-    decimal ValorTotal,
     string AlteradoPor,
     DateTime OcorridoEm) : IDomainEvent;

@@ -52,10 +52,14 @@ public class OrdemServico : Entity
         StatusOS = EnumStatusOS.Recebida;
 
         RegistrarHistorico(null, EnumStatusOS.Recebida, "sistema", "Criação inicial");
+        RaiseEvent(new OrdemCriadaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, DateTime.UtcNow));
     }
 
     public void IniciarDiagnostico(string alteradoPor)
-        => Transitar(EnumStatusOS.Recebida, EnumStatusOS.EmDiagnostico, alteradoPor, "Diagnóstico iniciado");
+    {
+        Transitar(EnumStatusOS.Recebida, EnumStatusOS.EmDiagnostico, alteradoPor, "Diagnóstico iniciado");
+        RaiseEvent(new DiagnosticoIniciadoEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, DateTime.UtcNow));
+    }
 
     public void EnviarParaAprovacao(string alteradoPor)
     {
@@ -66,8 +70,7 @@ public class OrdemServico : Entity
     public void Aprovar(string alteradoPor)
     {
         Transitar(EnumStatusOS.AguardandoAprovacao, EnumStatusOS.EmExecucao, alteradoPor, "Orçamento aprovado");
-        RaiseEvent(new OrdemAprovadaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, DateTime.UtcNow));
-    }
+        RaiseEvent(new OrdemAprovadaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, Total, alteradoPor, DateTime.UtcNow));    }
 
     public void Rejeitar(string alteradoPor, string motivo)
     {

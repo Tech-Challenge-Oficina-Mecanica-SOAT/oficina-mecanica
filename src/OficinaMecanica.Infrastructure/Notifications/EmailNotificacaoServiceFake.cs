@@ -40,4 +40,16 @@ public class EmailNotificacaoServiceFake : INotificacaoService
         _logger.Info($"FAKE - EnviarEntregaAsync: OS={osId}, Email={emailCliente}");
         return Task.CompletedTask;
     }
+
+    public Task EnviarDiagnosticoAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info($"FAKE - EnviarDiagnosticoAsync: OS={osId}, Email={emailCliente}");
+        return Task.CompletedTask;
+    }
+
+    public Task EnviarCriacaoAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info($"FAKE - EnviarCriacaoAsync: OS={osId}, Email={emailCliente}");
+        return Task.CompletedTask;
+    }
 }
