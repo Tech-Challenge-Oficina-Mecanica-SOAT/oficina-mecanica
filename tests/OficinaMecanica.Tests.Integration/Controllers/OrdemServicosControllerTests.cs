@@ -23,7 +23,7 @@ public class OrdemServicosControllerTests
     public OrdemServicosControllerTests(ITestOutputHelper output) =>
         _output = output;
 
-    private async Task<Guid> SeedOSAsync(IServiceProvider services, string email)
+    private async Task<(Guid osId, Guid servicoId, Guid pecaId)> SeedOSAsync(IServiceProvider services, string email)
     {
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -36,6 +36,16 @@ public class OrdemServicosControllerTests
         db.Veiculos.Add(veiculo);
         await db.SaveChangesAsync();
 
+        // Criar um serviço para ser referenciado
+        var servico = new Servico("Troca de óleo", "Serviço de troca de óleo", 100);
+        db.Servicos.Add(servico);
+        
+        // Criar uma peça para ser referenciada
+        var peca = new PecaInsumo("Óleo motor", "TEST-01", "Óleo 5W30", 80, 100);
+        db.PecasInsumos.Add(peca);
+        
+        await db.SaveChangesAsync();
+
         var os = new OrdemServico(cliente.Id, veiculo.Id, "obs")
         {
             Cliente = cliente,
@@ -44,7 +54,7 @@ public class OrdemServicosControllerTests
         db.OrdensServico.Add(os);
         await db.SaveChangesAsync();
 
-        return os.Id;
+        return (os.Id, servico.Id, peca.Id);
     }
 
     [Fact]
@@ -56,17 +66,25 @@ public class OrdemServicosControllerTests
         using var factory = new OrdemServicosWebFactory(statusSpy, notificacaoSpy);
 
         var client = factory.CreateClient().ComToken("Admin");
-        var osId = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
+        var (osId, servicoId, pecaId) = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
 
         var itens = new List<AdicionarOSItemRequest>
         {
             new()
             {
                 Tipo = "servico",
-                ReferenciaId = Guid.NewGuid(),
+                ReferenciaId = servicoId,  // ← Usar ID real do serviço
                 Descricao = "Troca de óleo",
                 Quantidade = 2,
                 PrecoUnitario = 100m
+            },
+            new()
+            {
+                Tipo = "peca",
+                ReferenciaId = pecaId,     // ← Usar ID real da peça
+                Descricao = "Óleo motor",
+                Quantidade = 3,
+                PrecoUnitario = 50m
             }
         };
 
@@ -92,7 +110,7 @@ public class OrdemServicosControllerTests
         using var factory = new OrdemServicosNotificacaoFactory(notificacaoSpy);
 
         var client = factory.CreateClient().ComToken("Admin");
-        var osId = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
+        var (osId, servicoId, pecaId) = await SeedOSAsync(factory.Server.Services, "cliente@teste.com");
 
         var iniciar = await client.PatchAsync($"/api/ordens-servico/{osId}/iniciar-diagnostico", null);
         iniciar.IsSuccessStatusCode.Should().BeTrue();
@@ -102,10 +120,14 @@ public class OrdemServicosControllerTests
             new()
             {
                 Tipo = "servico",
-                ReferenciaId = Guid.NewGuid(),
-                Descricao = "Troca de óleo",
-                Quantidade = 2,
-                PrecoUnitario = 100m
+                ReferenciaId = servicoId,
+                Quantidade = 2
+            },
+            new()
+            {
+                Tipo = "peca",
+                ReferenciaId = pecaId,
+                Quantidade = 3
             }
         };
 
@@ -121,7 +143,7 @@ public class OrdemServicosControllerTests
         notificacaoSpy.Calls.Should().Be(1);
         notificacaoSpy.LastOsId.Should().Be(osId);
         notificacaoSpy.LastEmail.Should().Be("cliente@teste.com");
-        notificacaoSpy.LastTotal.Should().Be(200m);
+        notificacaoSpy.LastTotal.Should().Be(440m);
     }
 
     private sealed class MarcarAguardandoAprovacaoSpy : IMarcarAguardandoAprovacaoUseCase

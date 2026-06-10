@@ -32,7 +32,11 @@ public class AdicionarItensOSUseCaseTests
         OrdemServicoId = osId,
         Itens = new List<AdicionarOSItemRequest>
         {
-            new() { Tipo = tipo, ReferenciaId = Guid.NewGuid(), Descricao = "x", Quantidade = 1, PrecoUnitario = 10m }
+            new() { 
+                Tipo = tipo, 
+                ReferenciaId = Guid.NewGuid(),
+                Quantidade = 1 
+            }
         }
     };
 
@@ -61,26 +65,11 @@ public class AdicionarItensOSUseCaseTests
         var os = new OficinaMecanica.Domain.Entities.OrdemServico(Guid.NewGuid(), Guid.NewGuid(), "obs");
         os.ForcarStatus(EnumStatusOS.EmDiagnostico, "admin", "setup");
         
-        _pecaInsumoRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
-            .ReturnsAsync((Guid id) => 
-            {
-                var mock = new Mock<OficinaMecanica.Domain.Entities.PecaInsumo>();
-                mock.Setup(p => p.Id).Returns(id);
-                mock.Setup(p => p.Nome).Returns("Item Teste");
-                mock.Setup(p => p.Preco).Returns(10m);
-                mock.Setup(p => p.Quantidade).Returns(100);
-                return mock.Object;
-            });
-        
         _servicoRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
-            .ReturnsAsync((Guid id) =>
-            {
-                var mock = new Mock<OficinaMecanica.Domain.Entities.Servico>();
-                mock.Setup(s => s.Id).Returns(id);
-                mock.Setup(s => s.Nome).Returns("Servico Teste");
-                mock.Setup(s => s.Valor).Returns(10m);
-                return mock.Object;
-            });
+            .ReturnsAsync((Guid id) => new OficinaMecanica.Domain.Entities.Servico("Servico Teste", "Descricao", 10m));
+        
+        _pecaInsumoRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((Guid id) => new PecaInsumo("Peca Teste", "COD001", "Descricao", 10m, 100));
         
         _repo.Setup(r => r.ObterPorIdComItensAsync(os.Id)).ReturnsAsync(os);
         _repo.Setup(r => r.AdicionarItensAsync(It.IsAny<IEnumerable<OrdemServicoItem>>()))
@@ -89,6 +78,11 @@ public class AdicionarItensOSUseCaseTests
             .ReturnsAsync(Result<bool>.Success(true));
 
         var result = await _sut.ExecutarAsync(Req(os.Id));
+
+        if (!result.IsSuccess)
+        {
+            Console.WriteLine($"ERRO: {result.Error}");
+        }
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Should().HaveCount(1);
