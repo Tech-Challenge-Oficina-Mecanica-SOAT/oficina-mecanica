@@ -7,4 +7,6 @@ public interface INotificacaoService
     Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo);
     Task EnviarConclusaoAsync(Guid osId, string emailCliente);
     Task EnviarEntregaAsync(Guid osId, string emailCliente);
+    Task EnviarCriacaoAsync(Guid osId, string emailCliente);
+    Task EnviarDiagnosticoAsync(Guid osId, string emailCliente);
 }

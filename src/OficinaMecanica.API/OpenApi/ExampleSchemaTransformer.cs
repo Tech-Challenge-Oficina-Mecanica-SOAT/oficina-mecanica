@@ -81,6 +81,12 @@ internal sealed class ExampleSchemaTransformer : IOpenApiSchemaTransformer
             ["quantidade"] = 10,
             ["tipoOperacao"] = "incrementar",
         },
+        [typeof(AdicionarOSItemRequest)] = () => new JsonObject
+        {
+            ["tipo"] = "",
+            ["referenciaId"] = "",
+            ["quantidade"] = 0,
+        },
     };
 
     public Task TransformAsync(
