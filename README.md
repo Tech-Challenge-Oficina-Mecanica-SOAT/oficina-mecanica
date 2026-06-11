@@ -11,6 +11,7 @@ Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviç
 - [Pré-requisitos](#pré-requisitos)
 - [Como executar](#como-executar)
 - [Documentação interativa (Scalar)](#documentação-interativa-scalar)
+- [Collection das APIs](#collection-das-apis)
 - [Autenticação](#autenticação)
 - [Roteiros de teste](#roteiros-de-teste)
 - [Cobertura de testes](#cobertura-de-testes)
@@ -131,6 +132,42 @@ http://localhost:5000/scalar
 ```
 
 Todas as rotas estão documentadas com descrição, parâmetros, exemplos de resposta e os perfis de acesso exigidos.
+
+---
+
+## Collection das APIs
+
+A documentação completa da API está disponível via Scalar, que fornece uma interface interativa para explorar e testar todos os endpoints.
+
+### Acesso interativo
+
+- **Ambiente de desenvolvimento (Docker):** `http://localhost:5000/scalar/v1`
+- **Ambiente local (dotnet run):** `http://localhost:5165/scalar/v1`
+
+### Exportar collection
+
+#### OpenAPI JSON
+
+O documento OpenAPI (antigo Swagger) está disponível em:
+
+- **Docker:** `http://localhost:5000/openapi/v1.json`
+- **Local:** `http://localhost:5165/openapi/v1.json`
+
+#### Postman
+
+1. Acesse o link do OpenAPI JSON acima
+2. Copie o conteúdo
+3. No Postman, clique em **Import** → **Raw text** → cole o JSON → **Continue** → **Import**
+
+Ou exporte via linha de comando:
+
+```bash
+# Instalar a ferramenta (apenas uma vez)
+dotnet tool install -g Swashbuckle.AspNetCore.Cli
+
+# Exportar o JSON
+swagger tofile --output openapi.json src/OficinaMecanica.API/bin/Debug/net10.0/OficinaMecanica.API.dll v1
+```
 
 ---
 
