@@ -145,3 +145,7 @@ Recebida → EmDiagnostico → AguardandoAprovacao → EmExecucao → Finalizada
 7. `entregar` → `Entregue`.
 8. `GET /historico` → verificar todas as 7 entradas.
 9. `GET /Publico/os/{id}/status` (sem token) → confirmar status público `Entregue`.
+
+## Próximo passo
+
+[09. Webhook de Aprovação de Orçamento](./09-webhook-aprovacao.md)
