@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oficina-mecanica-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Jwt__Issuer: "OficinaMecanicaAPI"
+  Jwt__Audience: "OficinaMecanicaClients"
+  EmailSettings__SmtpServer: "mailhog"
+  EmailSettings__Port: "1025"
+  EmailSettings__UseSSL: "false"
+  EmailSettings__From: "noreply@oficinamecanica.com"
