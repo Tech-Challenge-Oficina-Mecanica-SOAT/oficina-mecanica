@@ -301,6 +301,18 @@ http://localhost:5000/scalar
 
 Todas as rotas estão documentadas com descrição, parâmetros, exemplos de resposta e os perfis de acesso exigidos.
 
+### Postman Collection
+
+Importe a collection completa no Postman para testar todos os endpoints com variáveis de ambiente pré-configuradas:
+
+- **Arquivo:** [`docs/oficina-mecanica.postman_collection.json`](docs/oficina-mecanica.postman_collection.json)
+
+**Como importar:**
+1. Abra o Postman → clique em **Import**
+2. Selecione o arquivo acima
+3. Configure a variável `baseUrl` se necessário (padrão: `http://localhost:5000`)
+4. Faça **Auth → Login** primeiro — o token é salvo automaticamente nas variáveis da collection
+
 ---
 
 ## Autenticação

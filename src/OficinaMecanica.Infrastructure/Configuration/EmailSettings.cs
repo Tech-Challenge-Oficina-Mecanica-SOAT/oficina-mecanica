@@ -8,4 +8,5 @@ public class EmailSettings
     public string UserName { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string From { get; set; } = "noreply@oficinamecanica.com";
+    public string BaseUrl { get; set; } = "http://localhost:5000";
 }

@@ -59,7 +59,7 @@ public class EmailNotificacaoService : INotificacaoService
         // Aqui 'token' não é mais null porque foi gerado se era null
         var assunto = $"Orçamento - OS #{osId.ToString().Substring(0, 8)}";
         
-        var baseUrl = "http://localhost:5000";
+        var baseUrl = _emailSettings.BaseUrl.TrimEnd('/');
         var linkAprovar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{token}?aprovado=true";
         var linkRecusar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{token}?aprovado=false";
         
@@ -89,27 +89,61 @@ public class EmailNotificacaoService : INotificacaoService
         await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
     }
 
-    public async Task EnviarConclusaoAsync(Guid osId, string emailCliente)
-    {
-        _logger.Info($"Notificação de conclusão - OS: {osId}, Cliente: {emailCliente}");
-        await Task.CompletedTask;
-    }
-
     public async Task EnviarAprovacaoAsync(Guid osId, string emailCliente)
     {
-        _logger.Info($"Orçamento aprovado - OS: {osId}, Cliente: {emailCliente}");
-        await Task.CompletedTask;
+        var assunto = $"Orçamento Aprovado - OS #{osId.ToString()[..8]}";
+        var corpoHtml = $@"
+            <html><body style='font-family: Arial, sans-serif;'>
+            <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                <h2 style='color: #28a745;'>✅ Orçamento Aprovado!</h2>
+                <p><strong>OS #:</strong> {osId.ToString()[..8]}</p>
+                <p>Sua ordem de serviço foi aprovada e já entrou em execução.</p>
+                <p>Acompanhe o status em tempo real:</p>
+                <p><a href='{_emailSettings.BaseUrl.TrimEnd('/')}/Publico/os/{osId}/status'>Ver status da OS</a></p>
+                <p>Obrigado pela confiança!</p>
+            </div></body></html>";
+        await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
     }
 
     public async Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo)
     {
-        _logger.Info($"Orçamento rejeitado - OS: {osId}, Cliente: {emailCliente}, Motivo: {motivo}");
-        await Task.CompletedTask;
+        var assunto = $"Orçamento Recusado - OS #{osId.ToString()[..8]}";
+        var corpoHtml = $@"
+            <html><body style='font-family: Arial, sans-serif;'>
+            <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                <h2 style='color: #dc3545;'>❌ Orçamento Recusado</h2>
+                <p><strong>OS #:</strong> {osId.ToString()[..8]}</p>
+                <p><strong>Motivo:</strong> {motivo}</p>
+                <p>Entre em contato conosco para negociar um novo orçamento.</p>
+            </div></body></html>";
+        await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
+    }
+
+    public async Task EnviarConclusaoAsync(Guid osId, string emailCliente)
+    {
+        var assunto = $"Serviço Concluído - OS #{osId.ToString()[..8]}";
+        var corpoHtml = $@"
+            <html><body style='font-family: Arial, sans-serif;'>
+            <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                <h2 style='color: #17a2b8;'>🔧 Serviço Concluído!</h2>
+                <p><strong>OS #:</strong> {osId.ToString()[..8]}</p>
+                <p>O serviço do seu veículo foi concluído. Entre em contato para agendar a retirada.</p>
+                <p><a href='{_emailSettings.BaseUrl.TrimEnd('/')}/Publico/os/{osId}/status'>Ver status da OS</a></p>
+            </div></body></html>";
+        await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
     }
 
     public async Task EnviarEntregaAsync(Guid osId, string emailCliente)
     {
-        _logger.Info($"Veículo entregue - OS: {osId}, Cliente: {emailCliente}");
-        await Task.CompletedTask;
+        var assunto = $"Veículo Entregue - OS #{osId.ToString()[..8]}";
+        var corpoHtml = $@"
+            <html><body style='font-family: Arial, sans-serif;'>
+            <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                <h2 style='color: #28a745;'>🚗 Veículo Entregue!</h2>
+                <p><strong>OS #:</strong> {osId.ToString()[..8]}</p>
+                <p>Seu veículo foi entregue com sucesso. Obrigado pela preferência!</p>
+                <p>Avalie nosso serviço e volte sempre.</p>
+            </div></body></html>";
+        await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
     }
 }
