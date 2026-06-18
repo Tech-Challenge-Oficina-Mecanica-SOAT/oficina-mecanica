@@ -41,7 +41,7 @@ public class EmailNotificacaoServiceFakeTests
     [Fact]
     public async Task EnviarConclusaoAsync_DeveLogarMensagem()
     {
-        await _service.EnviarConclusaoAsync(Guid.NewGuid(), "teste@email.com");
+        await _service.EnviarConclusaoAsync(Guid.NewGuid(), "teste@email.com", "motivo");
         _loggerMock.Verify(x => x.Info(It.Is<string>(s => s.Contains("FAKE") && s.Contains("EnviarConclusaoAsync"))), Times.Once);
     }
 
