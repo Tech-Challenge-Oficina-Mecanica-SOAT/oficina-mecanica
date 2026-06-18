@@ -320,7 +320,16 @@ GET /api/ordens-servico/{{osId}}/historico
 
 **Pré-requisito:** Cluster Kind rodando (via `terraform apply` ou `kubectl apply` manual). Dois terminais abertos.
 
-> Após subir o cluster, exponha a API com port-forward antes de iniciar os testes:
+> O Kind não vem com `metrics-server` instalado por padrão. Sem ele, o HPA nunca calcula utilização (`TARGETS` fica em `<unknown>/70%`) e nunca escala. Instale antes de testar:
+> ```bash
+> kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+> # Em clusters Kind/local, o kubelet usa certificado self-signed; é necessário permitir TLS inseguro:
+> kubectl patch deployment metrics-server -n kube-system --type='json' \
+>   -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+> kubectl rollout status deployment/metrics-server -n kube-system
+> ```
+
+> Os manifestos em `k8s/` não declaram `namespace`, então tudo é aplicado no namespace `default`. Exponha a API com port-forward antes de iniciar os testes (nome do Service real é `oficina-mecanica-api`, não `oficina-api-service`):
 > ```bash
 > kubectl port-forward svc/oficina-mecanica-api 5000:80
 > # http://localhost:5000/scalar
@@ -339,7 +348,7 @@ kubectl run -it --rm load-test --image=busybox --restart=Never -- \
 
 > _"O HPA `oficina-mecanica-api-hpa` está configurado para escalar entre 2 e 10 réplicas quando o consumo de CPU ultrapassar 70% ou a memória 80%. Vou simular carga para demonstrar o escalonamento automático."_
 
-Aguarde alguns segundos e mostre o HPA escalando no Terminal 1.
+> O HPA só reavalia métricas a cada ~15s (intervalo padrão do `--horizontal-pod-autoscaler-sync-period`) e o `metrics-server` coleta a cada ~60s. Espere de 1 a 3 minutos para ver `TARGETS` subir e o `REPLICAS` escalar no Terminal 1 — não é instantâneo.
 
 ```bash
 kubectl get pods -w
@@ -358,19 +367,43 @@ kubectl describe hpa oficina-mecanica-api-hpa
 
 **O que mostrar:** Terminal na pasta `infra/local/`.
 
+> ⚠️ **Pré-requisito importante (Windows):** se você tiver antivírus com inspeção de tráfego HTTPS (AVG, Avast, Kaspersky, etc.), desative essa proteção antes de rodar `terraform init`/`apply`. Esses antivírus interceptam TLS até em conexões loopback (`127.0.0.1`), o que quebra o handshake mTLS que o Terraform usa para se comunicar com os plugins de provider — o erro aparece como `Plugin did not respond` / `x509: certificate signed by unknown authority`, mesmo com providers oficiais da HashiCorp. Achado e corrigido nesta sessão: ver detalhe em [`README_FASE2.md`](./README_FASE2.md#terraform-iac--corrigido-e-validado).
+
+> ℹ️ Os providers de comunidade usados antes aqui (`tehcyx/kind`, `gavinbunney/kubectl`) estavam **abandonados desde 2021** e foram **removidos**. O `infra/local/main.tf` atual usa só os providers oficiais `hashicorp/null` e `hashicorp/local`, chamando os binários `kind`/`kubectl` via `local-exec` — mesmo resultado, sem dependência de plugin não mantido.
+
+**1. Build da imagem da API** (passo manual, fora do Terraform — ver por quê em [`README_FASE2.md`](./README_FASE2.md#terraform-iac--corrigido-e-validado)):
+```bash
+docker build -t oficina-mecanica-api:local .
+```
+
+**2. Editar `k8s/secret.yaml`** com credenciais reais (`Jwt__SecretKey`, `Seguranca__PasswordKey`, `PostgresPassword` e `ConnectionStrings__DefaultConnection` — as duas últimas com a **mesma senha**).
+
+**3. Inicializar e aplicar:**
 ```bash
 cd infra/local
 terraform init
 terraform plan
 ```
 
-> _"O Terraform provisiona o cluster Kind localmente com um control-plane e um worker node, e em seguida aplica todos os manifestos Kubernetes em ordem de dependência."_
+> _"O Terraform provisiona o cluster Kind localmente com um control-plane e um worker node, carrega a imagem da API já buildada para dentro do cluster, instala o metrics-server e aplica todos os manifestos Kubernetes em ordem de dependência — Postgres, MailHog, API, Service e HPA."_
 
 ```bash
 terraform apply -auto-approve
 ```
 
-Mostre os recursos sendo criados no output.
+Mostre os recursos sendo criados no output (13 recursos: cluster, carga de imagem, secret, configmap, PVC, Postgres, MailHog, metrics-server, API, Service, HPA).
+
+**4. Verificar o resultado:**
+```bash
+kubectl --context kind-oficina-mecanica get pods
+kubectl --context kind-oficina-mecanica get hpa
+```
+
+**5. Destruir o ambiente ao final:**
+```bash
+terraform destroy -auto-approve
+```
+Isso apaga o cluster Kind por completo (não precisa deletar recursos um a um).
 
 > _"Para ambientes cloud, temos também o módulo `infra/cloud/aws/` que provisiona um cluster EKS na AWS com VPC dedicada, subnets públicas e privadas, e banco PostgreSQL gerenciado no RDS — tudo com um único `terraform apply`."_
 
