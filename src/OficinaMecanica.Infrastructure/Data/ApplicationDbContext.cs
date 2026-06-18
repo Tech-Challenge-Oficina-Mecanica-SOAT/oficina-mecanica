@@ -28,6 +28,8 @@ public class ApplicationDbContext : DbContext
 
         var eventos = entitiesComEventos.SelectMany(e => e.DomainEvents).ToList();
 
+        Console.WriteLine($"[DEBUG] Eventos encontrados: {eventos.Count}");
+
         var resultado = await base.SaveChangesAsync(cancellationToken);
 
         if (_dispatcher is not null && eventos.Count > 0)

@@ -14,6 +14,7 @@ Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviç
 - [Terraform (IaC)](#terraform-iac)
 - [CI/CD](#cicd)
 - [Documentação interativa (Scalar)](#documentação-interativa-scalar)
+- [Collection das APIs](#collection-das-apis)
 - [Autenticação](#autenticação)
 - [Roteiros de teste](#roteiros-de-teste)
 - [Cobertura de testes](#cobertura-de-testes)
@@ -312,6 +313,42 @@ Importe a collection completa no Postman para testar todos os endpoints com vari
 2. Selecione o arquivo acima
 3. Configure a variável `baseUrl` se necessário (padrão: `http://localhost:5000`)
 4. Faça **Auth → Login** primeiro — o token é salvo automaticamente nas variáveis da collection
+
+---
+
+## Collection das APIs
+
+A documentação completa da API está disponível via Scalar, que fornece uma interface interativa para explorar e testar todos os endpoints.
+
+### Acesso interativo
+
+- **Ambiente de desenvolvimento (Docker):** `http://localhost:5000/scalar/v1`
+- **Ambiente local (dotnet run):** `http://localhost:5165/scalar/v1`
+
+### Exportar collection
+
+#### OpenAPI JSON
+
+O documento OpenAPI (antigo Swagger) está disponível em:
+
+- **Docker:** `http://localhost:5000/openapi/v1.json`
+- **Local:** `http://localhost:5165/openapi/v1.json`
+
+#### Postman
+
+1. Acesse o link do OpenAPI JSON acima
+2. Copie o conteúdo
+3. No Postman, clique em **Import** → **Raw text** → cole o JSON → **Continue** → **Import**
+
+Ou exporte via linha de comando:
+
+```bash
+# Instalar a ferramenta (apenas uma vez)
+dotnet tool install -g Swashbuckle.AspNetCore.Cli
+
+# Exportar o JSON
+swagger tofile --output openapi.json src/OficinaMecanica.API/bin/Debug/net10.0/OficinaMecanica.API.dll v1
+```
 
 ---
 

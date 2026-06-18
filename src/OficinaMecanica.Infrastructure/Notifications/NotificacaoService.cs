@@ -47,4 +47,20 @@ public class NotificacaoService : INotificacaoService
             osId, emailCliente);
         return Task.CompletedTask;
     }
+
+    public Task EnviarCriacaoAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info(
+            "Notificacao de criacao enviada. OS: {OsId}, Cliente: {Email}",
+            osId, emailCliente);
+        return Task.CompletedTask;
+    }
+
+    public Task EnviarDiagnosticoAsync(Guid osId, string emailCliente)
+    {
+        _logger.Info(
+            "Diagnóstico notificado. OS: {OsId}, Cliente: {Email}",
+            osId, emailCliente);
+        return Task.CompletedTask;
+    }
 }
