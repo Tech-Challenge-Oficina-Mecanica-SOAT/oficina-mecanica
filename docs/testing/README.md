@@ -40,6 +40,7 @@ Alternativa para quem prefere terminal/IDE: abra [`oficina.http`](./oficina.http
 | 6 | Painel público de OS | Anônimo | [06-painel-publico-os.md](./06-painel-publico-os.md) |
 | 7 | Ordens de serviço (criar, itens, orçamento) | Admin | [07-ordens-servico.md](./07-ordens-servico.md) |
 | 8 | Ciclo de vida e status da OS | Admin / Mecânico / Cliente | [08-status-os.md](./08-status-os.md) |
+| 9 | Webhook de aprovação de orçamento (e-mail) | Público (token único) | [09-webhook-aprovacao.md](./09-webhook-aprovacao.md) |
 
 ## Convenção neste guia
 
@@ -56,5 +57,7 @@ Cada arquivo tem duas seções principais:
 4. `04`: cadastrar serviço (ex.: troca de óleo).
 5. `05`: cadastrar peça e movimentar estoque.
 6. `07`: abrir OS, adicionar serviço e peça como itens, consultar o total (orçamento).
-7. `08`: avançar o ciclo de vida da OS até a entrega (diagnóstico → aprovação → execução → finalização → entrega).
-8. `06`: consultar o status público da OS pelo Id (sem token).
+7. `08`: avançar o ciclo de vida da OS até `AguardandoAprovacao`.
+8. `09`: aprovar o orçamento via webhook (link do e-mail no MailHog).
+9. `08`: continuar o ciclo (execução → finalização → entrega).
+10. `06`: consultar o status público da OS pelo Id (sem token).
