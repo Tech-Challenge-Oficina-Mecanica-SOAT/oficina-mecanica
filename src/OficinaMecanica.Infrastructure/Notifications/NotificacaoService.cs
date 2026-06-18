@@ -32,11 +32,11 @@ public class NotificacaoService : INotificacaoService
         return Task.CompletedTask;
     }
 
-    public Task EnviarConclusaoAsync(Guid osId, string emailCliente)
+    public Task EnviarConclusaoAsync(Guid osId, string emailCliente, string motivo)
     {
         _logger.Info(
-            "Notificacao de conclusao enviada. OS: {OsId}, Cliente: {Email}",
-            osId, emailCliente);
+            "Notificacao de conclusao enviada. OS: {OsId}, Cliente: {Email}, Motivo: {Motivo}",
+            osId, emailCliente, motivo);
         return Task.CompletedTask;
     }
 

@@ -244,6 +244,15 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     if (context.Database.IsRelational())
         context.Database.Migrate();
+
+    if (!context.Set<OficinaMecanica.Domain.Entities.Usuario>().Any())
+    {
+        var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var adminHash = hasher.Hash("Senha@123");
+        context.Set<OficinaMecanica.Domain.Entities.Usuario>().Add(
+            new OficinaMecanica.Domain.Entities.Usuario("admin@oficina.com", adminHash, OficinaMecanica.Domain.Enums.Perfil.Admin));
+        context.SaveChanges();
+    }
 }
 
 app.Run();

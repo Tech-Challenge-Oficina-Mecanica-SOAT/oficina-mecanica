@@ -172,16 +172,230 @@ Todos os requisitos técnicos estão implementados:
 
 ---
 
-## 5. Roteiro para o Vídeo Demonstrativo (≤ 15 min)
+## 5. Roteiro Detalhado para o Vídeo Demonstrativo (≤ 15 min)
 
-| Tempo | Conteúdo |
-|-------|---------|
-| 0:00–2:00 | Visão geral da arquitetura — mostrar README + diagrama Mermaid |
-| 2:00–4:00 | `docker-compose up` — API rodando, acessar Scalar UI em `/scalar` |
-| 4:00–7:00 | Consumo das APIs via Postman collection: login → criar cliente/veículo → abrir OS → avançar status → receber e-mail no MailHog (`localhost:8025`) → clicar no link de aprovação |
-| 7:00–10:00 | CI/CD: mostrar GitHub Actions em execução (build → test → push Docker → deploy K8s) |
-| 10:00–13:00 | Kubernetes: `kubectl get pods/svc/hpa -w`, simular carga para demonstrar HPA escalando |
-| 13:00–15:00 | Terraform: `cd infra/local && terraform apply` criando o cluster Kind |
+> Use um gravador de tela (OBS Studio, Loom, etc.) com resolução mínima 1080p.
+> Deixe todos os terminais, Postman e browser abertos antes de começar a gravar para não perder tempo.
+> Fale em voz alta descrevendo o que está fazendo — o avaliador precisa entender sem ler o código.
+
+---
+
+### Cena 1 — Apresentação da Solução (0:00 – 2:00)
+
+**O que mostrar:** Tela do README.md aberta no browser (GitHub) ou no VSCode Preview.
+
+**O que dizer e fazer:**
+
+1. Abra o repositório no GitHub e mostre a estrutura de pastas na raiz.
+   > _"Este é o repositório do Tech Challenge Fase 2 da Oficina Mecânica. A solução foi construída em .NET 10 seguindo Clean Architecture com quatro camadas: Domain, Application, Infrastructure e API."_
+
+2. Role até o diagrama Mermaid de infraestrutura no README.
+   > _"A infraestrutura é composta por um cluster Kubernetes, onde a API escala automaticamente entre 2 e 10 réplicas via HPA, um PostgreSQL com volume persistente e um MailHog para captura de e-mails durante o desenvolvimento."_
+
+3. Mostre rapidamente as pastas `k8s/`, `infra/` e `.github/workflows/` no explorador de arquivos.
+   > _"Os manifestos Kubernetes estão em /k8s, o Terraform em /infra — com suporte a ambiente local via Kind e cloud via AWS EKS — e o pipeline CI/CD está configurado no GitHub Actions."_
+
+---
+
+### Cena 2 — Subindo o Ambiente Local (2:00 – 4:00)
+
+**Pré-requisito:** Docker Desktop rodando.
+
+**O que fazer:**
+
+```bash
+# Terminal 1 — na raiz do projeto
+docker compose up -d --build
+docker compose ps
+```
+
+> _"Com um único comando, temos a API, o PostgreSQL, o MailHog e o SonarQube no ar localmente. Na primeira execução usamos `--build` para garantir que a imagem esteja atualizada."_
+
+Abra o browser em `http://localhost:5000/scalar`.
+
+> _"A documentação interativa Scalar lista todos os endpoints com descrição, parâmetros e exemplos de resposta. Aqui vemos as rotas públicas, os endpoints protegidos por JWT e os webhooks."_
+
+Mostre a resposta do endpoint de login: `POST http://localhost:5000/Auth/login`.
+
+> _"A API está no ar — o endpoint de login responde com token JWT. O usuário admin padrão é criado automaticamente no primeiro boot pelo seed do Program.cs."_
+
+---
+
+### Cena 3 — Consumo das APIs (fluxo completo da OS) (4:00 – 7:00)
+
+**Pré-requisito:** Postman aberto com a collection `docs/oficina-mecanica.postman_collection.json` importada. Variável `baseUrl` = `http://localhost:5000`.
+
+**O que fazer e dizer, passo a passo:**
+
+**3.1 — Login**
+```
+Auth → Login
+Body: { "email": "admin@oficina.com", "senha": "Senha@123" }
+```
+> _"Faço login como Admin e o script da collection salva o token JWT automaticamente na variável `{{token}}`."_
+
+Mostre que `pm.collectionVariables.set('token', ...)` capturou o valor.
+
+**3.2 — Criar Cliente**
+```
+Clientes → Criar Cliente
+Body: { "nome": "João Silva", "documento": "12345678901", "email": "joao@email.com", "telefone": "11999999999" }
+```
+> _"Crio um cliente. O ID é salvo automaticamente na variável `{{clienteId}}`."_
+
+**3.3 — Criar Veículo**
+```
+Veículos → Criar Veículo
+Body: { "clienteId": "{{clienteId}}", "placa": "ABC1234", "marca": "Toyota", "modelo": "Corolla", "ano": 2020 }
+```
+> _"Crio o veículo vinculado ao cliente. O valor object Placa valida o formato automaticamente."_
+
+**3.4 — Abrir OS**
+```
+Ordens de Serviço → Abrir OS
+Body: { "clienteId": "{{clienteId}}", "veiculoId": "{{veiculoId}}", "descricaoProblema": "Barulho ao frear" }
+```
+> _"Abro a Ordem de Serviço. O sistema retorna o ID único da OS com status `Recebida`."_
+
+**3.5 — Listagem ordenada**
+```
+Ordens de Serviço → Listar OS Ordenadas por Status
+```
+> _"A listagem ordenada prioriza: Em Execução > Aguardando Aprovação > Diagnóstico > Recebida, e dentro de cada grupo as mais antigas aparecem primeiro. OS Finalizadas e Entregues são excluídas logicamente."_
+
+**3.6 — Avançar status até AguardandoAprovacao**
+```
+Status da OS → 1 - Iniciar Diagnóstico     (PATCH /{osId}/iniciar-diagnostico)
+Status da OS → 2 - Enviar para Aprovação   (PATCH /{osId}/status, novoStatus: 2)
+```
+> _"Avanço a OS pelo fluxo: Recebida → EmDiagnostico → AguardandoAprovacao. Cada transição é registrada no histórico."_
+
+**3.7 — E-mail de orçamento no MailHog**
+
+Abra o browser em `http://localhost:8025`.
+
+> _"Quando a OS entra em AguardandoAprovacao, um domain event é disparado e a aplicação envia um e-mail ao cliente com os botões de Aprovar e Recusar. O MailHog captura esse e-mail localmente."_
+
+Clique no e-mail recebido e mostre os botões HTML. Clique em **"APROVAR ORÇAMENTO"**.
+
+> _"Ao clicar, o cliente acessa um endpoint público sem autenticação. O token de uso único é validado e o status da OS avança para EmExecucao automaticamente."_
+
+**3.8 — Verificar status público (sem auth)**
+```
+Público → Consultar Status da OS
+GET /Publico/os/{{osId}}/status
+```
+> _"Qualquer pessoa pode consultar o status da OS sem precisar de login — ideal para o cliente acompanhar pelo portal ou app."_
+
+**3.9 — Histórico de status**
+```
+Status da OS → Histórico de Status
+GET /api/ordens-servico/{{osId}}/historico
+```
+> _"O histórico completo registra cada transição com timestamp, usuário responsável e motivo."_
+
+---
+
+### Cena 4 — CI/CD no GitHub Actions (7:00 – 10:00)
+
+**O que mostrar:** Aba Actions do repositório no GitHub.
+
+**O que fazer e dizer:**
+
+1. Abra a aba **Actions** e mostre o último workflow executado.
+   > _"O pipeline é acionado em todo push para main ou pull request. Ele executa 4 jobs em sequência."_
+
+2. Clique no job **build-and-test** e expanda os steps.
+   > _"Primeiro: restore das dependências e build em modo Release. Em seguida, os 476 testes automatizados são executados — 392 unitários e 84 de integração com banco PostgreSQL real via Testcontainers."_
+
+3. Clique no job **build-docker**.
+   > _"Se os testes passam, a imagem Docker é construída via build multi-stage e publicada no GitHub Container Registry com a tag do commit SHA e a tag `latest`."_
+
+4. Clique nos jobs **deploy-banco** e **deploy-api**.
+   > _"Os dois últimos jobs criam o cluster Kind, aplicam os manifestos do banco e da API, substituem a tag da imagem pelo SHA do commit e fazem um smoke test no `/health` para confirmar que o deploy funcionou."_
+
+---
+
+### Cena 5 — Kubernetes e HPA (10:00 – 13:00)
+
+**Pré-requisito:** Cluster Kind rodando (via `terraform apply` ou `kubectl apply` manual). Dois terminais abertos.
+
+> Após subir o cluster, exponha a API com port-forward antes de iniciar os testes:
+> ```bash
+> kubectl port-forward svc/oficina-mecanica-api 5000:80
+> # http://localhost:5000/scalar
+> ```
+
+**Terminal 1 — monitorar HPA em tempo real:**
+```bash
+kubectl get hpa -w
+```
+
+**Terminal 2 — simular carga:**
+```bash
+kubectl run -it --rm load-test --image=busybox --restart=Never -- \
+  sh -c "while true; do wget -q -O- http://oficina-mecanica-api/health; done"
+```
+
+> _"O HPA `oficina-mecanica-api-hpa` está configurado para escalar entre 2 e 10 réplicas quando o consumo de CPU ultrapassar 70% ou a memória 80%. Vou simular carga para demonstrar o escalonamento automático."_
+
+Aguarde alguns segundos e mostre o HPA escalando no Terminal 1.
+
+```bash
+kubectl get pods -w
+```
+> _"Novos pods são criados automaticamente para absorver a carga. Quando a carga cessa, o HPA reduz as réplicas de volta ao mínimo de 2."_
+
+Mostre também:
+```bash
+kubectl get all
+kubectl describe hpa oficina-mecanica-api-hpa
+```
+
+---
+
+### Cena 6 — Terraform (13:00 – 15:00)
+
+**O que mostrar:** Terminal na pasta `infra/local/`.
+
+```bash
+cd infra/local
+terraform init
+terraform plan
+```
+
+> _"O Terraform provisiona o cluster Kind localmente com um control-plane e um worker node, e em seguida aplica todos os manifestos Kubernetes em ordem de dependência."_
+
+```bash
+terraform apply -auto-approve
+```
+
+Mostre os recursos sendo criados no output.
+
+> _"Para ambientes cloud, temos também o módulo `infra/cloud/aws/` que provisiona um cluster EKS na AWS com VPC dedicada, subnets públicas e privadas, e banco PostgreSQL gerenciado no RDS — tudo com um único `terraform apply`."_
+
+Abra o arquivo `infra/cloud/aws/main.tf` no editor e mostre brevemente os blocos de VPC, EKS e RDS.
+
+> _"Todos os recursos são documentados em `infra/cloud/aws/README.md` com instruções de pré-requisitos, variáveis e como obter a connection string do RDS após o provisionamento."_
+
+---
+
+### Encerramento (14:30 – 15:00)
+
+> _"Para resumir: evoluímos a aplicação da Fase 1 com Clean Architecture, 476 testes automatizados com 90,5% de cobertura, containerização Docker, orquestração Kubernetes com HPA, infraestrutura como código com Terraform local e cloud, pipeline CI/CD completa no GitHub Actions e notificações por e-mail com link de aprovação de orçamento. Obrigado."_
+
+---
+
+## 5b. Tabela-Resumo do Roteiro (referência rápida)
+
+| Tempo | Cena | Ferramenta |
+|-------|------|-----------|
+| 0:00–2:00 | Apresentação da solução e arquitetura | GitHub / VSCode |
+| 2:00–4:00 | Ambiente local — docker-compose up + Scalar UI | Terminal / Browser |
+| 4:00–7:00 | Fluxo completo da OS + aprovação via e-mail | Postman + MailHog |
+| 7:00–10:00 | Pipeline CI/CD rodando | GitHub Actions |
+| 10:00–13:00 | Kubernetes + HPA escalando | kubectl / Terminal |
+| 13:00–15:00 | Terraform local + visão geral do módulo AWS | Terminal / Editor |
 
 **Após gravar**, adicionar no README:
 ```markdown
@@ -206,6 +420,8 @@ Todos os requisitos técnicos estão implementados:
 
 | Arquivo | O que mudou |
 |---------|-------------|
+| `src/OficinaMecanica.API/Program.cs` | Adicionado seed do usuário admin padrão (`admin@oficina.com` / `Senha@123`) no primeiro boot |
+| `docker-compose.yaml` | Adicionadas variáveis de ambiente `Jwt__*`, `Seguranca__PasswordKey` e `EmailSettings__BaseUrl` para o container da API |
 | `src/OficinaMecanica.Infrastructure/Configuration/EmailSettings.cs` | Adicionada propriedade `BaseUrl` |
 | `src/OficinaMecanica.Infrastructure/Notifications/EmailNotificacaoService.cs` | Substituído `baseUrl` hardcoded por `_emailSettings.BaseUrl`; implementado envio real de HTML para aprovação, rejeição, conclusão e entrega |
 | `src/OficinaMecanica.API/appsettings.json` | Adicionada seção `EmailSettings` com `BaseUrl` |

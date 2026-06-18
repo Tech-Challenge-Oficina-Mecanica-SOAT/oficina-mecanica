@@ -6,4 +6,6 @@ public record OrdemConcluidaEvent(
     Guid OrdemServicoId,
     string EmailCliente,
     string AlteradoPor,
-    DateTime OcorridoEm) : IDomainEvent;
+    DateTime OcorridoEm,
+    string Motivo
+    ) : IDomainEvent;
