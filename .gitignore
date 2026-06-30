@@ -99,3 +99,4 @@ coverage-report/
 *.tfstate.*
 *.tfplan
 infra/local/.generated/
+infra/local/tf-debug.log
