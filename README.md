@@ -10,6 +10,9 @@ Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviç
 - [Arquitetura](#arquitetura)
 - [Pré-requisitos](#pré-requisitos)
 - [Como executar](#como-executar)
+- [Kubernetes](#kubernetes)
+- [Terraform (IaC)](#terraform-iac)
+- [CI/CD](#cicd)
 - [Documentação interativa (Scalar)](#documentação-interativa-scalar)
 - [Collection das APIs](#collection-das-apis)
 - [Autenticação](#autenticação)
@@ -30,6 +33,35 @@ O projeto segue **Clean Architecture** com quatro camadas e regra de dependênci
 API  →  Application  →  Domain
  ↓           ↓
 Infrastructure
+```
+
+### Desenho da infraestrutura (Fase 2)
+
+```mermaid
+graph TD
+    Internet([Internet]) --> Ingress[Ingress / Port-forward]
+    Ingress --> API[API Deployment\n2-10 réplicas]
+    API --> HPA[HPA\nCPU 70% / Mem 80%]
+    API --> Postgres[(Postgres\nPVC 5Gi)]
+    API --> MailHog[MailHog\nSMTP fake]
+    API --> Webhook[Webhook Externo\nAprovação de Orçamento]
+
+    subgraph Cluster Kind / K8s
+        API
+        HPA
+        Postgres
+        MailHog
+    end
+
+    subgraph Secrets K8s
+        S1[Jwt__SecretKey]
+        S2[ConnectionStrings]
+        S3[PasswordKey]
+    end
+
+    API --> S1
+    API --> S2
+    API --> S3
 ```
 
 ### Camadas
@@ -93,6 +125,9 @@ Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbConte
 | .NET SDK | 10.0 |
 | Docker | 24+ |
 | Docker Compose | 2.x |
+| kubectl | 1.28+ (para K8s) |
+| Kind | 0.20+ (para K8s local) |
+| Terraform | 1.6+ (para IaC) |
 
 ---
 
@@ -101,7 +136,7 @@ Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbConte
 ### Com Docker (recomendado)
 
 ```bash
-# 1. Subir PostgreSQL + API (build automático)
+# 1. Subir PostgreSQL + API + MailHog (build automático)
 docker compose up -d --build
 
 # 2. Verificar status
@@ -112,13 +147,147 @@ docker logs -f oficina_api
 docker logs -f oficina_postgres
 ```
 
-A API estará disponível em **`http://localhost:5000`**.
+A API estará disponível em **`http://localhost:5000`**.  
+O MailHog (UI de e-mails) estará em **`http://localhost:8025`**.
 
 ### Localmente (sem Docker)
 
 ```bash
 # Requer PostgreSQL rodando localmente com as credenciais do appsettings.json
 dotnet run --project src/OficinaMecanica.API
+```
+
+---
+
+## Kubernetes
+
+Os manifestos estão em `k8s/` na raiz do repositório.
+
+### Estrutura
+
+```
+k8s/
+├── configmap.yaml           # Variáveis não-sensíveis (environment, JWT issuer/audience)
+├── secret.yaml              # Variáveis sensíveis (JWT key, senha do banco)
+├── postgres-pvc.yaml        # Volume persistente 5Gi
+├── postgres-deployment.yaml
+├── postgres-service.yaml
+├── api-deployment.yaml      # 2 réplicas, readiness/liveness probe
+├── api-service.yaml         # ClusterIP: 80 → 5000
+├── api-hpa.yaml             # HPA: min=2 max=10 cpu=70% mem=80%
+└── mailhog-deployment.yaml  # SMTP fake para dev
+```
+
+### Aplicar manualmente (sem Terraform)
+
+```bash
+# 1. Editar k8s/secret.yaml com as credenciais reais
+
+# 2. Aplicar na ordem correta
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/postgres-pvc.yaml
+kubectl apply -f k8s/postgres-deployment.yaml
+kubectl apply -f k8s/postgres-service.yaml
+kubectl apply -f k8s/mailhog-deployment.yaml
+kubectl apply -f k8s/api-deployment.yaml
+kubectl apply -f k8s/api-service.yaml
+kubectl apply -f k8s/api-hpa.yaml
+
+# 3. Verificar pods
+kubectl get pods
+kubectl get svc
+kubectl get hpa
+
+# 4. Acessar a API
+kubectl port-forward svc/oficina-mecanica-api 5000:80
+# http://localhost:5000/scalar
+
+# 5. Acessar o MailHog
+kubectl port-forward svc/mailhog 8025:8025
+# http://localhost:8025
+```
+
+> ⚠️ Nunca commite o `secret.yaml` com valores reais. Adicione-o ao `.gitignore`.
+
+---
+
+## Terraform (IaC)
+
+O Terraform provisiona automaticamente um cluster Kind local e aplica todos os manifestos Kubernetes.
+
+### Estrutura
+
+```
+infra/
+├── README.md
+├── local/
+│   ├── main.tf      # Cluster Kind + todos os kubectl_manifest
+│   └── outputs.tf   # Outputs: cluster_name, endpoint, kubeconfig_path
+└── modules/
+    └── postgres/
+        └── main.tf  # Módulo reutilizável do banco (fácil troca por RDS no futuro)
+```
+
+### Como usar
+
+```bash
+# Pré-requisitos: Kind e Terraform instalados
+
+# 1. Editar k8s/secret.yaml com credenciais reais
+
+# 2. Inicializar e aplicar
+cd infra/local
+terraform init
+terraform apply
+
+# 3. Ver outputs
+terraform output
+
+# 4. Destruir o ambiente
+terraform destroy
+```
+
+### Recursos criados pelo Terraform
+
+| Recurso | Descrição |
+|---|---|
+| `kind_cluster.oficina` | Cluster Kind com 1 control-plane + 1 worker |
+| `kubectl_manifest.postgres_*` | PVC + Deployment + Service do Postgres |
+| `kubectl_manifest.api_*` | Deployment + Service + HPA da API |
+| `kubectl_manifest.mailhog` | Deployment + Service do MailHog |
+| `kubectl_manifest.configmap` | ConfigMap com variáveis de ambiente |
+| `kubectl_manifest.secret` | Secret com credenciais sensíveis |
+
+---
+
+## CI/CD
+
+O pipeline está em `.github/workflows/ci.yml` e possui jobs separados por trigger:
+
+### Em Pull Request (apenas testes)
+
+```
+build-and-test → dotnet restore + build + test
+```
+
+### Em push para main (build + deploy completo)
+
+```
+build-and-test → build-docker → deploy-banco → deploy-api
+```
+
+| Job | O que faz |
+|---|---|
+| `build-and-test` | Restore, build e testes automatizados |
+| `build-docker` | Build e push da imagem para o GitHub Container Registry (GHCR) |
+| `deploy-banco` | Sobe cluster Kind, aplica manifestos do Postgres |
+| `deploy-api` | Aplica ConfigMap, Secret e manifestos da API; faz smoke test |
+
+A imagem é publicada em:
+```
+ghcr.io/<seu-usuario>/oficina-mecanica-api:latest
+ghcr.io/<seu-usuario>/oficina-mecanica-api:sha-<commit>
 ```
 
 ---
@@ -132,6 +301,18 @@ http://localhost:5000/scalar
 ```
 
 Todas as rotas estão documentadas com descrição, parâmetros, exemplos de resposta e os perfis de acesso exigidos.
+
+### Postman Collection
+
+Importe a collection completa no Postman para testar todos os endpoints com variáveis de ambiente pré-configuradas:
+
+- **Arquivo:** [`docs/oficina-mecanica.postman_collection.json`](docs/oficina-mecanica.postman_collection.json)
+
+**Como importar:**
+1. Abra o Postman → clique em **Import**
+2. Selecione o arquivo acima
+3. Configure a variável `baseUrl` se necessário (padrão: `http://localhost:5000`)
+4. Faça **Auth → Login** primeiro — o token é salvo automaticamente nas variáveis da collection
 
 ---
 
@@ -288,10 +469,6 @@ O relatório cobre:
 - Controles de segurança já implementados (hash timing-safe, JWT validado, EF Core parametrizado, usuário não-root no container)
 - Instruções de correção para cada vulnerabilidade pendente
 
-### Reproduzir a análise com SonarQube
-
-O SonarQube está incluso no `docker-compose.yaml`. Veja a seção [Scan de qualidade (SonarQube)](#scan-de-qualidade-sonarqube) abaixo para executar um novo scan.
-
 ---
 
 ## Scan de qualidade (SonarQube)
@@ -318,8 +495,6 @@ dotnet tool install --global dotnet-sonarscanner
 
 ### 4. Executar o scan
 
-> **Git Bash no Windows:** os argumentos `/k:` e `/d:` são convertidos incorretamente pelo MSYS. Use **PowerShell** ou **CMD**, ou prefixe o comando com `MSYS_NO_PATHCONV=1`.
-
 **PowerShell / CMD:**
 ```powershell
 dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN" /d:sonar.exclusions="**/Migrations/**,**/obj/**"
@@ -332,18 +507,6 @@ dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 MSYS_NO_PATHCONV=1 dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN" /d:sonar.exclusions="**/Migrations/**,**/obj/**"
 dotnet build OficinaMecanica.slnx
 MSYS_NO_PATHCONV=1 dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
-```
-
-Resultados disponíveis em: `http://localhost:9000/dashboard?id=mecanica-api`
-
-### 5. Scan com cobertura integrada
-
-**PowerShell / CMD:**
-```powershell
-dotnet sonarscanner begin /k:"mecanica-api" /d:sonar.host.url="http://localhost:9000" /d:sonar.token="SEU_TOKEN" /d:sonar.exclusions="**/Migrations/**,**/obj/**" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
-dotnet build OficinaMecanica.slnx
-dotnet test --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
-dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 ```
 
 ---
@@ -406,3 +569,12 @@ netstat -ano | findstr :5000
 # Linux/macOS
 lsof -i :5000
 ```
+
+**Pods não sobem no Kubernetes**  
+```bash
+kubectl describe pod <nome-do-pod>
+kubectl logs <nome-do-pod>
+```
+
+**Terraform falha ao criar cluster**  
+Certifique-se que o Docker está rodando antes de executar `terraform apply`.

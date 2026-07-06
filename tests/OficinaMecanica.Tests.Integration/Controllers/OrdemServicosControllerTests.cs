@@ -179,7 +179,7 @@ public class OrdemServicosControllerTests
 
         public Task EnviarAprovacaoAsync(Guid osId, string emailCliente) => Task.CompletedTask;
         public Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo) => Task.CompletedTask;
-        public Task EnviarConclusaoAsync(Guid osId, string emailCliente) => Task.CompletedTask;
+        public Task EnviarConclusaoAsync(Guid osId, string emailCliente, string motivo) => Task.CompletedTask;
         public Task EnviarEntregaAsync(Guid osId, string emailCliente) => Task.CompletedTask;
         public Task EnviarCriacaoAsync(Guid osId, string emailCliente) => Task.CompletedTask;
         public Task EnviarDiagnosticoAsync(Guid osId, string emailCliente) => Task.CompletedTask;

@@ -225,7 +225,7 @@ public class EmailNotificacaoService : INotificacaoService
 
         var assunto = $"Orçamento - OS #{osId.ToString().Substring(0, 8)}";
         
-        var baseUrl = "http://localhost:5000";
+        var baseUrl = _emailSettings.BaseUrl.TrimEnd('/');
         var linkAprovar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{token}?aprovado=true";
         var linkRecusar = $"{baseUrl}/api/webhooks/ordens-servico/aprovar/{token}?aprovado=false";
         
@@ -290,7 +290,7 @@ public class EmailNotificacaoService : INotificacaoService
         await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
     }
 
-    public async Task EnviarConclusaoAsync(Guid osId, string emailCliente)
+    public async Task EnviarAprovacaoAsync(Guid osId, string emailCliente)
     {
         var os = await _ordemServicoRepository.ObterPorIdComItensAsync(osId);
         if (os == null)
@@ -351,7 +351,7 @@ public class EmailNotificacaoService : INotificacaoService
         _logger.Info($"Notificação de conclusão - OS: {osId}, Cliente: {emailCliente}");
     }
 
-    public async Task EnviarAprovacaoAsync(Guid osId, string emailCliente)
+    public async Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo)
     {
         var os = await _ordemServicoRepository.ObterPorIdComItensAsync(osId);
         if (os == null)
@@ -412,7 +412,7 @@ public class EmailNotificacaoService : INotificacaoService
         _logger.Info($"Orçamento aprovado - OS: {osId}, Cliente: {emailCliente}");
     }
 
-    public async Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo)
+    public async Task EnviarConclusaoAsync(Guid osId, string emailCliente, string motivo)
     {
         var os = await _ordemServicoRepository.ObterPorIdComItensAsync(osId);
         if (os == null)

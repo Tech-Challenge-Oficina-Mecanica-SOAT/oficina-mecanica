@@ -35,10 +35,16 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=OficinaDB;Username=postgres;Password=SuaSenha
+      - Jwt__SecretKey=mecanica-jwt-secret-key-minimo-32-chars!!
+      - Jwt__Issuer=mecanica-api
+      - Jwt__Audience=mecanica-cliente
+      - Jwt__ExpiracaoMinutos=5
+      - Seguranca__PasswordKey=K7mP2nQx9vR4wL8sY1tZ6uA3cE5gJ0hF
       - EmailSettings__SmtpServer=mailhog
       - EmailSettings__Port=1025
       - EmailSettings__UseSSL=false
       - EmailSettings__From=noreply@oficinamecanica.com
+      - EmailSettings__BaseUrl=http://localhost:5000
     restart: unless-stopped
 
   mailhog:

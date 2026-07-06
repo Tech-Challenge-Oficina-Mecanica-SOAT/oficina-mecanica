@@ -92,3 +92,11 @@ docs/superpowers/
 coverage-results/
 coverage-report/
 .sonarqube/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+infra/local/.generated/
+infra/local/tf-debug.log

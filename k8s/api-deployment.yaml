@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oficina-mecanica-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: oficina-mecanica-api
+  template:
+    metadata:
+      labels:
+        app: oficina-mecanica-api
+    spec:
+      containers:
+        - name: api
+          image: IMAGE_TAG_PLACEHOLDER
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: oficina-mecanica-config
+            - secretRef:
+                name: oficina-mecanica-secret
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 20

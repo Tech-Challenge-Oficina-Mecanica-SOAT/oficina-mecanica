@@ -1,0 +1,543 @@
+{
+  "info": {
+    "_postman_id": "oficina-mecanica-api-v2",
+    "name": "Oficina Mecânica API - Fase 2",
+    "description": "Collection completa da API da Oficina Mecânica. Fluxo recomendado: 1) Auth/Login → 2) Criar Cliente → 3) Criar Veículo → 4) Abrir OS → 5) Avançar status via endpoints de status.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "clienteId", "value": "", "type": "string" },
+    { "key": "veiculoId", "value": "", "type": "string" },
+    { "key": "osId", "value": "", "type": "string" },
+    { "key": "servicoId", "value": "", "type": "string" },
+    { "key": "pecaId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "  console.log('Token salvo:', json.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@oficina.com\",\n  \"senha\": \"Admin@123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/Auth/login", "host": ["{{baseUrl}}"], "path": ["Auth", "login"] }
+          }
+        },
+        {
+          "name": "Registrar Usuário",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Admin Oficina\",\n  \"email\": \"admin@oficina.com\",\n  \"senha\": \"Admin@123\",\n  \"perfil\": 0\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/Auth/registrar", "host": ["{{baseUrl}}"], "path": ["Auth", "registrar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Público (sem auth)",
+      "item": [
+        {
+          "name": "Consultar Status da OS",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/Publico/os/{{osId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["Publico", "os", "{{osId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Aprovar Orçamento via E-mail (token)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ordens-servico/aprovar/:token?aprovado=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ordens-servico", "aprovar", ":token"],
+              "variable": [{ "key": "token", "value": "SEU_TOKEN_AQUI" }],
+              "query": [{ "key": "aprovado", "value": "true" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Criar Cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('clienteId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"documento\": \"12345678901\",\n  \"email\": \"joao@email.com\",\n  \"telefone\": \"11999999999\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/clientes", "host": ["{{baseUrl}}"], "path": ["api", "clientes"] }
+          }
+        },
+        {
+          "name": "Listar Clientes",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/clientes", "host": ["{{baseUrl}}"], "path": ["api", "clientes"] }
+          }
+        },
+        {
+          "name": "Consultar Cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["api", "clientes", "{{clienteId}}"] }
+          }
+        },
+        {
+          "name": "Consultar Cliente por Documento",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes/documento/12345678901",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clientes", "documento", "12345678901"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva Atualizado\",\n  \"email\": \"joao.novo@email.com\",\n  \"telefone\": \"11988888888\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["api", "clientes", "{{clienteId}}"] }
+          }
+        },
+        {
+          "name": "Desativar Cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/desativar", "host": ["{{baseUrl}}"], "path": ["api", "clientes", "{{clienteId}}", "desativar"] }
+          }
+        },
+        {
+          "name": "Ativar Cliente",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteId}}/ativar", "host": ["{{baseUrl}}"], "path": ["api", "clientes", "{{clienteId}}", "ativar"] }
+          }
+        },
+        {
+          "name": "Remover Cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["api", "clientes", "{{clienteId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Veículos",
+      "item": [
+        {
+          "name": "Criar Veículo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('veiculoId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"placa\": \"ABC1234\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Corolla\",\n  \"ano\": 2020\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/veiculos", "host": ["{{baseUrl}}"], "path": ["api", "veiculos"] }
+          }
+        },
+        {
+          "name": "Listar Veículos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/veiculos", "host": ["{{baseUrl}}"], "path": ["api", "veiculos"] }
+          }
+        },
+        {
+          "name": "Consultar Veículo por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/veiculos/{{veiculoId}}", "host": ["{{baseUrl}}"], "path": ["api", "veiculos", "{{veiculoId}}"] }
+          }
+        },
+        {
+          "name": "Consultar por Placa",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/veiculos/placa/ABC1234", "host": ["{{baseUrl}}"], "path": ["api", "veiculos", "placa", "ABC1234"] }
+          }
+        },
+        {
+          "name": "Listar Veículos por Cliente",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/veiculos/cliente/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["api", "veiculos", "cliente", "{{clienteId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Serviços",
+      "item": [
+        {
+          "name": "Criar Serviço",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('servicoId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Troca de Óleo\",\n  \"descricao\": \"Troca de óleo e filtro\",\n  \"valor\": 150.00\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/servicos", "host": ["{{baseUrl}}"], "path": ["api", "servicos"] }
+          }
+        },
+        {
+          "name": "Listar Serviços",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/servicos", "host": ["{{baseUrl}}"], "path": ["api", "servicos"] }
+          }
+        },
+        {
+          "name": "Listar Serviços Ativos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/servicos/ativos", "host": ["{{baseUrl}}"], "path": ["api", "servicos", "ativos"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Peças",
+      "item": [
+        {
+          "name": "Criar Peça",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('pecaId', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Filtro de Óleo\",\n  \"codigo\": \"FO-001\",\n  \"precoUnitario\": 35.00,\n  \"estoque\": 50\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/pecas", "host": ["{{baseUrl}}"], "path": ["api", "pecas"] }
+          }
+        },
+        {
+          "name": "Listar Peças",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/pecas", "host": ["{{baseUrl}}"], "path": ["api", "pecas"] }
+          }
+        },
+        {
+          "name": "Atualizar Estoque",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantidade\": 10\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/pecas/{{pecaId}}/estoque", "host": ["{{baseUrl}}"], "path": ["api", "pecas", "{{pecaId}}", "estoque"] }
+          }
+        },
+        {
+          "name": "Listar Estoque Baixo",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/pecas/estoque-baixo", "host": ["{{baseUrl}}"], "path": ["api", "pecas", "estoque-baixo"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordens de Serviço",
+      "item": [
+        {
+          "name": "Abrir OS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('osId', json.id);",
+                  "  console.log('OS criada:', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"descricaoProblema\": \"Carro fazendo barulho ao frear\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico"] }
+          }
+        },
+        {
+          "name": "Listar Todas as OS",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico"] }
+          }
+        },
+        {
+          "name": "Listar OS Ordenadas por Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/ordenadas", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "ordenadas"] }
+          }
+        },
+        {
+          "name": "Consultar OS por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}"] }
+          }
+        },
+        {
+          "name": "Adicionar Itens à OS",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"tipo\": \"servico\",\n    \"referenciaId\": \"{{servicoId}}\",\n    \"quantidade\": 1\n  },\n  {\n    \"tipo\": \"peca\",\n    \"referenciaId\": \"{{pecaId}}\",\n    \"quantidade\": 2\n  }\n]"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/itens", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "itens"] }
+          }
+        },
+        {
+          "name": "Tempo Médio de Execução",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/tempo-medio-execucao", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "tempo-medio-execucao"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Status da OS (fluxo completo)",
+      "item": [
+        {
+          "name": "1 - Iniciar Diagnóstico",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/iniciar-diagnostico", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "iniciar-diagnostico"] }
+          }
+        },
+        {
+          "name": "2 - Enviar para Aprovação (Forçar Status)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"novoStatus\": 2,\n  \"motivo\": \"Diagnóstico concluído. Orçamento R$ 350,00\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "status"] }
+          }
+        },
+        {
+          "name": "3a - Aprovar Orçamento (via API)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/aprovar", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "aprovar"] }
+          }
+        },
+        {
+          "name": "3b - Rejeitar Orçamento (via API)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Valor acima do esperado\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/rejeitar", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "rejeitar"] }
+          }
+        },
+        {
+          "name": "4 - Notificar Conclusão",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/notificar-conclusao", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "notificar-conclusao"] }
+          }
+        },
+        {
+          "name": "5 - Entregar Veículo",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/entregar", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "entregar"] }
+          }
+        },
+        {
+          "name": "Histórico de Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/ordens-servico/{{osId}}/historico", "host": ["{{baseUrl}}"], "path": ["api", "ordens-servico", "{{osId}}", "historico"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          }
+        }
+      ]
+    }
+  ]
+}

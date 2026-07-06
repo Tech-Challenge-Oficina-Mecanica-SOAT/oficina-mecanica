@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: oficina-mecanica-api
+spec:
+  selector:
+    app: oficina-mecanica-api
+  ports:
+    - port: 80
+      targetPort: 5000
+  type: ClusterIP

@@ -83,7 +83,7 @@ public class OrdemServico : Entity
     public void Finalizar(string alteradoPor)
     {
         Transitar(EnumStatusOS.EmExecucao, EnumStatusOS.Finalizada, alteradoPor, "Execução finalizada");
-        RaiseEvent(new OrdemConcluidaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, DateTime.UtcNow));
+        RaiseEvent(new OrdemConcluidaEvent(Id, Cliente?.Email?.Valor ?? string.Empty, alteradoPor, DateTime.UtcNow, "Ordem de serviço concluída"));
     }
 
     public void Entregar(string alteradoPor)
