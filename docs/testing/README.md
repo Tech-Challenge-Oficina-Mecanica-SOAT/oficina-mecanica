@@ -4,6 +4,8 @@ Este diretório contém roteiros para testar os fluxos da API, organizados por *
 
 A documentação interativa do projeto é gerada via **Scalar** (em `/scalar`). Não há Swagger UI.
 
+> Precisa instalar Docker, Kubernetes (Kind) ou Terraform, ou subir o projeto via K8s/IaC antes de testar? Veja [`00-ambiente-execucao.md`](./00-ambiente-execucao.md).
+
 ## TL;DR: Quickstart (5 minutos)
 
 > Recomendado para uma primeira avaliação rápida do projeto.

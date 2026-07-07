@@ -126,8 +126,33 @@ Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbConte
 | Docker | 24+ |
 | Docker Compose | 2.x |
 | kubectl | 1.28+ (para K8s) |
-| Kind | 0.20+ (para K8s local) |
-| Terraform | 1.6+ (para IaC) |
+| Kind | 0.20+ (para K8s local) — testado com `v0.31.0` |
+| Terraform | 1.6+ (para IaC) — testado com `v1.15.6` |
+
+> No Windows, o **Docker Desktop precisa estar com o engine rodando** (não basta o CLI instalado) — sem isso `kind create cluster` falha com erro de pipe.
+
+### Instalando Kind e Terraform no Windows
+
+Via **Chocolatey** (em PowerShell como Administrador):
+
+```powershell
+choco install kind terraform -y
+```
+
+Ou via **winget**:
+
+```powershell
+winget install Kubernetes.kind
+winget install Hashicorp.Terraform
+```
+
+Confirme as instalações:
+
+```powershell
+kind version
+terraform version
+docker info   # confirma que o engine do Docker Desktop está de pé
+```
 
 ---
 
@@ -180,10 +205,19 @@ k8s/
 
 ### Aplicar manualmente (sem Terraform)
 
-```bash
-# 1. Editar k8s/secret.yaml com as credenciais reais
+Fluxo completo, incluindo cluster local Kind, para quem não tem um cluster/registry já disponível (guia detalhado, com todos os comandos de instalação, está em [`docs/testing/00-ambiente-execucao.md`](./docs/testing/00-ambiente-execucao.md)):
 
-# 2. Aplicar na ordem correta
+```bash
+# 1. Criar o cluster Kind
+kind create cluster --name oficina-mecanica
+
+# 2. Build da imagem da API e carga no cluster (sem registry)
+docker build -t oficina-mecanica-api:local .
+kind load docker-image oficina-mecanica-api:local --name oficina-mecanica
+
+# 3. Editar k8s/secret.yaml com as credenciais reais
+
+# 4. Aplicar na ordem correta
 kubectl apply -f k8s/secret.yaml
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/postgres-pvc.yaml
@@ -194,27 +228,61 @@ kubectl apply -f k8s/api-deployment.yaml
 kubectl apply -f k8s/api-service.yaml
 kubectl apply -f k8s/api-hpa.yaml
 
-# 3. Verificar pods
+# 5. Instalar o metrics-server (obrigatório para o HPA funcionar — Kind não vem com ele)
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch deployment metrics-server -n kube-system --type='json' \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+
+# 6. Verificar pods
 kubectl get pods
 kubectl get svc
 kubectl get hpa
 
-# 4. Acessar a API
+# 7. Acessar a API
 kubectl port-forward svc/oficina-mecanica-api 5000:80
 # http://localhost:5000/scalar
 
-# 5. Acessar o MailHog
+# 8. Acessar o MailHog
 kubectl port-forward svc/mailhog 8025:8025
 # http://localhost:8025
 ```
 
+> Quando a imagem vier de um registry (CI/CD via GHCR, ou EKS), use `k8s/api-deployment.yaml` direto — o pipeline em `.github/workflows/ci.yml` já substitui o placeholder pela tag real da imagem publicada.
+
 > ⚠️ Nunca commite o `secret.yaml` com valores reais. Adicione-o ao `.gitignore`.
+
+### Testando o autoscaling (HPA) de ponta a ponta
+
+Com o metrics-server instalado, acompanhe em um terminal:
+
+```bash
+kubectl get hpa -w
+```
+
+E gere carga em outro terminal (um único `wget` sequencial não é suficiente para passar de 70% de CPU — use 3–4 pods em paralelo):
+
+```bash
+for i in 1 2 3 4; do
+  kubectl run load-test-$i --image=busybox --restart=Never -- \
+    sh -c "while true; do wget -q -O- http://oficina-mecanica-api/health; done"
+done
+```
+
+Para parar a carga e observar o scale-down (o HPA tem uma janela de estabilização padrão de ~5 minutos antes de reduzir réplicas):
+
+```bash
+kubectl delete pod load-test-1 load-test-2 load-test-3 load-test-4 --force --grace-period=0
+```
 
 ---
 
 ## Terraform (IaC)
 
 O Terraform provisiona automaticamente um cluster Kind local e aplica todos os manifestos Kubernetes.
+
+> O módulo usa apenas os providers oficiais `hashicorp/null` e `hashicorp/local`, chamando os binários `kind`/`kubectl` via `local-exec` — evita depender de providers de comunidade não mantidos (`tehcyx/kind`, `gavinbunney/kubectl`).
+
+> **Windows:** se `terraform init`/`apply` falhar com `Plugin did not respond` / `x509: certificate signed by unknown authority`, mesmo com providers oficiais, a causa costuma ser um antivírus com inspeção HTTPS (AVG, Avast, Kaspersky, ESET, etc.) interceptando TLS em loopback, onde o Terraform fala com os plugins via mTLS. Desative a inspeção Web/HTTPS do antivírus antes de rodar comandos Terraform.
 
 ### Estrutura
 
@@ -416,7 +484,7 @@ Todas as demais rotas exigem `Authorization: Bearer {token}` com o perfil indica
 
 ## Roteiros de teste
 
-Guias passo a passo por funcionalidade e um arquivo `.http` para uso no VS Code (extensão REST Client) estão em [`docs/testing/`](./docs/testing/README.md).
+Guias passo a passo por funcionalidade e um arquivo `.http` para uso no VS Code (extensão REST Client) estão em [`docs/testing/`](./docs/testing/README.md). Para instalar Docker/Kubernetes/Terraform e subir o ambiente antes de testar, veja [`docs/testing/00-ambiente-execucao.md`](./docs/testing/00-ambiente-execucao.md).
 
 ---
 
@@ -460,7 +528,7 @@ O arquivo `coverage-report/Summary.txt` contém o resumo em texto puro.
 
 ## Relatório de vulnerabilidades
 
-A análise de segurança está documentada em **[`relatorio-vulnerabilidades.md`](./relatorio-vulnerabilidades.md)**, na raiz do repositório.
+A análise de segurança está documentada em **[`docs/relatorio-vulnerabilidades.md`](./docs/relatorio-vulnerabilidades.md)**.
 
 O relatório cobre:
 
@@ -578,3 +646,24 @@ kubectl logs <nome-do-pod>
 
 **Terraform falha ao criar cluster**  
 Certifique-se que o Docker está rodando antes de executar `terraform apply`.
+
+**`kubectl get hpa` mostra `TARGETS: <unknown>/70%` para sempre**  
+O metrics-server não está instalado (Kind não vem com ele). Instale com `--kubelet-insecure-tls` (ver [seção de Kubernetes](#kubernetes)).
+
+**`x509: certificate signed by unknown authority` em qualquer comando `kubectl`**  
+Bug de verificação de certificado do client Go no Windows com clusters Kind:
+```powershell
+kubectl config set-cluster <nome-do-contexto> --insecure-skip-tls-verify=true
+```
+
+**`terraform apply` falha com `Plugin did not respond` / handshake TLS**  
+Antivírus com inspeção HTTPS (Web Shield) interceptando TLS em loopback. Desative a inspeção antes de rodar comandos Terraform.
+
+**`docker build` chamado de dentro do `local-exec` do Terraform falha com `context canceled`**  
+Interação específica do Windows entre o `terraform.exe` e o streaming do buildx. Faça o `docker build` manualmente antes do `terraform apply` — o Terraform só executa o `kind load docker-image`.
+
+**`/health` retorna `404` via `kubectl port-forward` mas o pod está `1/1 Running`**  
+Outro processo já está escutando na porta local escolhida. Use outra porta, ex.: `kubectl port-forward svc/oficina-mecanica-api 5050:80`.
+
+**API reinicia uma vez no boot com `duplicate key value violates unique constraint "PK___EFMigrationsHistory"`**  
+Race benigna: as réplicas do Deployment chamam `Database.Migrate()` simultaneamente no startup e uma perde a corrida. O pod se recupera sozinho no restart seguinte.
