@@ -165,7 +165,7 @@ Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbConte
 
 ## Como executar
 
-### Opção 1 — Kubernetes + Terraform (Fase 2) ✅ recomendado
+### Opção 1 — Kubernetes + Terraform (Fase 2) recomendado
 
 Requer: Docker Desktop, Kind, Terraform, kubectl e make.
 
@@ -256,18 +256,6 @@ Importe a collection completa no Postman para testar todos os endpoints com vari
 
 - **Scalar (interativa):** <http://localhost:5000/scalar> (com a API no ar)
 - **Postman Collection:** [`docs/oficina-mecanica.postman_collection.json`](./docs/oficina-mecanica.postman_collection.json)
-
----
-
-## Vídeo demonstrativo
-
-> **[link do vídeo — a adicionar]**
-
-O vídeo demonstra:
-- Deploy da aplicação via `make oficina-up`
-- Execução do pipeline CI/CD
-- Consumo das APIs via Scalar / Postman
-- Escalabilidade automática (HPA sob carga)
 
 ---
 
