@@ -18,6 +18,7 @@
 set -uo pipefail
 
 BASE="${BASE:-http://localhost:5000}"
+MAILHOG_BASE="${MAILHOG_BASE:-http://localhost:8025}"
 PASS=0
 FAIL=0
 
@@ -284,13 +285,13 @@ do_curl POST "$BASE/api/Clientes" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"nome\":\"Outro Joao\",\"documento\":\"$CPF_TESTE\",\"telefone\":\"11000000000\",\"email\":\"outro@email.com\"}"
-check "POST /api/Clientes — documento duplicado → 400" "400" "$HTTP_STATUS"
+check "POST /api/Clientes — documento duplicado → 409" "409" "$HTTP_STATUS"
 
 ###############################################################################
 section "5. VEÍCULOS"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Veiculos" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
@@ -298,12 +299,12 @@ do_curl POST "$BASE/api/Veiculos" \
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Veiculos — criar → 201"
   VEICULO_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Veiculos → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Veiculos → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Veiculos/placa/$PLACA_TESTE" -H "Authorization: Bearer $TOKEN_ADMIN"
   VEICULO_ID=$(extract "id")
   [ -n "$VEICULO_ID" ] && green "POST /api/Veiculos — criar → 201 (registro existente reaproveitado)" \
-                       || red "POST /api/Veiculos — criar → 201  (esperado HTTP 201, obtido 400)"
+                       || red "POST /api/Veiculos — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Veiculos — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -342,13 +343,13 @@ do_curl POST "$BASE/api/Veiculos" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"clienteId\":\"$CLIENTE_ID\",\"placa\":\"$PLACA_TESTE\",\"marca\":\"Fiat\",\"modelo\":\"Palio\",\"ano\":2019}"
-check "POST /api/Veiculos — placa duplicada → 400" "400" "$HTTP_STATUS"
+check "POST /api/Veiculos — placa duplicada → 409" "409" "$HTTP_STATUS"
 
 ###############################################################################
 section "6. SERVIÇOS"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Servicos" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
@@ -356,12 +357,12 @@ do_curl POST "$BASE/api/Servicos" \
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Servicos — criar → 201"
   SERVICO_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Servicos → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Servicos → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Servicos/nome/Troca%20de%20oleo" -H "Authorization: Bearer $TOKEN_ADMIN"
   SERVICO_ID=$(extract "id")
   [ -n "$SERVICO_ID" ] && green "POST /api/Servicos — criar → 201 (registro existente reaproveitado)" \
-                       || red "POST /api/Servicos — criar → 201  (esperado HTTP 201, obtido 400)"
+                       || red "POST /api/Servicos — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Servicos — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -403,7 +404,7 @@ check "GET /api/Servicos/nome/{inexistente} → 404" "404" "$HTTP_STATUS"
 section "7. PEÇAS E ESTOQUE"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Pecas" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
@@ -411,12 +412,12 @@ do_curl POST "$BASE/api/Pecas" \
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Pecas — criar → 201"
   PECA_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Pecas → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Pecas → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Pecas/codigo/$CODIGO_PECA" -H "Authorization: Bearer $TOKEN_ADMIN"
   PECA_ID=$(extract "id")
   [ -n "$PECA_ID" ] && green "POST /api/Pecas — criar → 201 (registro existente reaproveitado)" \
-                    || red "POST /api/Pecas — criar → 201  (esperado HTTP 201, obtido 400)"
+                    || red "POST /api/Pecas — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Pecas — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -571,10 +572,32 @@ do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/status" \
   -d '{"novoStatus":3,"motivo":"Diagnostico concluido, orcamento enviado"}'
 check "PATCH /status — forçar AguardandoAprovacao (novoStatus:3) → 204" "204" "$HTTP_STATUS"
 
-# AguardandoAprovacao → EmExecucao (Admin ou Cliente)
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/aprovar" \
-  -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /aprovar — AguardandoAprovacao → EmExecucao → 204" "204" "$HTTP_STATUS"
+# ── E-mail de orçamento (MailHog) ────────────────────────────
+# A transição para AguardandoAprovacao dispara EnviarOrcamentoAsync
+# que envia e-mail com links de aprovação/recusa via webhook.
+sleep 3  # aguarda a API enviar o e-mail
+do_curl GET "$MAILHOG_BASE/api/v2/messages"
+MAILHOG_BODY="$HTTP_BODY"
+MAILHOG_TOTAL=$(echo "$MAILHOG_BODY" | grep -o '"total":[0-9]*' | head -1 | cut -d':' -f2)
+if [ "${MAILHOG_TOTAL:-0}" -gt 0 ]; then
+  green "MailHog — e-mail de orçamento recebido (total de mensagens: $MAILHOG_TOTAL)"
+  WEBHOOK_TOKEN=$(echo "$MAILHOG_BODY" | grep -o 'aprovar/[a-f0-9]\{32\}' | head -1 | sed 's|aprovar/||')
+  info "MailHog token de aprovação: ${WEBHOOK_TOKEN:-não encontrado}"
+else
+  red "MailHog — nenhum e-mail encontrado em $MAILHOG_BASE/api/v2/messages"
+  WEBHOOK_TOKEN=""
+fi
+
+# AguardandoAprovacao → EmExecucao via webhook (se token extraído) ou /aprovar direto
+if [ -n "$WEBHOOK_TOKEN" ]; then
+  do_curl GET "$BASE/api/webhooks/ordens-servico/aprovar/$WEBHOOK_TOKEN?aprovado=true"
+  check "GET /webhooks/ordens-servico/aprovar/{token}?aprovado=true → 200" "200" "$HTTP_STATUS"
+else
+  info "Token de webhook não encontrado — usando PATCH /aprovar direto"
+  do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/aprovar" \
+    -H "Authorization: Bearer $TOKEN_ADMIN"
+  check "PATCH /aprovar — AguardandoAprovacao → EmExecucao → 204" "204" "$HTTP_STATUS"
+fi
 
 # EmExecucao → Finalizada (Admin ou Mecânico)
 do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/notificar-conclusao" \
