@@ -10,8 +10,8 @@
 #    docker compose down -v && docker compose up -d --build
 #
 #  EXECUÇÃO
-#    bash src/plans/test-local.sh
-#    bash src/plans/test-local.sh 2>/dev/null   # silencia warnings curl
+#     bash docs/testing/test-local.sh
+#     bash docs/testing/test-local.sh 2>/dev/null   # silencia warnings curl
 #
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -115,15 +115,34 @@ echo "╚═══════════════════════�
 info "BASE: $BASE"
 
 ###############################################################################
+section "0. BOOTSTRAP — login com admin semente"
+###############################################################################
+# A API cria admin@oficina.com / Senha@123 automaticamente no primeiro boot
+# (quando o banco está vazio). Esse token é necessário para registrar
+# usuários com perfil Admin ou Mecânico via POST /Auth/registrar.
+
+do_curl POST "$BASE/Auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@oficina.com","senha":"Senha@123"}'
+TOKEN_SEED_ADMIN=$(extract "token")
+if [ -n "$TOKEN_SEED_ADMIN" ]; then
+  green "POST /Auth/login — admin semente OK"
+else
+  abort "admin semente não encontrado — banco pode não estar limpo ou a API não subiu corretamente"
+fi
+
+###############################################################################
 section "1. AUTENTICAÇÃO — registro"
 ###############################################################################
 
 do_curl POST "$BASE/Auth/registrar" \
+  -H "Authorization: Bearer $TOKEN_SEED_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$ADMIN_EMAIL\",\"senha\":\"$SENHA\",\"perfil\":0}"
 check_any "POST /Auth/registrar — Admin (201 | 409 já existe)" "201 409" "$HTTP_STATUS"
 
 do_curl POST "$BASE/Auth/registrar" \
+  -H "Authorization: Bearer $TOKEN_SEED_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$MECANICO_EMAIL\",\"senha\":\"$SENHA\",\"perfil\":1}"
 check_any "POST /Auth/registrar — Mecânico" "201 409" "$HTTP_STATUS"
@@ -135,6 +154,7 @@ check_any "POST /Auth/registrar — Cliente" "201 409" "$HTTP_STATUS"
 
 # E-mail duplicado → 409
 do_curl POST "$BASE/Auth/registrar" \
+  -H "Authorization: Bearer $TOKEN_SEED_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$ADMIN_EMAIL\",\"senha\":\"$SENHA\",\"perfil\":0}"
 check "POST /Auth/registrar — e-mail duplicado → 409" "409" "$HTTP_STATUS"
@@ -208,7 +228,7 @@ check "GET /api/ordens-servico com token Cliente → 403" "403" "$HTTP_STATUS"
 section "4. CLIENTES"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Clientes" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
@@ -216,12 +236,12 @@ do_curl POST "$BASE/api/Clientes" \
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Clientes — criar → 201"
   CLIENTE_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Clientes → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Clientes → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Clientes/documento/$CPF_TESTE" -H "Authorization: Bearer $TOKEN_ADMIN"
   CLIENTE_ID=$(extract "id")
   [ -n "$CLIENTE_ID" ] && green "POST /api/Clientes — criar → 201 (registro existente reaproveitado)" \
-                       || red "POST /api/Clientes — criar → 201  (esperado HTTP 201, obtido 400)"
+                       || red "POST /api/Clientes — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Clientes — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -436,7 +456,7 @@ check "PATCH /api/Pecas/{id}/estoque — decrementar → 200" "200" "$HTTP_STATU
 do_curl PUT "$BASE/api/Pecas/$PECA_ID" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d '{"nome":"Filtro de oleo premium","codigo":"FO-001","precoUnitario":55.00}'
+  -d '{"nome":"Filtro de oleo premium","precoUnitario":55.00}'
 check "PUT /api/Pecas/{id} → 200" "200" "$HTTP_STATUS"
 
 # Caminho triste — saldo insuficiente
@@ -485,7 +505,7 @@ check "GET /api/ordens-servico/{id} → 200" "200" "$HTTP_STATUS"
 do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"servico\",\"referenciaId\":\"$SERVICO_ID\",\"descricao\":\"Troca de pastilha de freio\",\"quantidade\":1,\"precoUnitario\":150.00}"
+  -d "{\"tipo\":\"servico\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1}"
 check "POST /api/ordens-servico/{id}/itens — servico → 201" "201" "$HTTP_STATUS"
 ITEM_ID=$(extract "id")
 if [ -z "$ITEM_ID" ]; then red "itemId não extraído — remoção de item não será testada"; fi
@@ -495,7 +515,7 @@ info "itemId: $ITEM_ID"
 do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"peca\",\"referenciaId\":\"$PECA_ID\",\"descricao\":\"Pastilha de freio dianteira\",\"quantidade\":2,\"precoUnitario\":89.90}"
+  -d "{\"tipo\":\"peca\",\"referenciaId\":\"$PECA_ID\",\"quantidade\":2}"
 check "POST /api/ordens-servico/{id}/itens — peca → 201" "201" "$HTTP_STATUS"
 
 # Verificar total atualizado
@@ -522,7 +542,7 @@ check "GET /api/ordens-servico/{id-inexistente} → 404" "404" "$HTTP_STATUS"
 do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"invalido\",\"referenciaId\":\"$SERVICO_ID\",\"descricao\":\"Teste\",\"quantidade\":1,\"precoUnitario\":10.00}"
+  -d "{\"tipo\":\"invalido\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1}"
 check "POST /api/ordens-servico/{id}/itens — tipo inválido → 400" "400" "$HTTP_STATUS"
 
 ###############################################################################

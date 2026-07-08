@@ -1,9 +1,9 @@
-# Oficina Mecânica — API (Fase 2)
+# Infraestrutura Fase 2 — Detalhamento Técnico
 
 API REST desenvolvida em **ASP.NET Core (.NET 10)** como Tech Challenge da pós-graduação FIAP SOAT.
 Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviços, peças, ordens de serviço e autenticação por perfil.
 
-> Este README é uma adaptação do [`README.md`](./README.md) original com o fluxo de Kubernetes/HPA e Terraform **validado passo a passo de ponta a ponta** em ambiente Windows. Use-o como guia operacional da Fase 2; para a visão de arquitetura/domínio, o `README.md` continua sendo a referência principal.
+> Este README é uma adaptação do [`README.md`](../README.md) original com o fluxo de Kubernetes/HPA e Terraform **validado passo a passo de ponta a ponta** em ambiente Windows. Use-o como guia operacional da Fase 2; para a visão de arquitetura/domínio, o `README.md` continua sendo a referência principal.
 
 ---
 
@@ -64,7 +64,7 @@ graph TD
     Postgres --> S4
 ```
 
-> Detalhes de camadas, Value Objects e Domain Events: ver [`README.md`](./README.md#arquitetura).
+> Detalhes de camadas, Value Objects e Domain Events: ver [`README.md`](../README.md#arquitetura).
 
 ---
 
@@ -244,33 +244,15 @@ A causa raiz não era o código do Terraform: era o **AVG Antivirus** (Web Shiel
 
 ### Como usar
 
+O caminho recomendado é via Makefile na raiz do projeto (cross-platform):
+
 ```bash
-# 1. Build da imagem da API — feito FORA do Terraform.
-#    (no Windows, chamar "docker build" como filho do processo terraform.exe
-#    cancela a transferência do build context com "context canceled" — uma
-#    interação específica do gerenciamento de processos do Terraform nesse SO,
-#    não reproduzida ao buildar via PowerShell/Bash direto. Por isso o build
-#    é um passo manual antes do apply, e o Terraform só faz o "kind load".)
-docker build -t oficina-mecanica-api:local .
-
-# 2. Editar k8s/secret.yaml com credenciais reais
-#    (Jwt__SecretKey, Seguranca__PasswordKey, PostgresPassword e
-#    ConnectionStrings__DefaultConnection — as duas últimas com a mesma senha)
-
-# 3. Inicializar e aplicar
-cd infra/local
-terraform init
-terraform plan
-terraform apply -auto-approve
-
-# 4. Ver outputs e verificar o cluster
-terraform output
-kubectl --context kind-oficina-mecanica get pods
-kubectl --context kind-oficina-mecanica get hpa
-
-# 5. Destruir o ambiente (remove o cluster Kind por completo)
-terraform destroy -auto-approve
+make setup       # gera credenciais de dev + verifica pré-requisitos
+make oficina-up  # build + terraform apply + port-forwards
+make oficina-down# encerra tudo + terraform destroy
 ```
+
+Para o fluxo manual passo a passo (útil para debug), consulte as seções anteriores deste documento.
 
 ### Variáveis disponíveis (`infra/local/variables.tf`)
 
@@ -309,7 +291,7 @@ oficina-mecanica-api-hpa   Deployment/oficina-mecanica-api   cpu: 1%/70%, memory
 
 ## HPA — testando o autoscaling de ponta a ponta
 
-Com o metrics-server instalado (passo 5 acima), o teste segue o roteiro de [`FASE2_COMPLIANCE.md`](./FASE2_COMPLIANCE.md), Cena 5:
+Com o metrics-server instalado (passo 5 acima), o teste segue o roteiro de [`FASE2_COMPLIANCE.md`](../FASE2_COMPLIANCE.md), Cena 5:
 
 **Terminal 1 — observar o HPA:**
 ```bash
@@ -375,7 +357,7 @@ A imagem publicada (`ghcr.io/<usuario>/oficina-mecanica-api`) já resolve o prob
 http://localhost:5000/scalar
 ```
 
-Collection Postman completa em [`docs/oficina-mecanica.postman_collection.json`](docs/oficina-mecanica.postman_collection.json).
+Collection Postman completa em [`oficina-mecanica.postman_collection.json`](oficina-mecanica.postman_collection.json).
 
 ---
 
@@ -383,7 +365,7 @@ Collection Postman completa em [`docs/oficina-mecanica.postman_collection.json`]
 
 JWT Bearer Token, obtido via `POST /Auth/login`. Perfis: `Admin` (0), `Mecanico` (1), `Cliente` (2). Token expira em 5 minutos.
 
-> Detalhes completos de rotas públicas/protegidas por perfil: ver [`README.md`](./README.md#autenticação).
+> Detalhes completos de rotas públicas/protegidas por perfil: ver [`README.md`](../README.md#autenticação).
 
 ---
 
@@ -391,10 +373,10 @@ JWT Bearer Token, obtido via `POST /Auth/login`. Perfis: `Admin` (0), `Mecanico`
 
 476 testes (392 unitários + 84 de integração), 90.5% de cobertura de linhas no total.
 
-> Como gerar o relatório localmente: ver [`README.md`](./README.md#cobertura-de-testes).
+> Como gerar o relatório localmente: ver [`README.md`](../README.md#cobertura-de-testes).
 
 ---
 
 ## Relatório de vulnerabilidades
 
-Documentado em [`relatorio-vulnerabilidades.md`](./relatorio-vulnerabilidades.md) — 10 achados mapeados contra OWASP Top 10.
+Documentado em [`relatorio-vulnerabilidades.md`](../relatorio-vulnerabilidades.md) — 10 achados mapeados contra OWASP Top 10.

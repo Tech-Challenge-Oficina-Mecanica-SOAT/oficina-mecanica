@@ -15,3 +15,9 @@ variable "api_image" {
   type        = string
   default     = "oficina-mecanica-api:local"
 }
+
+variable "bash_interpreter" {
+  description = "Caminho para o bash. Default funciona em macOS/Linux. Windows (Git Bash): C:/Program Files/Git/bin/bash.exe"
+  type        = string
+  default     = "bash"
+}
