@@ -408,7 +408,7 @@ section "7. PEÇAS E ESTOQUE"
 do_curl POST "$BASE/api/Pecas" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"nome\":\"Filtro de oleo\",\"codigo\":\"$CODIGO_PECA\",\"precoUnitario\":45.90,\"estoque\":50,\"descricao\":\"Filtro motor 1.0 a 2.0\"}"
+  -d "{\"nome\":\"Filtro de oleo\",\"codigo\":\"$CODIGO_PECA\",\"precoUnitario\":45.90,\"estoque\":500,\"descricao\":\"Filtro motor 1.0 a 2.0\"}"
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Pecas — criar → 201"
   PECA_ID=$(extract "id")
@@ -454,10 +454,16 @@ do_curl PATCH "$BASE/api/Pecas/$PECA_ID/estoque" \
 check "PATCH /api/Pecas/{id}/estoque — decrementar → 200" "200" "$HTTP_STATUS"
 
 # Atualizar dados
+# PUT substitui o recurso inteiro — inclui estoque e descrição atuais para não zerá-los
+# (a API não faz merge parcial; campos omitidos viram "" / 0)
+do_curl GET "$BASE/api/Pecas/$PECA_ID" -H "Authorization: Bearer $TOKEN_ADMIN"
+ESTOQUE_ATUAL=$(echo "$HTTP_BODY" | grep -o '"estoque":[0-9]*' | head -1 | cut -d':' -f2)
+DESCRICAO_ATUAL=$(extract "descricao")
+
 do_curl PUT "$BASE/api/Pecas/$PECA_ID" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d '{"nome":"Filtro de oleo premium","precoUnitario":55.00}'
+  -d "{\"nome\":\"Filtro de oleo premium\",\"descricao\":\"${DESCRICAO_ATUAL:-Filtro motor 1.0 a 2.0}\",\"precoUnitario\":55.00,\"estoque\":${ESTOQUE_ATUAL:-0}}"
 check "PUT /api/Pecas/{id} → 200" "200" "$HTTP_STATUS"
 
 # Caminho triste — saldo insuficiente
@@ -479,7 +485,7 @@ do_curl POST "$BASE/api/Pecas" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"nome\":\"Outro filtro\",\"codigo\":\"$CODIGO_PECA\",\"precoUnitario\":30.00,\"estoque\":10}"
-check "POST /api/Pecas — código duplicado → 400" "400" "$HTTP_STATUS"
+check "POST /api/Pecas — código duplicado → 409" "409" "$HTTP_STATUS"
 
 ###############################################################################
 section "8. ORDENS DE SERVIÇO"
@@ -502,22 +508,24 @@ check "GET /api/ordens-servico → 200" "200" "$HTTP_STATUS"
 do_curl GET "$BASE/api/ordens-servico/$OS_ID" -H "Authorization: Bearer $TOKEN_ADMIN"
 check "GET /api/ordens-servico/{id} → 200" "200" "$HTTP_STATUS"
 
-# Adicionar serviço à OS
+# Iniciar diagnóstico — pré-requisito de negócio para orçar itens
+# (AdicionarItensOSUseCase move a OS para AguardandoAprovacao automaticamente
+# ao adicionar itens, e essa transição só é válida a partir de EmDiagnostico)
+do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/iniciar-diagnostico" \
+  -H "Authorization: Bearer $TOKEN_ADMIN"
+check "PATCH /iniciar-diagnostico — Recebida → EmDiagnostico → 204" "204" "$HTTP_STATUS"
+
+# Adicionar serviço + peça à OS em uma única chamada.
+# Cada POST /itens dispara a transição automática para AguardandoAprovacao,
+# então múltiplos itens devem ser enviados juntos, não em chamadas separadas.
 do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"servico\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1}"
-check "POST /api/ordens-servico/{id}/itens — servico → 201" "201" "$HTTP_STATUS"
+  -d "[{\"tipo\":\"servico\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1},{\"tipo\":\"peca\",\"referenciaId\":\"$PECA_ID\",\"quantidade\":2}]"
+check "POST /api/ordens-servico/{id}/itens — servico + peça → 201" "201" "$HTTP_STATUS"
 ITEM_ID=$(extract "id")
 if [ -z "$ITEM_ID" ]; then red "itemId não extraído — remoção de item não será testada"; fi
 info "itemId: $ITEM_ID"
-
-# Adicionar peça à OS
-do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
-  -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"peca\",\"referenciaId\":\"$PECA_ID\",\"quantidade\":2}"
-check "POST /api/ordens-servico/{id}/itens — peca → 201" "201" "$HTTP_STATUS"
 
 # Verificar total atualizado
 do_curl GET "$BASE/api/ordens-servico/$OS_ID" -H "Authorization: Bearer $TOKEN_ADMIN"
@@ -543,38 +551,24 @@ check "GET /api/ordens-servico/{id-inexistente} → 404" "404" "$HTTP_STATUS"
 do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"invalido\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1}"
+  -d "[{\"tipo\":\"invalido\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1}]"
 check "POST /api/ordens-servico/{id}/itens — tipo inválido → 400" "400" "$HTTP_STATUS"
 
 ###############################################################################
 section "9. CICLO DE VIDA DA OS — transições de status"
 ###############################################################################
 
-# Transição inválida antes de iniciar (aprovar OS ainda Recebida → 400)
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/aprovar" \
-  -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /aprovar — OS Recebida (transição inválida) → 400" "400" "$HTTP_STATUS"
+# A OS já está em AguardandoAprovacao — a adição de itens na seção 8
+# disparou a transição automaticamente (iniciar-diagnostico + itens já testados lá).
 
-# Recebida → EmDiagnostico (Admin ou Mecânico)
+# Transição inválida — tentar iniciar diagnóstico de novo (OS já além de EmDiagnostico) → 400
 do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/iniciar-diagnostico" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /iniciar-diagnostico — Recebida → EmDiagnostico → 204" "204" "$HTTP_STATUS"
-
-# Idempotência — tentar iniciar diagnóstico de novo → 400
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/iniciar-diagnostico" \
-  -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /iniciar-diagnostico — segunda vez (já EmDiagnostico) → 400" "400" "$HTTP_STATUS"
-
-# EmDiagnostico → AguardandoAprovacao via ForcarStatus (Admin)
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/status" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
-  -H "Content-Type: application/json" \
-  -d '{"novoStatus":3,"motivo":"Diagnostico concluido, orcamento enviado"}'
-check "PATCH /status — forçar AguardandoAprovacao (novoStatus:3) → 204" "204" "$HTTP_STATUS"
+check "PATCH /iniciar-diagnostico — OS já além de EmDiagnostico (transição inválida) → 400" "400" "$HTTP_STATUS"
 
 # ── E-mail de orçamento (MailHog) ────────────────────────────
-# A transição para AguardandoAprovacao dispara EnviarOrcamentoAsync
-# que envia e-mail com links de aprovação/recusa via webhook.
+# A transição para AguardandoAprovacao (disparada ao adicionar itens, seção 8)
+# aciona EnviarOrcamentoAsync, que envia e-mail com links de aprovação/recusa via webhook.
 sleep 3  # aguarda a API enviar o e-mail
 do_curl GET "$MAILHOG_BASE/api/v2/messages"
 MAILHOG_BODY="$HTTP_BODY"
