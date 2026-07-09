@@ -1,13 +1,14 @@
-SHELL := bash
-
-# Detecta SO e configura o interpretador bash para o Terraform.
-# No Windows (Git Bash), 'make' já roda via bash mas o Terraform precisa
-# do caminho explícito porque chama o interpretador como processo filho.
+# Detecta SO e configura o interpretador bash (para as receitas do make e para o Terraform).
+# No Windows, o make (build nativa, ex.: choco) não localiza 'bash' sozinho e cai para
+# cmd.exe, então precisamos apontar o caminho absoluto do Git Bash explicitamente.
 ifeq ($(OS),Windows_NT)
+  SHELL := C:/Program Files/Git/bin/bash.exe
   export TF_VAR_bash_interpreter := C:/Program Files/Git/bin/bash.exe
 else
+  SHELL := bash
   export TF_VAR_bash_interpreter := bash
 endif
+.SHELLFLAGS := -ec
 
 CLUSTER_CONTEXT := kind-oficina-mecanica
 PIDS_FILE       := .pids
