@@ -17,9 +17,9 @@ public class EmailNotificacaoServiceFake : INotificacaoService
         return Task.CompletedTask;
     }
 
-    public Task EnviarConclusaoAsync(Guid osId, string emailCliente, string motivo)
+    public Task EnviarConclusaoAsync(Guid osId, string emailCliente)
     {
-        _logger.Info($"FAKE - EnviarConclusaoAsync: OS={osId}, Email={emailCliente}, Motivo={motivo}");
+        _logger.Info($"FAKE - EnviarConclusaoAsync: OS={osId}, Email={emailCliente}");
         return Task.CompletedTask;
     }
 

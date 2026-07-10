@@ -10,4 +10,4 @@ data:
   EmailSettings__Port: "1025"
   EmailSettings__UseSSL: "false"
   EmailSettings__From: "noreply@oficinamecanica.com"
-  EmailSettings__BaseUrl: "http://oficina-mecanica-service"
+  EmailSettings__BaseUrl: "http://localhost:5000"

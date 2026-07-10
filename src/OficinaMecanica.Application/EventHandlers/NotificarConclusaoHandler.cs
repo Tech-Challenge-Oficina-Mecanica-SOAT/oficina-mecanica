@@ -12,5 +12,5 @@ public class NotificarConclusaoHandler : IEventHandler<OrdemConcluidaEvent>
         _notificacao = notificacao;
 
     public Task HandleAsync(OrdemConcluidaEvent evt) =>
-        _notificacao.EnviarConclusaoAsync(evt.OrdemServicoId, evt.EmailCliente, evt.Motivo);
+        _notificacao.EnviarConclusaoAsync(evt.OrdemServicoId, evt.EmailCliente);
 }
