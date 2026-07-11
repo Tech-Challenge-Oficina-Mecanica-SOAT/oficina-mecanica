@@ -7,21 +7,30 @@ Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviç
 
 ## Índice
 
+- [Descrição e objetivos da Fase 2](#descrição-e-objetivos-da-fase-2)
 - [Arquitetura](#arquitetura)
-- [Pré-requisitos](#pré-requisitos)
 - [Como executar](#como-executar)
-- [Kubernetes](#kubernetes)
-- [Terraform (IaC)](#terraform-iac)
-- [CI/CD](#cicd)
-- [Documentação interativa (Scalar)](#documentação-interativa-scalar)
+- [CI/CD — Fluxo de deploy](#cicd--fluxo-de-deploy)
 - [Collection das APIs](#collection-das-apis)
+- [Vídeo demonstrativo](#vídeo-demonstrativo)
+- [Documentação interativa (Scalar)](#documentação-interativa-scalar)
 - [Autenticação](#autenticação)
 - [Roteiros de teste](#roteiros-de-teste)
 - [Cobertura de testes](#cobertura-de-testes)
 - [Relatório de vulnerabilidades](#relatório-de-vulnerabilidades)
-- [Scan de qualidade (SonarQube)](#scan-de-qualidade-sonarqube)
-- [EF Core / Migrations](#ef-core--migrations)
-- [Troubleshooting](#troubleshooting)
+
+---
+
+## Descrição e objetivos da Fase 2
+
+Esta fase evolui a API REST de gerenciamento de oficina mecânica para um ambiente **Kubernetes local** provisionado via **Terraform (IaC)**:
+
+- **Deploy em Kubernetes** com cluster Kind, 2 réplicas da API, HPA (escalonamento automático por CPU/memória), volume persistente para PostgreSQL e MailHog para e-mails transacionais.
+- **Infraestrutura como código** com Terraform: cluster, manifestos e metrics-server provisionados com um único `make oficina-up`.
+- **CI/CD** com GitHub Actions: pipeline de build, testes, push de imagem para GHCR e deploy automatizado em push para `main`.
+- **Escalabilidade automática** demonstrada: HPA escala de 2 a 10 réplicas sob carga, retorna ao mínimo após estabilização.
+
+> Detalhamento completo da infraestrutura: [`docs/infra-detalhado.md`](./docs/infra-detalhado.md)
 
 ---
 
@@ -62,6 +71,29 @@ graph TD
     API --> S1
     API --> S2
     API --> S3
+```
+
+### Fluxo de deploy
+
+```
+Desenvolvedor
+    │
+    ├─ make oficina-up
+    │       │
+    │       ├─ docker build → oficina-mecanica-api:local
+    │       │
+    │       └─ terraform apply
+    │               │
+    │               ├─ kind create cluster (1 control-plane + 1 worker)
+    │               ├─ kind load docker-image
+    │               ├─ kubectl apply: secret, configmap, postgres-pvc
+    │               ├─ kubectl apply: postgres-deployment + service
+    │               ├─ kubectl apply: mailhog-deployment
+    │               ├─ kubectl apply: api-deployment + service + hpa
+    │               └─ kubectl apply: metrics-server
+    │
+    └─ port-forward svc/oficina-mecanica-api 5000:80
+       port-forward svc/mailhog 8025:8025
 ```
 
 ### Camadas
@@ -133,135 +165,39 @@ Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbConte
 
 ## Como executar
 
-### Com Docker (recomendado)
+### Opção 1 — Kubernetes + Terraform (Fase 2) recomendado
+
+Requer: Docker Desktop, Kind, Terraform, kubectl e make.
 
 ```bash
-# 1. Subir PostgreSQL + API + MailHog (build automático)
+make setup       # verifica pré-requisitos e gera credenciais de dev
+make oficina-up  # build + terraform apply + port-forwards
+```
+
+- API: <http://localhost:5000/scalar>
+- MailHog: <http://localhost:8025>
+
+Para encerrar: `make oficina-down`  
+Para reiniciar limpo: `make oficina-reset`
+
+> Guia completo com troubleshooting: [`docs/testing/00-infra.md`](./docs/testing/00-infra.md)  
+> Detalhamento técnico da infraestrutura: [`docs/infra-detalhado.md`](./docs/infra-detalhado.md)
+
+---
+
+### Opção 2 — Docker Compose (execução local simples)
+
+```bash
 docker compose up -d --build
-
-# 2. Verificar status
-docker compose ps
-
-# 3. Acompanhar logs
-docker logs -f oficina_api
-docker logs -f oficina_postgres
 ```
 
-A API estará disponível em **`http://localhost:5000`**.  
-O MailHog (UI de e-mails) estará em **`http://localhost:8025`**.
-
-### Localmente (sem Docker)
-
-```bash
-# Requer PostgreSQL rodando localmente com as credenciais do appsettings.json
-dotnet run --project src/OficinaMecanica.API
-```
+API em `http://localhost:5000`, MailHog em `http://localhost:8025`.
 
 ---
 
-## Kubernetes
+## CI/CD — Fluxo de deploy
 
-Os manifestos estão em `k8s/` na raiz do repositório.
-
-### Estrutura
-
-```
-k8s/
-├── configmap.yaml           # Variáveis não-sensíveis (environment, JWT issuer/audience)
-├── secret.yaml              # Variáveis sensíveis (JWT key, senha do banco)
-├── postgres-pvc.yaml        # Volume persistente 5Gi
-├── postgres-deployment.yaml
-├── postgres-service.yaml
-├── api-deployment.yaml      # 2 réplicas, readiness/liveness probe
-├── api-service.yaml         # ClusterIP: 80 → 5000
-├── api-hpa.yaml             # HPA: min=2 max=10 cpu=70% mem=80%
-└── mailhog-deployment.yaml  # SMTP fake para dev
-```
-
-### Aplicar manualmente (sem Terraform)
-
-```bash
-# 1. Editar k8s/secret.yaml com as credenciais reais
-
-# 2. Aplicar na ordem correta
-kubectl apply -f k8s/secret.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/postgres-pvc.yaml
-kubectl apply -f k8s/postgres-deployment.yaml
-kubectl apply -f k8s/postgres-service.yaml
-kubectl apply -f k8s/mailhog-deployment.yaml
-kubectl apply -f k8s/api-deployment.yaml
-kubectl apply -f k8s/api-service.yaml
-kubectl apply -f k8s/api-hpa.yaml
-
-# 3. Verificar pods
-kubectl get pods
-kubectl get svc
-kubectl get hpa
-
-# 4. Acessar a API
-kubectl port-forward svc/oficina-mecanica-api 5000:80
-# http://localhost:5000/scalar
-
-# 5. Acessar o MailHog
-kubectl port-forward svc/mailhog 8025:8025
-# http://localhost:8025
-```
-
-> ⚠️ Nunca commite o `secret.yaml` com valores reais. Adicione-o ao `.gitignore`.
-
----
-
-## Terraform (IaC)
-
-O Terraform provisiona automaticamente um cluster Kind local e aplica todos os manifestos Kubernetes.
-
-### Estrutura
-
-```
-infra/
-├── README.md
-├── local/
-│   ├── main.tf      # Cluster Kind + todos os kubectl_manifest
-│   └── outputs.tf   # Outputs: cluster_name, endpoint, kubeconfig_path
-└── modules/
-    └── postgres/
-        └── main.tf  # Módulo reutilizável do banco (fácil troca por RDS no futuro)
-```
-
-### Como usar
-
-```bash
-# Pré-requisitos: Kind e Terraform instalados
-
-# 1. Editar k8s/secret.yaml com credenciais reais
-
-# 2. Inicializar e aplicar
-cd infra/local
-terraform init
-terraform apply
-
-# 3. Ver outputs
-terraform output
-
-# 4. Destruir o ambiente
-terraform destroy
-```
-
-### Recursos criados pelo Terraform
-
-| Recurso | Descrição |
-|---|---|
-| `kind_cluster.oficina` | Cluster Kind com 1 control-plane + 1 worker |
-| `kubectl_manifest.postgres_*` | PVC + Deployment + Service do Postgres |
-| `kubectl_manifest.api_*` | Deployment + Service + HPA da API |
-| `kubectl_manifest.mailhog` | Deployment + Service do MailHog |
-| `kubectl_manifest.configmap` | ConfigMap com variáveis de ambiente |
-| `kubectl_manifest.secret` | Secret com credenciais sensíveis |
-
----
-
-## CI/CD
+O pipeline GitHub Actions (`.github/workflows/ci.yml`) cobre build, testes e deploy automático a cada push em `main`. A imagem é publicada no GitHub Container Registry (GHCR) e o cluster Kind é provisionado no runner para smoke test de deploy.
 
 O pipeline está em `.github/workflows/ci.yml` e possui jobs separados por trigger:
 
@@ -318,37 +254,8 @@ Importe a collection completa no Postman para testar todos os endpoints com vari
 
 ## Collection das APIs
 
-A documentação completa da API está disponível via Scalar, que fornece uma interface interativa para explorar e testar todos os endpoints.
-
-### Acesso interativo
-
-- **Ambiente de desenvolvimento (Docker):** `http://localhost:5000/scalar/v1`
-- **Ambiente local (dotnet run):** `http://localhost:5165/scalar/v1`
-
-### Exportar collection
-
-#### OpenAPI JSON
-
-O documento OpenAPI (antigo Swagger) está disponível em:
-
-- **Docker:** `http://localhost:5000/openapi/v1.json`
-- **Local:** `http://localhost:5165/openapi/v1.json`
-
-#### Postman
-
-1. Acesse o link do OpenAPI JSON acima
-2. Copie o conteúdo
-3. No Postman, clique em **Import** → **Raw text** → cole o JSON → **Continue** → **Import**
-
-Ou exporte via linha de comando:
-
-```bash
-# Instalar a ferramenta (apenas uma vez)
-dotnet tool install -g Swashbuckle.AspNetCore.Cli
-
-# Exportar o JSON
-swagger tofile --output openapi.json src/OficinaMecanica.API/bin/Debug/net10.0/OficinaMecanica.API.dll v1
-```
+- **Scalar (interativa):** <http://localhost:5000/scalar> (com a API no ar)
+- **Postman Collection:** [`docs/oficina-mecanica.postman_collection.json`](./docs/oficina-mecanica.postman_collection.json)
 
 ---
 
