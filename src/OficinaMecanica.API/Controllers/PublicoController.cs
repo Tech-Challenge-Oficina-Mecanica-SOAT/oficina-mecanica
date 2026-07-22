@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OficinaMecanica.API.Common;
+using OficinaMecanica.API.Presentation.PainelStatus;
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Domain.Interfaces;
@@ -14,9 +14,18 @@ namespace OficinaMecanica.API.Controllers;
 public class PublicoController : ControllerBase
 {
     private readonly IOrdemServicoRepository _osRepository;
+    private readonly IPainelStatusViewModelFactory _viewModelFactory;
+    private readonly IPainelStatusHtmlRenderer _htmlRenderer;
 
-    public PublicoController(IOrdemServicoRepository osRepository) =>
+    public PublicoController(
+        IOrdemServicoRepository osRepository,
+        IPainelStatusViewModelFactory viewModelFactory,
+        IPainelStatusHtmlRenderer htmlRenderer)
+    {
         _osRepository = osRepository;
+        _viewModelFactory = viewModelFactory;
+        _htmlRenderer = htmlRenderer;
+    }
 
     /// <summary>
     /// Consulta o status atual de uma OS sem necessidade de autenticação
@@ -57,7 +66,8 @@ public class PublicoController : ControllerBase
         if (os is null)
             return NotFound("Ordem de serviço não encontrada.");
 
-        var html = PainelStatusHtmlBuilder.Construir(os);
+        var viewModel = _viewModelFactory.CriarViewModel(os);
+        var html = _htmlRenderer.Renderizar(viewModel);
         return Content(html, "text/html; charset=utf-8");
     }
 }
