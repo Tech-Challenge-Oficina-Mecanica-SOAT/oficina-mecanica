@@ -2,7 +2,7 @@
 
 Cadastro dos serviços oferecidos pela oficina (troca de óleo, alinhamento, etc.).
 
-> O `ServicosController` atualmente está sem `[Authorize]`, então responde sem token. Mesmo assim, recomenda-se enviar o JWT para simular o uso em produção.
+> Todos os endpoints exigem autenticação com perfil **Admin** (`Authorization: Bearer <token>`).
 
 ## Endpoints
 

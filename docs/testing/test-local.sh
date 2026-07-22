@@ -10,14 +10,15 @@
 #    docker compose down -v && docker compose up -d --build
 #
 #  EXECUÇÃO
-#    bash src/plans/test-local.sh
-#    bash src/plans/test-local.sh 2>/dev/null   # silencia warnings curl
+#     bash docs/testing/test-local.sh
+#     bash docs/testing/test-local.sh 2>/dev/null   # silencia warnings curl
 #
 # ═══════════════════════════════════════════════════════════════════════════════
 
 set -uo pipefail
 
 BASE="${BASE:-http://localhost:5000}"
+MAILHOG_BASE="${MAILHOG_BASE:-http://localhost:8025}"
 PASS=0
 FAIL=0
 
@@ -115,15 +116,34 @@ echo "╚═══════════════════════�
 info "BASE: $BASE"
 
 ###############################################################################
+section "0. BOOTSTRAP — login com admin semente"
+###############################################################################
+# A API cria admin@oficina.com / Senha@123 automaticamente no primeiro boot
+# (quando o banco está vazio). Esse token é necessário para registrar
+# usuários com perfil Admin ou Mecânico via POST /Auth/registrar.
+
+do_curl POST "$BASE/Auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@oficina.com","senha":"Senha@123"}'
+TOKEN_SEED_ADMIN=$(extract "token")
+if [ -n "$TOKEN_SEED_ADMIN" ]; then
+  green "POST /Auth/login — admin semente OK"
+else
+  abort "admin semente não encontrado — banco pode não estar limpo ou a API não subiu corretamente"
+fi
+
+###############################################################################
 section "1. AUTENTICAÇÃO — registro"
 ###############################################################################
 
 do_curl POST "$BASE/Auth/registrar" \
+  -H "Authorization: Bearer $TOKEN_SEED_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$ADMIN_EMAIL\",\"senha\":\"$SENHA\",\"perfil\":0}"
 check_any "POST /Auth/registrar — Admin (201 | 409 já existe)" "201 409" "$HTTP_STATUS"
 
 do_curl POST "$BASE/Auth/registrar" \
+  -H "Authorization: Bearer $TOKEN_SEED_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$MECANICO_EMAIL\",\"senha\":\"$SENHA\",\"perfil\":1}"
 check_any "POST /Auth/registrar — Mecânico" "201 409" "$HTTP_STATUS"
@@ -135,6 +155,7 @@ check_any "POST /Auth/registrar — Cliente" "201 409" "$HTTP_STATUS"
 
 # E-mail duplicado → 409
 do_curl POST "$BASE/Auth/registrar" \
+  -H "Authorization: Bearer $TOKEN_SEED_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$ADMIN_EMAIL\",\"senha\":\"$SENHA\",\"perfil\":0}"
 check "POST /Auth/registrar — e-mail duplicado → 409" "409" "$HTTP_STATUS"
@@ -208,7 +229,7 @@ check "GET /api/ordens-servico com token Cliente → 403" "403" "$HTTP_STATUS"
 section "4. CLIENTES"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Clientes" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
@@ -216,12 +237,12 @@ do_curl POST "$BASE/api/Clientes" \
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Clientes — criar → 201"
   CLIENTE_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Clientes → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Clientes → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Clientes/documento/$CPF_TESTE" -H "Authorization: Bearer $TOKEN_ADMIN"
   CLIENTE_ID=$(extract "id")
   [ -n "$CLIENTE_ID" ] && green "POST /api/Clientes — criar → 201 (registro existente reaproveitado)" \
-                       || red "POST /api/Clientes — criar → 201  (esperado HTTP 201, obtido 400)"
+                       || red "POST /api/Clientes — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Clientes — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -264,13 +285,13 @@ do_curl POST "$BASE/api/Clientes" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"nome\":\"Outro Joao\",\"documento\":\"$CPF_TESTE\",\"telefone\":\"11000000000\",\"email\":\"outro@email.com\"}"
-check "POST /api/Clientes — documento duplicado → 400" "400" "$HTTP_STATUS"
+check "POST /api/Clientes — documento duplicado → 409" "409" "$HTTP_STATUS"
 
 ###############################################################################
 section "5. VEÍCULOS"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Veiculos" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
@@ -278,12 +299,12 @@ do_curl POST "$BASE/api/Veiculos" \
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Veiculos — criar → 201"
   VEICULO_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Veiculos → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Veiculos → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Veiculos/placa/$PLACA_TESTE" -H "Authorization: Bearer $TOKEN_ADMIN"
   VEICULO_ID=$(extract "id")
   [ -n "$VEICULO_ID" ] && green "POST /api/Veiculos — criar → 201 (registro existente reaproveitado)" \
-                       || red "POST /api/Veiculos — criar → 201  (esperado HTTP 201, obtido 400)"
+                       || red "POST /api/Veiculos — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Veiculos — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -322,13 +343,13 @@ do_curl POST "$BASE/api/Veiculos" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"clienteId\":\"$CLIENTE_ID\",\"placa\":\"$PLACA_TESTE\",\"marca\":\"Fiat\",\"modelo\":\"Palio\",\"ano\":2019}"
-check "POST /api/Veiculos — placa duplicada → 400" "400" "$HTTP_STATUS"
+check "POST /api/Veiculos — placa duplicada → 409" "409" "$HTTP_STATUS"
 
 ###############################################################################
 section "6. SERVIÇOS"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Servicos" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
@@ -336,12 +357,12 @@ do_curl POST "$BASE/api/Servicos" \
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Servicos — criar → 201"
   SERVICO_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Servicos → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Servicos → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Servicos/nome/Troca%20de%20oleo" -H "Authorization: Bearer $TOKEN_ADMIN"
   SERVICO_ID=$(extract "id")
   [ -n "$SERVICO_ID" ] && green "POST /api/Servicos — criar → 201 (registro existente reaproveitado)" \
-                       || red "POST /api/Servicos — criar → 201  (esperado HTTP 201, obtido 400)"
+                       || red "POST /api/Servicos — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Servicos — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -383,20 +404,20 @@ check "GET /api/Servicos/nome/{inexistente} → 404" "404" "$HTTP_STATUS"
 section "7. PEÇAS E ESTOQUE"
 ###############################################################################
 
-# Criar (aceita 400 por duplicata — recupera o registro existente)
+# Criar (aceita 409 por duplicata — recupera o registro existente)
 do_curl POST "$BASE/api/Pecas" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"nome\":\"Filtro de oleo\",\"codigo\":\"$CODIGO_PECA\",\"precoUnitario\":45.90,\"estoque\":50,\"descricao\":\"Filtro motor 1.0 a 2.0\"}"
+  -d "{\"nome\":\"Filtro de oleo\",\"codigo\":\"$CODIGO_PECA\",\"precoUnitario\":45.90,\"estoque\":500,\"descricao\":\"Filtro motor 1.0 a 2.0\"}"
 if [ "$HTTP_STATUS" = "201" ]; then
   green "POST /api/Pecas — criar → 201"
   PECA_ID=$(extract "id")
-elif [ "$HTTP_STATUS" = "400" ]; then
-  info "POST /api/Pecas → 400 (duplicata) — buscando registro existente"
+elif [ "$HTTP_STATUS" = "409" ]; then
+  info "POST /api/Pecas → 409 (duplicata) — buscando registro existente"
   do_curl GET "$BASE/api/Pecas/codigo/$CODIGO_PECA" -H "Authorization: Bearer $TOKEN_ADMIN"
   PECA_ID=$(extract "id")
   [ -n "$PECA_ID" ] && green "POST /api/Pecas — criar → 201 (registro existente reaproveitado)" \
-                    || red "POST /api/Pecas — criar → 201  (esperado HTTP 201, obtido 400)"
+                    || red "POST /api/Pecas — criar → 201  (esperado HTTP 201, obtido 409)"
 else
   red "POST /api/Pecas — criar → 201  (esperado HTTP 201, obtido $HTTP_STATUS)"
 fi
@@ -433,10 +454,16 @@ do_curl PATCH "$BASE/api/Pecas/$PECA_ID/estoque" \
 check "PATCH /api/Pecas/{id}/estoque — decrementar → 200" "200" "$HTTP_STATUS"
 
 # Atualizar dados
+# PUT substitui o recurso inteiro — inclui estoque e descrição atuais para não zerá-los
+# (a API não faz merge parcial; campos omitidos viram "" / 0)
+do_curl GET "$BASE/api/Pecas/$PECA_ID" -H "Authorization: Bearer $TOKEN_ADMIN"
+ESTOQUE_ATUAL=$(echo "$HTTP_BODY" | grep -o '"estoque":[0-9]*' | head -1 | cut -d':' -f2)
+DESCRICAO_ATUAL=$(extract "descricao")
+
 do_curl PUT "$BASE/api/Pecas/$PECA_ID" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d '{"nome":"Filtro de oleo premium","codigo":"FO-001","precoUnitario":55.00}'
+  -d "{\"nome\":\"Filtro de oleo premium\",\"descricao\":\"${DESCRICAO_ATUAL:-Filtro motor 1.0 a 2.0}\",\"precoUnitario\":55.00,\"estoque\":${ESTOQUE_ATUAL:-0}}"
 check "PUT /api/Pecas/{id} → 200" "200" "$HTTP_STATUS"
 
 # Caminho triste — saldo insuficiente
@@ -458,7 +485,7 @@ do_curl POST "$BASE/api/Pecas" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
   -d "{\"nome\":\"Outro filtro\",\"codigo\":\"$CODIGO_PECA\",\"precoUnitario\":30.00,\"estoque\":10}"
-check "POST /api/Pecas — código duplicado → 400" "400" "$HTTP_STATUS"
+check "POST /api/Pecas — código duplicado → 409" "409" "$HTTP_STATUS"
 
 ###############################################################################
 section "8. ORDENS DE SERVIÇO"
@@ -481,22 +508,24 @@ check "GET /api/ordens-servico → 200" "200" "$HTTP_STATUS"
 do_curl GET "$BASE/api/ordens-servico/$OS_ID" -H "Authorization: Bearer $TOKEN_ADMIN"
 check "GET /api/ordens-servico/{id} → 200" "200" "$HTTP_STATUS"
 
-# Adicionar serviço à OS
+# Iniciar diagnóstico — pré-requisito de negócio para orçar itens
+# (AdicionarItensOSUseCase move a OS para AguardandoAprovacao automaticamente
+# ao adicionar itens, e essa transição só é válida a partir de EmDiagnostico)
+do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/iniciar-diagnostico" \
+  -H "Authorization: Bearer $TOKEN_ADMIN"
+check "PATCH /iniciar-diagnostico — Recebida → EmDiagnostico → 204" "204" "$HTTP_STATUS"
+
+# Adicionar serviço + peça à OS em uma única chamada.
+# Cada POST /itens dispara a transição automática para AguardandoAprovacao,
+# então múltiplos itens devem ser enviados juntos, não em chamadas separadas.
 do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"servico\",\"referenciaId\":\"$SERVICO_ID\",\"descricao\":\"Troca de pastilha de freio\",\"quantidade\":1,\"precoUnitario\":150.00}"
-check "POST /api/ordens-servico/{id}/itens — servico → 201" "201" "$HTTP_STATUS"
+  -d "[{\"tipo\":\"servico\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1},{\"tipo\":\"peca\",\"referenciaId\":\"$PECA_ID\",\"quantidade\":2}]"
+check "POST /api/ordens-servico/{id}/itens — servico + peça → 201" "201" "$HTTP_STATUS"
 ITEM_ID=$(extract "id")
 if [ -z "$ITEM_ID" ]; then red "itemId não extraído — remoção de item não será testada"; fi
 info "itemId: $ITEM_ID"
-
-# Adicionar peça à OS
-do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
-  -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"peca\",\"referenciaId\":\"$PECA_ID\",\"descricao\":\"Pastilha de freio dianteira\",\"quantidade\":2,\"precoUnitario\":89.90}"
-check "POST /api/ordens-servico/{id}/itens — peca → 201" "201" "$HTTP_STATUS"
 
 # Verificar total atualizado
 do_curl GET "$BASE/api/ordens-servico/$OS_ID" -H "Authorization: Bearer $TOKEN_ADMIN"
@@ -522,39 +551,47 @@ check "GET /api/ordens-servico/{id-inexistente} → 404" "404" "$HTTP_STATUS"
 do_curl POST "$BASE/api/ordens-servico/$OS_ID/itens" \
   -H "Authorization: Bearer $TOKEN_ADMIN" \
   -H "Content-Type: application/json" \
-  -d "{\"tipo\":\"invalido\",\"referenciaId\":\"$SERVICO_ID\",\"descricao\":\"Teste\",\"quantidade\":1,\"precoUnitario\":10.00}"
+  -d "[{\"tipo\":\"invalido\",\"referenciaId\":\"$SERVICO_ID\",\"quantidade\":1}]"
 check "POST /api/ordens-servico/{id}/itens — tipo inválido → 400" "400" "$HTTP_STATUS"
 
 ###############################################################################
 section "9. CICLO DE VIDA DA OS — transições de status"
 ###############################################################################
 
-# Transição inválida antes de iniciar (aprovar OS ainda Recebida → 400)
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/aprovar" \
-  -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /aprovar — OS Recebida (transição inválida) → 400" "400" "$HTTP_STATUS"
+# A OS já está em AguardandoAprovacao — a adição de itens na seção 8
+# disparou a transição automaticamente (iniciar-diagnostico + itens já testados lá).
 
-# Recebida → EmDiagnostico (Admin ou Mecânico)
+# Transição inválida — tentar iniciar diagnóstico de novo (OS já além de EmDiagnostico) → 400
 do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/iniciar-diagnostico" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /iniciar-diagnostico — Recebida → EmDiagnostico → 204" "204" "$HTTP_STATUS"
+check "PATCH /iniciar-diagnostico — OS já além de EmDiagnostico (transição inválida) → 400" "400" "$HTTP_STATUS"
 
-# Idempotência — tentar iniciar diagnóstico de novo → 400
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/iniciar-diagnostico" \
-  -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /iniciar-diagnostico — segunda vez (já EmDiagnostico) → 400" "400" "$HTTP_STATUS"
+# ── E-mail de orçamento (MailHog) ────────────────────────────
+# A transição para AguardandoAprovacao (disparada ao adicionar itens, seção 8)
+# aciona EnviarOrcamentoAsync, que envia e-mail com links de aprovação/recusa via webhook.
+sleep 3  # aguarda a API enviar o e-mail
+do_curl GET "$MAILHOG_BASE/api/v2/messages"
+MAILHOG_BODY="$HTTP_BODY"
+MAILHOG_TOTAL=$(echo "$MAILHOG_BODY" | grep -o '"total":[0-9]*' | head -1 | cut -d':' -f2)
+if [ "${MAILHOG_TOTAL:-0}" -gt 0 ]; then
+  green "MailHog — e-mail de orçamento recebido (total de mensagens: $MAILHOG_TOTAL)"
+  WEBHOOK_TOKEN=$(echo "$MAILHOG_BODY" | grep -o 'aprovar/[a-f0-9]\{32\}' | head -1 | sed 's|aprovar/||')
+  info "MailHog token de aprovação: ${WEBHOOK_TOKEN:-não encontrado}"
+else
+  red "MailHog — nenhum e-mail encontrado em $MAILHOG_BASE/api/v2/messages"
+  WEBHOOK_TOKEN=""
+fi
 
-# EmDiagnostico → AguardandoAprovacao via ForcarStatus (Admin)
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/status" \
-  -H "Authorization: Bearer $TOKEN_ADMIN" \
-  -H "Content-Type: application/json" \
-  -d '{"novoStatus":3,"motivo":"Diagnostico concluido, orcamento enviado"}'
-check "PATCH /status — forçar AguardandoAprovacao (novoStatus:3) → 204" "204" "$HTTP_STATUS"
-
-# AguardandoAprovacao → EmExecucao (Admin ou Cliente)
-do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/aprovar" \
-  -H "Authorization: Bearer $TOKEN_ADMIN"
-check "PATCH /aprovar — AguardandoAprovacao → EmExecucao → 204" "204" "$HTTP_STATUS"
+# AguardandoAprovacao → EmExecucao via webhook (se token extraído) ou /aprovar direto
+if [ -n "$WEBHOOK_TOKEN" ]; then
+  do_curl GET "$BASE/api/webhooks/ordens-servico/aprovar/$WEBHOOK_TOKEN?aprovado=true"
+  check "GET /webhooks/ordens-servico/aprovar/{token}?aprovado=true → 200" "200" "$HTTP_STATUS"
+else
+  info "Token de webhook não encontrado — usando PATCH /aprovar direto"
+  do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/aprovar" \
+    -H "Authorization: Bearer $TOKEN_ADMIN"
+  check "PATCH /aprovar — AguardandoAprovacao → EmExecucao → 204" "204" "$HTTP_STATUS"
+fi
 
 # EmExecucao → Finalizada (Admin ou Mecânico)
 do_curl PATCH "$BASE/api/ordens-servico/$OS_ID/notificar-conclusao" \

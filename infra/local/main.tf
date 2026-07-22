@@ -23,12 +23,13 @@ terraform {
 # resultado, sem o risco de incompatibilidade do provider.
 resource "null_resource" "kind_cluster" {
   triggers = {
-    cluster_name = var.cluster_name
-    config_hash  = filemd5("${path.module}/kind-config.yaml")
+    cluster_name     = var.cluster_name
+    config_hash      = filemd5("${path.module}/kind-config.yaml")
+    bash_interpreter = var.bash_interpreter
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = <<-EOT
       set -e
       if kind get clusters | grep -qx "${var.cluster_name}"; then
@@ -44,7 +45,7 @@ resource "null_resource" "kind_cluster" {
 
   provisioner "local-exec" {
     when        = destroy
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [self.triggers.bash_interpreter, "-c"]
     command     = "kind delete cluster --name \"${self.triggers.cluster_name}\" || true"
   }
 }
@@ -68,7 +69,7 @@ resource "null_resource" "load_image" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = <<-EOT
       set -e
       if ! docker image inspect "${var.api_image}" >/dev/null 2>&1; then
@@ -102,7 +103,7 @@ resource "null_resource" "secret" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = "kubectl --context \"kind-${var.cluster_name}\" apply -f \"${path.module}/../../k8s/secret.yaml\""
   }
 }
@@ -115,7 +116,7 @@ resource "null_resource" "configmap" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = "kubectl --context \"kind-${var.cluster_name}\" apply -f \"${path.module}/../../k8s/configmap.yaml\""
   }
 }
@@ -128,7 +129,7 @@ resource "null_resource" "postgres_pvc" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = "kubectl --context \"kind-${var.cluster_name}\" apply -f \"${path.module}/../../k8s/postgres-pvc.yaml\""
   }
 }
@@ -141,7 +142,7 @@ resource "null_resource" "postgres_deployment" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = <<-EOT
       set -e
       kubectl --context "kind-${var.cluster_name}" apply -f "${path.module}/../../k8s/postgres-deployment.yaml"
@@ -158,7 +159,7 @@ resource "null_resource" "postgres_service" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = "kubectl --context \"kind-${var.cluster_name}\" apply -f \"${path.module}/../../k8s/postgres-service.yaml\""
   }
 }
@@ -171,7 +172,7 @@ resource "null_resource" "mailhog" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = "kubectl --context \"kind-${var.cluster_name}\" apply -f \"${path.module}/../../k8s/mailhog-deployment.yaml\""
   }
 }
@@ -189,7 +190,7 @@ resource "null_resource" "api_deployment" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = <<-EOT
       set -e
       kubectl --context "kind-${var.cluster_name}" apply -f "${local_file.api_deployment_rendered.filename}"
@@ -206,7 +207,7 @@ resource "null_resource" "api_service" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = "kubectl --context \"kind-${var.cluster_name}\" apply -f \"${path.module}/../../k8s/api-service.yaml\""
   }
 }
@@ -219,7 +220,7 @@ resource "null_resource" "api_hpa" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = "kubectl --context \"kind-${var.cluster_name}\" apply -f \"${path.module}/../../k8s/api-hpa.yaml\""
   }
 }
@@ -233,7 +234,7 @@ resource "null_resource" "metrics_server" {
   }
 
   provisioner "local-exec" {
-    interpreter = ["C:/Program Files/Git/bin/bash.exe", "-c"]
+    interpreter = [var.bash_interpreter, "-c"]
     command     = <<-EOT
       set -e
       kubectl --context "kind-${var.cluster_name}" apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml

@@ -100,3 +100,6 @@ coverage-report/
 *.tfplan
 infra/local/.generated/
 infra/local/tf-debug.log
+
+# port-forward PIDs gerados pelo Makefile
+.pids
