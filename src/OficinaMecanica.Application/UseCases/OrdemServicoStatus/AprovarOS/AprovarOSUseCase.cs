@@ -1,4 +1,5 @@
 using OficinaMecanica.Application.Common;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Interfaces;
 
 namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOS;
@@ -6,8 +7,13 @@ namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOS;
 public class AprovarOSUseCase : IAprovarOSUseCase
 {
     private readonly IOrdemServicoRepository _repository;
+    private readonly IOrdemServicoMetrics _metrics;
 
-    public AprovarOSUseCase(IOrdemServicoRepository repository) => _repository = repository;
+    public AprovarOSUseCase(IOrdemServicoRepository repository, IOrdemServicoMetrics metrics)
+    {
+        _repository = repository;
+        _metrics = metrics;
+    }
 
     public async Task<Result<bool>> ExecutarAsync(AprovarOSRequest request)
     {
@@ -15,10 +21,12 @@ public class AprovarOSUseCase : IAprovarOSUseCase
         if (os is null)
             return Result<bool>.NotFound("Ordem de serviço não encontrada.");
 
+        var statusAnterior = os.StatusOS;
         try { os.Aprovar(request.AlteradoPor); }
         catch (InvalidOperationException ex) { return Result<bool>.Validation(ex.Message); }
 
         await _repository.UpdateAsync(os);
+        _metrics.AtualizarStatus(statusAnterior, os.StatusOS);
         return Result<bool>.Success(true);
     }
 }

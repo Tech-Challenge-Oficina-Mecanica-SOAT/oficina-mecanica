@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
+using Serilog;
+using StackExchange.Redis;
+using Serilog.Formatting.Compact;
 using OficinaMecanica.API.Configuration;
 using OficinaMecanica.API.OpenApi;
 using OficinaMecanica.Application;
@@ -10,6 +15,8 @@ using OficinaMecanica.Application.EventHandlers;
 using OficinaMecanica.Domain.Events;
 using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Mappers;
+using AspNetCore.Authentication.ApiKey;
+using OficinaMecanica.Application.UseCases.Auth.AutenticarPorCpf;
 using OficinaMecanica.Application.UseCases.Auth.AutenticarUsuario;
 using OficinaMecanica.Application.UseCases.Auth.RegistrarUsuario;
 using OficinaMecanica.Application.UseCases.Cliente.AtivarCliente;
@@ -74,6 +81,12 @@ using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOrcamentoPo
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .Enrich.With<OficinaMecanica.Infrastructure.Logging.CorrelationIdEnricher>()
+    .WriteTo.Console(new OficinaMecanica.Infrastructure.Logging.CpfMaskingTextFormatter(new RenderedCompactJsonFormatter())));
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -110,6 +123,10 @@ else
 }
 builder.Services.AddScoped(typeof(IAppLogger<>), typeof(AppLogger<>));
 builder.Services.AddScoped<IAprovarOrcamentoPorEmailUseCase, AprovarOrcamentoPorEmailUseCase>();
+builder.Services.AddSingleton<IOrdemServicoMetrics, OficinaMecanica.Infrastructure.Metrics.OrdemServicoMetrics>();
+builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+    ConnectionMultiplexer.Connect(builder.Configuration["Redis:ConnectionString"]!));
+builder.Services.AddSingleton<IIdempotencyStore, OficinaMecanica.Infrastructure.Idempotency.RedisIdempotencyStore>();
 
 // DI - Domain Events
 builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
@@ -135,6 +152,7 @@ builder.Services.AddSingleton<HistoricoStatusOSMapper>();
 // DI - Auth Use Cases
 builder.Services.AddScoped<IAutenticarUsuarioUseCase, AutenticarUsuarioUseCase>();
 builder.Services.AddScoped<IRegistrarUsuarioUseCase, RegistrarUsuarioUseCase>();
+builder.Services.AddScoped<IAutenticarPorCpfUseCase, AutenticarPorCpfUseCase>();
 
 // DI - Cliente Use Cases
 builder.Services.AddScoped<ICriarClienteUseCase, CriarClienteUseCase>();
@@ -210,6 +228,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
         };
+    })
+    .AddApiKeyInHeader<OficinaMecanica.Infrastructure.Auth.InternalApiKeyProvider>("ApiKey", options =>
+    {
+        options.Realm = "OficinaMecanica Internal API";
+        options.KeyName = "X-Internal-Api-Key";
     });
 
 builder.Services.AddAuthorization(options =>
@@ -227,11 +250,15 @@ builder.Services.AddOpenApi(options =>
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<ApplicationDbContext>(name: "database", tags: ["ready"]);
 
 var app = builder.Build();
 
 app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
+app.MapHealthChecks("/health/startup", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
 
 app.MapOpenApi();
 
@@ -239,6 +266,11 @@ app.MapScalarApiReference(options =>
 {
     options.WithTitle("API Oficina Mecanica - Tech Challenge FIAP SOAT");
 });
+
+app.UseSerilogRequestLogging();
+
+app.UseHttpMetrics();
+app.MapMetrics("/metrics");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

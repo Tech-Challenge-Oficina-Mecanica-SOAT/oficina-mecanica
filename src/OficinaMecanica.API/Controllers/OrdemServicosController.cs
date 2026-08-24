@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OficinaMecanica.API.Common;
+using OficinaMecanica.API.Filters;
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
@@ -80,6 +81,7 @@ public class OrdemServicosController : ControllerBase
     /// Cria uma nova ordem de serviço vinculando cliente e veículo
     /// </summary>
     [HttpPost]
+    [Idempotent]
     [ProducesResponseType(typeof(OrdemServicoResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] AbrirOrdemServicoRequest request)
@@ -98,6 +100,7 @@ public class OrdemServicosController : ControllerBase
     /// O campo **tipo** aceita: `servico`, `peca` ou `insumo`
     /// </remarks>
     [HttpPost("{id:guid}/itens")]
+    [Idempotent]
     [ProducesResponseType(typeof(IEnumerable<OrdemServicoItemResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

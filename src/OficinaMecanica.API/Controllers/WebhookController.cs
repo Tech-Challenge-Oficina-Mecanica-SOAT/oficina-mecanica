@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OficinaMecanica.API.Filters;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOrcamentoPorEmail;
 
 namespace OficinaMecanica.API.Controllers;
@@ -17,6 +18,7 @@ public class WebhookController : ControllerBase
     }
 
     [HttpGet("ordens-servico/aprovar/{token}")]
+    [Idempotent]
     public async Task<IActionResult> AprovarOrcamento(string token, [FromQuery] bool aprovado)
     {
         var result = await _useCase.ExecutarAsync(new AprovarOrcamentoPorEmailRequest(token, aprovado));

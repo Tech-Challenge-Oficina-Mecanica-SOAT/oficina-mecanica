@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Moq;
 using OficinaMecanica.Application.Common;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOS;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -10,9 +11,10 @@ namespace OficinaMecanica.Tests.Unit.UseCases.OrdemServicoStatus.AprovarOS;
 public class AprovarOSUseCaseTests
 {
     private readonly Mock<IOrdemServicoRepository> _repo = new();
+    private readonly Mock<IOrdemServicoMetrics> _metrics = new();
     private readonly AprovarOSUseCase _sut;
 
-    public AprovarOSUseCaseTests() => _sut = new AprovarOSUseCase(_repo.Object);
+    public AprovarOSUseCaseTests() => _sut = new AprovarOSUseCase(_repo.Object, _metrics.Object);
 
     [Fact]
     public async Task ExecutarAsync_OSNaoEncontrada_RetornaNotFound()

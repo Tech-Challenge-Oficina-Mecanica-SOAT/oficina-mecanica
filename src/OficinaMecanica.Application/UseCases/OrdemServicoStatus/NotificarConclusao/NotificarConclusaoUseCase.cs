@@ -1,4 +1,5 @@
 using OficinaMecanica.Application.Common;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Interfaces;
 
 namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConclusao;
@@ -6,10 +7,12 @@ namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConcl
 public class NotificarConclusaoUseCase : INotificarConclusaoUseCase
 {
     private readonly IOrdemServicoRepository _repository;
+    private readonly IOrdemServicoMetrics _metrics;
 
-    public NotificarConclusaoUseCase(IOrdemServicoRepository repository)
+    public NotificarConclusaoUseCase(IOrdemServicoRepository repository, IOrdemServicoMetrics metrics)
     {
         _repository = repository;
+        _metrics = metrics;
     }
 
     public async Task<Result<bool>> ExecutarAsync(NotificarConclusaoRequest request)
@@ -18,10 +21,12 @@ public class NotificarConclusaoUseCase : INotificarConclusaoUseCase
         if (os is null)
             return Result<bool>.NotFound("Ordem de serviço não encontrada.");
 
+        var statusAnterior = os.StatusOS;
         try { os.Finalizar(request.AlteradoPor); }
         catch (InvalidOperationException ex) { return Result<bool>.Validation(ex.Message); }
 
         await _repository.UpdateAsync(os);
+        _metrics.AtualizarStatus(statusAnterior, os.StatusOS);
         return Result<bool>.Success(true);
     }
 }

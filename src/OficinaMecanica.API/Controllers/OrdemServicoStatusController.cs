@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OficinaMecanica.API.Common;
+using OficinaMecanica.API.Filters;
 using OficinaMecanica.Application.DTOs.Requests;
 using OficinaMecanica.Application.DTOs.Responses;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOS;
@@ -54,6 +55,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// Inicia o diagnóstico do veículo, avançando a OS de Recebida para EmDiagnostico
     /// </summary>
     [HttpPatch("{id:guid}/iniciar-diagnostico")]
+    [Idempotent]
     [Authorize(Roles = "Admin,Mecanico")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -68,6 +70,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// Aprova o orçamento da OS, avançando de AguardandoAprovacao para EmExecucao
     /// </summary>
     [HttpPatch("{id:guid}/aprovar")]
+    [Idempotent]
     [Authorize(Roles = "Admin,Cliente")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -85,6 +88,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// O `motivo` é obrigatório e fica registrado no histórico da OS para rastreabilidade.
     /// </remarks>
     [HttpPatch("{id:guid}/rejeitar")]
+    [Idempotent]
     [Authorize(Roles = "Admin,Cliente")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -100,6 +104,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// Notifica a conclusão do serviço, avançando a OS de EmExecucao para Finalizada
     /// </summary>
     [HttpPatch("{id:guid}/notificar-conclusao")]
+    [Idempotent]
     [Authorize(Roles = "Admin,Mecanico")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -114,6 +119,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// Registra a entrega do veículo ao cliente, encerrando a OS com status Entregue
     /// </summary>
     [HttpPatch("{id:guid}/entregar")]
+    [Idempotent]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -133,6 +139,7 @@ public class OrdemServicoStatusController : ControllerBase
     /// Todas as vezes o uso é registrado no histórico com o motivo informado.
     /// </remarks>
     [HttpPatch("{id:guid}/status")]
+    [Idempotent]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
