@@ -8,6 +8,7 @@ using StackExchange.Redis;
 using Serilog.Formatting.Compact;
 using OficinaMecanica.API.Configuration;
 using OficinaMecanica.API.OpenApi;
+using OficinaMecanica.API.Presentation.PainelStatus;
 using OficinaMecanica.Application;
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.Configuration;
@@ -142,6 +143,9 @@ builder.Services.AddScoped<IEventHandler<DiagnosticoIniciadoEvent>, NotificarDia
 builder.Services.AddSingleton(typeof(IAppLogger<>), typeof(AppLogger<>));
 
 // DI - Mappers
+builder.Services.AddScoped<IPainelStatusViewModelFactory, PainelStatusViewModelFactory>();
+builder.Services.AddScoped<IPainelStatusHtmlRenderer, PainelStatusHtmlRenderer>();
+
 builder.Services.AddSingleton<OrdemServicoMapper>();
 builder.Services.AddSingleton<ClienteMapper>();
 builder.Services.AddSingleton<VeiculoMapper>();

@@ -17,10 +17,11 @@ public class OrdemServicoRepository : IOrdemServicoRepository
             .FirstOrDefaultAsync(o => o.Id == id);
 
     public async Task<OrdemServico?> ObterPorIdComHistoricoAsync(Guid id) =>
-        await _context.OrdensServico
-            .Include(o => o.Cliente)
-            .Include(o => o.Historico)
-            .FirstOrDefaultAsync(o => o.Id == id);
+    await _context.OrdensServico
+        .Include(o => o.Cliente)
+        .Include(o => o.Veiculo)
+        .Include(o => o.Historico)
+        .FirstOrDefaultAsync(o => o.Id == id);
 
     public async Task<OrdemServico?> ObterPorIdComItensAsync(Guid id) =>
         await _context.OrdensServico
@@ -29,22 +30,13 @@ public class OrdemServicoRepository : IOrdemServicoRepository
             .Include(os => os.Itens)
             .FirstOrDefaultAsync(os => os.Id == id);
 
-    public async Task<IEnumerable<OrdemServico>> ListarTodosAsync()
-    {
-        var query = _context.OrdensServico
+    public async Task<IEnumerable<OrdemServico>> ListarTodosAsync() =>
+        await _context.OrdensServico
             .Include(os => os.Cliente)
             .Include(os => os.Veiculo)
             .Include(os => os.Itens)
-            .Where(os => os.StatusOS != EnumStatusOS.Finalizada && 
-                        os.StatusOS != EnumStatusOS.Entregue)
-            .OrderBy(os => os.StatusOS == EnumStatusOS.EmExecucao ? 1 :
-                        os.StatusOS == EnumStatusOS.AguardandoAprovacao ? 2 :
-                        os.StatusOS == EnumStatusOS.EmDiagnostico ? 3 :
-                        os.StatusOS == EnumStatusOS.Recebida ? 4 : 5)
-            .ThenBy(os => os.DataAbertura);
-
-        return await query.ToListAsync();
-    }
+            .OrderByDescending(os => os.DataAbertura)
+            .ToListAsync();
 
     public async Task<IEnumerable<OrdemServico>> ListarAtivasOrdenadasAsync()
     {

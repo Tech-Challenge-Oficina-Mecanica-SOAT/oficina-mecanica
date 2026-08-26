@@ -64,6 +64,9 @@ public class EmailNotificacaoService : INotificacaoService
             : "Nao informado";
 
         var assunto = $"Ordem de Servico Aberta - OS #{osId.ToString().Substring(0, 8)}";
+
+        var baseUrl = _emailSettings.BaseUrl.TrimEnd('/');
+        var linkAcompanhamento = $"{baseUrl}/Publico/os/{osId}";
         
         var corpoHtml = $@"
             <!DOCTYPE html>
@@ -77,6 +80,7 @@ public class EmailNotificacaoService : INotificacaoService
                     .header {{ text-align: center; border-bottom: 2px solid #007bff; margin-bottom: 20px; }}
                     .header h2 {{ color: #007bff; }}
                     .info-box {{ background-color: #fff; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd; }}
+                    .button {{ display: inline-block; padding: 12px 28px; text-decoration: none; border-radius: 5px; background-color: #007bff; color: white; font-weight: bold; }}
                     .footer {{ font-size: 12px; color: #666; text-align: center; margin-top: 20px; }}
                 </style>
             </head>
@@ -97,6 +101,10 @@ public class EmailNotificacaoService : INotificacaoService
                     </div>
                     
                     <p>Em breve o diagnóstico será iniciado e você receberá o orçamento para aprovação.</p>
+                    
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{linkAcompanhamento}' class='button'>ACOMPANHAR STATUS DA OS</a>
+                    </div>
                     
                     <hr/>
                     
@@ -290,7 +298,7 @@ public class EmailNotificacaoService : INotificacaoService
         await EnviarEmailAsync(emailCliente, assunto, corpoHtml);
     }
 
-    public async Task EnviarAprovacaoAsync(Guid osId, string emailCliente)
+    public async Task EnviarConclusaoAsync(Guid osId, string emailCliente)
     {
         var os = await _ordemServicoRepository.ObterPorIdComItensAsync(osId);
         if (os == null)
@@ -351,7 +359,7 @@ public class EmailNotificacaoService : INotificacaoService
         _logger.Info($"Notificação de conclusão - OS: {osId}, Cliente: {emailCliente}");
     }
 
-    public async Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo)
+    public async Task EnviarAprovacaoAsync(Guid osId, string emailCliente)
     {
         var os = await _ordemServicoRepository.ObterPorIdComItensAsync(osId);
         if (os == null)
@@ -412,7 +420,7 @@ public class EmailNotificacaoService : INotificacaoService
         _logger.Info($"Orçamento aprovado - OS: {osId}, Cliente: {emailCliente}");
     }
 
-    public async Task EnviarConclusaoAsync(Guid osId, string emailCliente, string motivo)
+    public async Task EnviarRejeicaoAsync(Guid osId, string emailCliente, string motivo)
     {
         var os = await _ordemServicoRepository.ObterPorIdComItensAsync(osId);
         if (os == null)
