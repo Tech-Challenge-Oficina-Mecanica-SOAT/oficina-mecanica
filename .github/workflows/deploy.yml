@@ -1,0 +1,80 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, homolog]
+
+jobs:
+  deploy:
+    name: Build & Deploy Lambda
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes
+        run: npm test
+
+      - name: Build lambda.zip
+        run: |
+          chmod +x scripts/build.sh
+          ./scripts/build.sh
+
+      - name: Definir ambiente
+        id: env
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          else
+            echo "environment=homolog" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configurar credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region:            us-east-1
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform/envs/${{ steps.env.outputs.environment }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform/envs/${{ steps.env.outputs.environment }}
+
+      - name: Smoke test
+        run: |
+          ENV=${{ steps.env.outputs.environment }}
+          API_URL=$(aws ssm get-parameter \
+            --name "/oficina/$ENV/api-gateway/endpoint" \
+            --query Parameter.Value \
+            --output text)
+
+          echo "API URL: $API_URL"
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "$API_URL/auth/cpf" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+
+          echo "Status: $STATUS"
+
+          if [ "$STATUS" = "400" ]; then
+            echo "Smoke test OK"
+          else
+            echo "Smoke test falhou: $STATUS"
+            exit 1
+          fi
