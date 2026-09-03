@@ -20,4 +20,12 @@ public class RedisIdempotencyStore : IIdempotencyStore
 
     public async Task SalvarAsync(string chave, string valor, TimeSpan expiracao) =>
         await Database.StringSetAsync(chave, valor, expiracao);
+
+    public async Task<bool> TentarReservarAsync(string chave, TimeSpan expiracao) =>
+        await Database.StringSetAsync(chave, ReservadoMarcador, expiracao, when: When.NotExists);
+
+    public async Task RemoverAsync(string chave) =>
+        await Database.KeyDeleteAsync(chave);
+
+    private const string ReservadoMarcador = "__reservado__";
 }

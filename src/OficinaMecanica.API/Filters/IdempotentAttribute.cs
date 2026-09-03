@@ -9,6 +9,8 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
 {
     private const string HeaderName = "Idempotency-Key";
     private static readonly TimeSpan Expiracao = TimeSpan.FromHours(24);
+    private static readonly TimeSpan IntervaloEspera = TimeSpan.FromMilliseconds(200);
+    private const int TentativasEspera = 25; // ~5s aguardando a requisição concorrente concluir
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
@@ -22,15 +24,26 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
         var store = context.HttpContext.RequestServices.GetRequiredService<IIdempotencyStore>();
         var chave = $"idempotency:{context.HttpContext.Request.Path}:{idempotencyKey}";
 
-        var cacheado = await store.ObterAsync(chave);
-        if (cacheado is not null)
+        var reservado = await store.TentarReservarAsync(chave, Expiracao);
+        if (!reservado)
         {
-            var resposta = JsonSerializer.Deserialize<CachedResponse>(cacheado)!;
+            var resposta = await AguardarResultadoAsync(store, chave);
+            if (resposta is not null)
+            {
+                context.Result = new ContentResult
+                {
+                    StatusCode = resposta.StatusCode,
+                    Content = resposta.Body,
+                    ContentType = resposta.ContentType
+                };
+                return;
+            }
+
             context.Result = new ContentResult
             {
-                StatusCode = resposta.StatusCode,
-                Content = resposta.Body,
-                ContentType = resposta.ContentType
+                StatusCode = StatusCodes.Status409Conflict,
+                Content = "Requisição com a mesma Idempotency-Key ainda está em processamento.",
+                ContentType = "text/plain"
             };
             return;
         }
@@ -38,7 +51,10 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
         var executedContext = await next();
 
         if (executedContext.Exception is not null)
+        {
+            await store.RemoverAsync(chave);
             return;
+        }
 
         if (executedContext.Result is ObjectResult objectResult)
         {
@@ -63,6 +79,38 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
             var resposta = new CachedResponse(statusCodeResult.StatusCode, string.Empty, "application/json");
             await store.SalvarAsync(chave, JsonSerializer.Serialize(resposta), Expiracao);
         }
+        else
+        {
+            // Resultado de tipo não cacheável (ex.: FileResult): libera a reserva
+            // para não deixar a chave presa sem um valor recuperável por até 24h.
+            await store.RemoverAsync(chave);
+        }
+    }
+
+    private static async Task<CachedResponse?> AguardarResultadoAsync(IIdempotencyStore store, string chave)
+    {
+        for (var tentativa = 0; tentativa < TentativasEspera; tentativa++)
+        {
+            await Task.Delay(IntervaloEspera);
+
+            var valor = await store.ObterAsync(chave);
+            if (valor is null)
+                return null; // reserva foi liberada (falhou) ou expirou
+
+            try
+            {
+                var resposta = JsonSerializer.Deserialize<CachedResponse>(valor);
+                if (resposta is not null)
+                    return resposta;
+            }
+            catch (JsonException)
+            {
+                // ainda é o marcador de reserva (não é JSON) — a requisição concorrente
+                // ainda está processando, continua aguardando.
+            }
+        }
+
+        return null;
     }
 
     private record CachedResponse(int StatusCode, string Body, string ContentType);
