@@ -6,10 +6,10 @@ public interface IIdempotencyStore
     Task SalvarAsync(string chave, string valor, TimeSpan expiracao);
 
     /// <summary>
-    /// Reserva a chave de forma atômica (SET NX). Retorna true se esta chamada
-    /// obteve a reserva; false se outra requisição já a possui.
+    /// Reserva a chave de forma atômica (SET NX), gravando <paramref name="valorInicial"/>.
+    /// Retorna true se esta chamada obteve a reserva; false se outra requisição já a possui.
     /// </summary>
-    Task<bool> TentarReservarAsync(string chave, TimeSpan expiracao);
+    Task<bool> TentarReservarAsync(string chave, string valorInicial, TimeSpan expiracao);
 
     /// <summary>
     /// Remove a reserva/valor da chave. Usado para liberar a chave quando a

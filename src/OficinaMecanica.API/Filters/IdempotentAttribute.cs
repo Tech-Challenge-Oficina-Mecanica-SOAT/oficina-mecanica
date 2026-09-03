@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -23,18 +25,35 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
 
         var store = context.HttpContext.RequestServices.GetRequiredService<IIdempotencyStore>();
         var chave = $"idempotency:{context.HttpContext.Request.Path}:{idempotencyKey}";
+        var corpoHash = CalcularHashCorpo(context.ActionArguments);
 
-        var reservado = await store.TentarReservarAsync(chave, Expiracao);
+        var entradaInicial = new CacheEntry(false, corpoHash, 0, null, null);
+        var reservado = await store.TentarReservarAsync(chave, JsonSerializer.Serialize(entradaInicial), Expiracao);
+
         if (!reservado)
         {
-            var resposta = await AguardarResultadoAsync(store, chave);
-            if (resposta is not null)
+            var valorAtual = await store.ObterAsync(chave);
+            var entradaAtual = valorAtual is null ? null : JsonSerializer.Deserialize<CacheEntry>(valorAtual);
+
+            if (entradaAtual is not null && entradaAtual.CorpoHash != corpoHash)
             {
                 context.Result = new ContentResult
                 {
-                    StatusCode = resposta.StatusCode,
-                    Content = resposta.Body,
-                    ContentType = resposta.ContentType
+                    StatusCode = StatusCodes.Status422UnprocessableEntity,
+                    Content = "A mesma Idempotency-Key foi usada com um corpo de requisição diferente.",
+                    ContentType = "text/plain"
+                };
+                return;
+            }
+
+            var entradaConcluida = await AguardarConclusaoAsync(store, chave);
+            if (entradaConcluida is { Concluido: true })
+            {
+                context.Result = new ContentResult
+                {
+                    StatusCode = entradaConcluida.StatusCode,
+                    Content = entradaConcluida.Body,
+                    ContentType = entradaConcluida.ContentType
                 };
                 return;
             }
@@ -56,31 +75,40 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
             return;
         }
 
-        CachedResponse? respostaExecutada = executedContext.Result switch
+        CacheEntry? entradaExecutada = executedContext.Result switch
         {
-            ObjectResult objectResult => new CachedResponse(
+            ObjectResult objectResult => new CacheEntry(
+                true, corpoHash,
                 objectResult.StatusCode ?? StatusCodes.Status200OK,
                 JsonSerializer.Serialize(objectResult.Value),
                 "application/json"),
-            ContentResult contentResult => new CachedResponse(
+            ContentResult contentResult => new CacheEntry(
+                true, corpoHash,
                 contentResult.StatusCode ?? StatusCodes.Status200OK,
                 contentResult.Content ?? string.Empty,
                 contentResult.ContentType ?? "text/plain"),
-            StatusCodeResult statusCodeResult => new CachedResponse(
-                statusCodeResult.StatusCode, string.Empty, "application/json"),
+            StatusCodeResult statusCodeResult => new CacheEntry(
+                true, corpoHash, statusCodeResult.StatusCode, string.Empty, "application/json"),
             _ => null
         };
 
         // Só cacheia respostas de sucesso (2xx). Erros (400, 404 etc.) e resultados
         // não cacheáveis (ex.: FileResult) liberam a reserva, permitindo que o
         // cliente reenvie a mesma Idempotency-Key com um payload corrigido.
-        if (respostaExecutada is not null && respostaExecutada.StatusCode is >= 200 and < 300)
-            await store.SalvarAsync(chave, JsonSerializer.Serialize(respostaExecutada), Expiracao);
+        if (entradaExecutada is not null && entradaExecutada.StatusCode is >= 200 and < 300)
+            await store.SalvarAsync(chave, JsonSerializer.Serialize(entradaExecutada), Expiracao);
         else
             await store.RemoverAsync(chave);
     }
 
-    private static async Task<CachedResponse?> AguardarResultadoAsync(IIdempotencyStore store, string chave)
+    private static string CalcularHashCorpo(IDictionary<string, object?> actionArguments)
+    {
+        var json = JsonSerializer.Serialize(actionArguments);
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(json));
+        return Convert.ToHexString(bytes);
+    }
+
+    private static async Task<CacheEntry?> AguardarConclusaoAsync(IIdempotencyStore store, string chave)
     {
         for (var tentativa = 0; tentativa < TentativasEspera; tentativa++)
         {
@@ -90,21 +118,13 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
             if (valor is null)
                 return null; // reserva foi liberada (falhou) ou expirou
 
-            try
-            {
-                var resposta = JsonSerializer.Deserialize<CachedResponse>(valor);
-                if (resposta is not null)
-                    return resposta;
-            }
-            catch (JsonException)
-            {
-                // ainda é o marcador de reserva (não é JSON) — a requisição concorrente
-                // ainda está processando, continua aguardando.
-            }
+            var entrada = JsonSerializer.Deserialize<CacheEntry>(valor);
+            if (entrada is { Concluido: true })
+                return entrada;
         }
 
         return null;
     }
 
-    private record CachedResponse(int StatusCode, string Body, string ContentType);
+    private record CacheEntry(bool Concluido, string CorpoHash, int StatusCode, string? Body, string? ContentType);
 }
