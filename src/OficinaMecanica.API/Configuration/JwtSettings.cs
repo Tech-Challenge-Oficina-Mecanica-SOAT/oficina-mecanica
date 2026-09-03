@@ -7,6 +7,7 @@ public class JwtSettings : IJwtSettings
 {
     public string SecretKey { get; }
     public string Issuer { get; }
+    public string LambdaIssuer { get; }
     public string Audience { get; }
     public int ExpiracaoMinutos { get; }
 
@@ -15,6 +16,7 @@ public class JwtSettings : IJwtSettings
         SecretKey = configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("Jwt:SecretKey não configurada.");
         Issuer = configuration["Jwt:Issuer"] ?? "mecanica-api";
+        LambdaIssuer = configuration["Jwt:LambdaIssuer"] ?? "oficina-mecanica-lambda";
         Audience = configuration["Jwt:Audience"] ?? "mecanica-cliente";
         var expiracaoStr = configuration["Jwt:ExpiracaoMinutos"];
         if (string.IsNullOrWhiteSpace(expiracaoStr))
