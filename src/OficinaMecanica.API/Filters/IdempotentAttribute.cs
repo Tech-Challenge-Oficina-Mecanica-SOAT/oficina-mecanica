@@ -14,10 +14,19 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
     private static readonly TimeSpan IntervaloEspera = TimeSpan.FromMilliseconds(200);
     private const int TentativasEspera = 25; // ~5s aguardando a requisição concorrente concluir
 
+    /// <summary>
+    /// Nome de um parâmetro da action (rota/query) a ser usado como Idempotency-Key
+    /// quando o header não está presente — necessário para endpoints acessados por
+    /// link (ex.: GET de aprovação por e-mail), onde o cliente não envia headers
+    /// customizados. O próprio valor (ex.: um token de uso único) já identifica a
+    /// requisição de forma única, então serve como chave de idempotência.
+    /// </summary>
+    public string? ChaveDeArgumento { get; init; }
+
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        if (!context.HttpContext.Request.Headers.TryGetValue(HeaderName, out var idempotencyKey) ||
-            string.IsNullOrWhiteSpace(idempotencyKey))
+        var idempotencyKey = ObterIdempotencyKey(context);
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
         {
             await next();
             return;
@@ -99,6 +108,20 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
             await store.SalvarAsync(chave, JsonSerializer.Serialize(entradaExecutada), Expiracao);
         else
             await store.RemoverAsync(chave);
+    }
+
+    private string? ObterIdempotencyKey(ActionExecutingContext context)
+    {
+        if (context.HttpContext.Request.Headers.TryGetValue(HeaderName, out var header) &&
+            !string.IsNullOrWhiteSpace(header))
+            return header.ToString();
+
+        if (ChaveDeArgumento is not null &&
+            context.ActionArguments.TryGetValue(ChaveDeArgumento, out var valor) &&
+            valor is not null)
+            return valor.ToString();
+
+        return null;
     }
 
     private static string CalcularHashCorpo(IDictionary<string, object?> actionArguments)

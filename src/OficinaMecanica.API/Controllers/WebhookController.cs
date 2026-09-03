@@ -18,7 +18,7 @@ public class WebhookController : ControllerBase
     }
 
     [HttpGet("ordens-servico/aprovar/{token}")]
-    [Idempotent]
+    [Idempotent(ChaveDeArgumento = "token")]
     public async Task<IActionResult> AprovarOrcamento(string token, [FromQuery] bool aprovado)
     {
         var result = await _useCase.ExecutarAsync(new AprovarOrcamentoPorEmailRequest(token, aprovado));
