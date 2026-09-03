@@ -56,35 +56,28 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter
             return;
         }
 
-        if (executedContext.Result is ObjectResult objectResult)
+        CachedResponse? respostaExecutada = executedContext.Result switch
         {
-            var resposta = new CachedResponse(
+            ObjectResult objectResult => new CachedResponse(
                 objectResult.StatusCode ?? StatusCodes.Status200OK,
                 JsonSerializer.Serialize(objectResult.Value),
-                "application/json");
-
-            await store.SalvarAsync(chave, JsonSerializer.Serialize(resposta), Expiracao);
-        }
-        else if (executedContext.Result is ContentResult contentResult)
-        {
-            var resposta = new CachedResponse(
+                "application/json"),
+            ContentResult contentResult => new CachedResponse(
                 contentResult.StatusCode ?? StatusCodes.Status200OK,
                 contentResult.Content ?? string.Empty,
-                contentResult.ContentType ?? "text/plain");
+                contentResult.ContentType ?? "text/plain"),
+            StatusCodeResult statusCodeResult => new CachedResponse(
+                statusCodeResult.StatusCode, string.Empty, "application/json"),
+            _ => null
+        };
 
-            await store.SalvarAsync(chave, JsonSerializer.Serialize(resposta), Expiracao);
-        }
-        else if (executedContext.Result is StatusCodeResult statusCodeResult)
-        {
-            var resposta = new CachedResponse(statusCodeResult.StatusCode, string.Empty, "application/json");
-            await store.SalvarAsync(chave, JsonSerializer.Serialize(resposta), Expiracao);
-        }
+        // Só cacheia respostas de sucesso (2xx). Erros (400, 404 etc.) e resultados
+        // não cacheáveis (ex.: FileResult) liberam a reserva, permitindo que o
+        // cliente reenvie a mesma Idempotency-Key com um payload corrigido.
+        if (respostaExecutada is not null && respostaExecutada.StatusCode is >= 200 and < 300)
+            await store.SalvarAsync(chave, JsonSerializer.Serialize(respostaExecutada), Expiracao);
         else
-        {
-            // Resultado de tipo não cacheável (ex.: FileResult): libera a reserva
-            // para não deixar a chave presa sem um valor recuperável por até 24h.
             await store.RemoverAsync(chave);
-        }
     }
 
     private static async Task<CachedResponse?> AguardarResultadoAsync(IIdempotencyStore store, string chave)
