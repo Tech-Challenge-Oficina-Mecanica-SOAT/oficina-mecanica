@@ -256,7 +256,8 @@ builder.Services.AddOpenApi(options =>
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 builder.Services.AddHealthChecks()
-    .AddDbContextCheck<ApplicationDbContext>(name: "database", tags: ["ready"]);
+    .AddDbContextCheck<ApplicationDbContext>(name: "database", tags: ["ready"])
+    .AddCheck<OficinaMecanica.Infrastructure.Idempotency.RedisHealthCheck>(name: "redis", tags: ["ready"]);
 
 var app = builder.Build();
 

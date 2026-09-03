@@ -41,55 +41,78 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter, IAsyncResultFi
         }
 
         var store = context.HttpContext.RequestServices.GetRequiredService<IIdempotencyStore>();
+        var logger = context.HttpContext.RequestServices.GetRequiredService<IAppLogger<IdempotentAttribute>>();
         var chave = $"idempotency:{context.HttpContext.Request.Path}:{idempotencyKey}";
         var corpoHash = CalcularHashCorpo(context.ActionArguments);
 
-        var entradaInicial = new CacheEntry(false, corpoHash, 0, null, null, null);
-        var reservado = await store.TentarReservarAsync(chave, JsonSerializer.Serialize(entradaInicial), Expiracao);
+        bool reservado;
+        try
+        {
+            var entradaInicial = new CacheEntry(false, corpoHash, 0, null, null, null);
+            reservado = await store.TentarReservarAsync(chave, JsonSerializer.Serialize(entradaInicial), Expiracao);
+        }
+        catch (Exception ex)
+        {
+            // Redis indisponível: segue sem garantia de idempotência em vez de
+            // devolver 500 pro cliente. Não sabemos se há reserva concorrente,
+            // então processar sem dedup é preferível a bloquear a requisição.
+            logger.Warning("Falha ao acessar o store de idempotência; seguindo sem deduplicação. Chave: {0}", ex, chave);
+            await next();
+            return;
+        }
 
         if (!reservado)
         {
-            var valorAtual = await store.ObterAsync(chave);
-            var entradaAtual = valorAtual is null ? null : JsonSerializer.Deserialize<CacheEntry>(valorAtual);
-
-            if (entradaAtual is not null && entradaAtual.CorpoHash != corpoHash)
+            try
             {
+                var valorAtual = await store.ObterAsync(chave);
+                var entradaAtual = valorAtual is null ? null : JsonSerializer.Deserialize<CacheEntry>(valorAtual);
+
+                if (entradaAtual is not null && entradaAtual.CorpoHash != corpoHash)
+                {
+                    context.Result = new ContentResult
+                    {
+                        StatusCode = StatusCodes.Status422UnprocessableEntity,
+                        Content = "A mesma Idempotency-Key foi usada com um corpo de requisição diferente.",
+                        ContentType = "text/plain"
+                    };
+                    return;
+                }
+
+                var entradaConcluida = await AguardarConclusaoAsync(store, chave);
+                if (entradaConcluida is { Concluido: true })
+                {
+                    AplicarHeaders(context.HttpContext.Response, entradaConcluida.Headers);
+                    context.Result = new ContentResult
+                    {
+                        StatusCode = entradaConcluida.StatusCode,
+                        Content = entradaConcluida.Body,
+                        ContentType = entradaConcluida.ContentType
+                    };
+                    return;
+                }
+
                 context.Result = new ContentResult
                 {
-                    StatusCode = StatusCodes.Status422UnprocessableEntity,
-                    Content = "A mesma Idempotency-Key foi usada com um corpo de requisição diferente.",
+                    StatusCode = StatusCodes.Status409Conflict,
+                    Content = "Requisição com a mesma Idempotency-Key ainda está em processamento.",
                     ContentType = "text/plain"
                 };
                 return;
             }
-
-            var entradaConcluida = await AguardarConclusaoAsync(store, chave);
-            if (entradaConcluida is { Concluido: true })
+            catch (Exception ex)
             {
-                AplicarHeaders(context.HttpContext.Response, entradaConcluida.Headers);
-                context.Result = new ContentResult
-                {
-                    StatusCode = entradaConcluida.StatusCode,
-                    Content = entradaConcluida.Body,
-                    ContentType = entradaConcluida.ContentType
-                };
+                logger.Warning("Falha ao consultar o store de idempotência; seguindo sem deduplicação. Chave: {0}", ex, chave);
+                await next();
                 return;
             }
-
-            context.Result = new ContentResult
-            {
-                StatusCode = StatusCodes.Status409Conflict,
-                Content = "Requisição com a mesma Idempotency-Key ainda está em processamento.",
-                ContentType = "text/plain"
-            };
-            return;
         }
 
         var executedContext = await next();
 
         if (executedContext.Exception is not null)
         {
-            await store.RemoverAsync(chave);
+            await TentarRemoverAsync(store, logger, chave);
             return;
         }
 
@@ -118,11 +141,11 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter, IAsyncResultFi
             // A gravação em si acontece em OnResultExecutionAsync: alguns resultados
             // (ex.: CreatedAtActionResult) só calculam headers como Location durante a
             // execução do resultado, que ocorre depois deste action filter terminar.
-            context.HttpContext.Items[ItemPendente] = (chave, entradaExecutada, store);
+            context.HttpContext.Items[ItemPendente] = (chave, entradaExecutada, store, logger);
         }
         else
         {
-            await store.RemoverAsync(chave);
+            await TentarRemoverAsync(store, logger, chave);
         }
     }
 
@@ -131,11 +154,32 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter, IAsyncResultFi
         await next();
 
         if (context.HttpContext.Items.TryGetValue(ItemPendente, out var pendenteObj) &&
-            pendenteObj is (string chave, CacheEntry entrada, IIdempotencyStore store))
+            pendenteObj is (string chave, CacheEntry entrada, IIdempotencyStore store, IAppLogger<IdempotentAttribute> logger))
         {
-            var headers = CapturarHeaders(context.HttpContext.Response.Headers);
-            var entradaComHeaders = entrada with { Headers = headers };
-            await store.SalvarAsync(chave, JsonSerializer.Serialize(entradaComHeaders), Expiracao);
+            try
+            {
+                var headers = CapturarHeaders(context.HttpContext.Response.Headers);
+                var entradaComHeaders = entrada with { Headers = headers };
+                await store.SalvarAsync(chave, JsonSerializer.Serialize(entradaComHeaders), Expiracao);
+            }
+            catch (Exception ex)
+            {
+                // A action já foi executada com sucesso; uma falha ao cachear não pode
+                // virar 500 pro cliente que já recebeu (ou vai receber) a resposta certa.
+                logger.Warning("Falha ao gravar cache de idempotência. Chave: {0}", ex, chave);
+            }
+        }
+    }
+
+    private static async Task TentarRemoverAsync(IIdempotencyStore store, IAppLogger<IdempotentAttribute> logger, string chave)
+    {
+        try
+        {
+            await store.RemoverAsync(chave);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning("Falha ao liberar reserva de idempotência. Chave: {0}", ex, chave);
         }
     }
 
