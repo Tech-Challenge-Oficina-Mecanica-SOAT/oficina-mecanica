@@ -35,6 +35,9 @@ public class AutenticarPorCpfUseCase : IAutenticarPorCpfUseCase
             return Result<TokenResponse>.Validation(ex.Message);
         }
 
+        if (documento.Tipo != TipoDocumento.Cpf)
+            return Result<TokenResponse>.Validation("Informe um CPF válido.");
+
         var cliente = await _autenticacaoClienteQuery.ObterPorDocumentoAsync(documento.Valor);
         if (cliente is null || !cliente.Ativo)
             return Result<TokenResponse>.NotFound("Cliente não encontrado ou inativo.");

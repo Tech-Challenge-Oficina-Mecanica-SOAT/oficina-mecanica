@@ -31,6 +31,16 @@ public class AutenticarPorCpfUseCaseTests
     }
 
     [Fact]
+    public async Task ExecutarAsync_Cnpj_RetornaValidation()
+    {
+        // CNPJ numérico válido não pode ser usado no login por CPF.
+        var result = await _sut.ExecutarAsync(new AutenticarPorCpfRequest("11222333000181"));
+
+        result.ErrorType.Should().Be(ResultErrorType.Validation);
+        _autenticacaoClienteQuery.Verify(r => r.ObterPorDocumentoAsync(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task ExecutarAsync_ClienteInexistente_RetornaNotFound()
     {
         _autenticacaoClienteQuery.Setup(r => r.ObterPorDocumentoAsync(CpfValido))
