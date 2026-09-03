@@ -108,6 +108,7 @@ builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();
 builder.Services.AddScoped<IHistoricoStatusOSRepository, HistoricoStatusOSRepository>();
+builder.Services.AddScoped<IAutenticacaoClienteQuery, AutenticacaoClienteQuery>();
 
 // DI - Segurança
 builder.Services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();

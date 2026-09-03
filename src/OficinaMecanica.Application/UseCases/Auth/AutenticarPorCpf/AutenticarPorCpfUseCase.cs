@@ -9,16 +9,16 @@ namespace OficinaMecanica.Application.UseCases.Auth.AutenticarPorCpf;
 
 public class AutenticarPorCpfUseCase : IAutenticarPorCpfUseCase
 {
-    private readonly IClienteRepository _clienteRepository;
+    private readonly IAutenticacaoClienteQuery _autenticacaoClienteQuery;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly ITokenGenerator _tokenGenerator;
 
     public AutenticarPorCpfUseCase(
-        IClienteRepository clienteRepository,
+        IAutenticacaoClienteQuery autenticacaoClienteQuery,
         IUsuarioRepository usuarioRepository,
         ITokenGenerator tokenGenerator)
     {
-        _clienteRepository = clienteRepository;
+        _autenticacaoClienteQuery = autenticacaoClienteQuery;
         _usuarioRepository = usuarioRepository;
         _tokenGenerator = tokenGenerator;
     }
@@ -35,11 +35,11 @@ public class AutenticarPorCpfUseCase : IAutenticarPorCpfUseCase
             return Result<TokenResponse>.Validation(ex.Message);
         }
 
-        var cliente = await _clienteRepository.GetByDocumentoAsync(documento.Valor);
+        var cliente = await _autenticacaoClienteQuery.ObterPorDocumentoAsync(documento.Valor);
         if (cliente is null || !cliente.Ativo)
             return Result<TokenResponse>.NotFound("Cliente não encontrado ou inativo.");
 
-        var usuario = await _usuarioRepository.ObterPorClienteIdAsync(cliente.Id);
+        var usuario = await _usuarioRepository.ObterPorClienteIdAsync(cliente.ClienteId);
         if (usuario is null)
             return Result<TokenResponse>.NotFound("Cliente não possui conta de acesso vinculada.");
 
