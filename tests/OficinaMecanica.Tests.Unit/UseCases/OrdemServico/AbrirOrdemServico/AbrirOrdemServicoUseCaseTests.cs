@@ -2,6 +2,7 @@ using FluentAssertions;
 using Moq;
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Application.DTOs.Requests;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.Mappers;
 using OficinaMecanica.Application.UseCases.OrdemServico.AbrirOrdemServico;
 using OficinaMecanica.Domain.Interfaces;
@@ -11,11 +12,12 @@ namespace OficinaMecanica.Tests.Unit.UseCases.OrdemServico.AbrirOrdemServico;
 public class AbrirOrdemServicoUseCaseTests
 {
     private readonly Mock<IOrdemServicoRepository> _repo = new();
+    private readonly Mock<IOrdemServicoMetrics> _metrics = new();
     private readonly AbrirOrdemServicoUseCase _sut;
 
     public AbrirOrdemServicoUseCaseTests()
     {
-        _sut = new AbrirOrdemServicoUseCase(_repo.Object, new OrdemServicoMapper());
+        _sut = new AbrirOrdemServicoUseCase(_repo.Object, new OrdemServicoMapper(), _metrics.Object);
     }
 
     [Fact]

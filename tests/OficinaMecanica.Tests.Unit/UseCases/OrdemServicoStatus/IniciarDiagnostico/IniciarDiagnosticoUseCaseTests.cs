@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Moq;
 using OficinaMecanica.Application.Common;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.IniciarDiagnostico;
 using OficinaMecanica.Domain.Entities;
 using OficinaMecanica.Domain.Interfaces;
@@ -10,9 +11,10 @@ namespace OficinaMecanica.Tests.Unit.UseCases.OrdemServicoStatus.IniciarDiagnost
 public class IniciarDiagnosticoUseCaseTests
 {
     private readonly Mock<IOrdemServicoRepository> _repo = new();
+    private readonly Mock<IOrdemServicoMetrics> _metrics = new();
     private readonly IniciarDiagnosticoUseCase _sut;
 
-    public IniciarDiagnosticoUseCaseTests() => _sut = new IniciarDiagnosticoUseCase(_repo.Object);
+    public IniciarDiagnosticoUseCaseTests() => _sut = new IniciarDiagnosticoUseCase(_repo.Object, _metrics.Object);
 
     [Fact]
     public async Task ExecutarAsync_OSNaoEncontrada_RetornaNotFound()

@@ -1,4 +1,5 @@
 using OficinaMecanica.Application.Common;
+using OficinaMecanica.Application.Interfaces;
 using OficinaMecanica.Domain.Interfaces;
 
 namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
@@ -6,10 +7,12 @@ namespace OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardan
 public class MarcarAguardandoAprovacaoUseCase : IMarcarAguardandoAprovacaoUseCase
 {
     private readonly IOrdemServicoRepository _repository;
+    private readonly IOrdemServicoMetrics _metrics;
 
-    public MarcarAguardandoAprovacaoUseCase(IOrdemServicoRepository repository)
+    public MarcarAguardandoAprovacaoUseCase(IOrdemServicoRepository repository, IOrdemServicoMetrics metrics)
     {
         _repository = repository;
+        _metrics = metrics;
     }
 
     public async Task<Result<bool>> ExecutarAsync(MarcarAguardandoAprovacaoRequest request)
@@ -18,10 +21,12 @@ public class MarcarAguardandoAprovacaoUseCase : IMarcarAguardandoAprovacaoUseCas
         if (os is null)
             return Result<bool>.NotFound("Ordem de serviço não encontrada.");
 
+        var statusAnterior = os.StatusOS;
         try { os.EnviarParaAprovacao(request.AlteradoPor); }
         catch (InvalidOperationException ex) { return Result<bool>.Validation(ex.Message); }
 
         await _repository.UpdateAsync(os);
+        _metrics.AtualizarStatus(statusAnterior, os.StatusOS);
         return Result<bool>.Success(true);
     }
 }

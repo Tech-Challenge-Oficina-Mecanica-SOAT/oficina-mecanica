@@ -14,6 +14,9 @@ public class UsuarioRepository : IUsuarioRepository
     public async Task<Usuario?> ObterPorEmailAsync(string email) =>
         await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
 
+    public async Task<Usuario?> ObterPorClienteIdAsync(Guid clienteId) =>
+        await _context.Usuarios.FirstOrDefaultAsync(u => u.ClienteId == clienteId);
+
     public async Task AdicionarAsync(Usuario usuario)
     {
         await _context.Usuarios.AddAsync(usuario);
