@@ -40,14 +40,20 @@ public class IdempotentAttribute : Attribute, IAsyncActionFilter, IAsyncResultFi
             return;
         }
 
-        var store = context.HttpContext.RequestServices.GetRequiredService<IIdempotencyStore>();
         var logger = context.HttpContext.RequestServices.GetRequiredService<IAppLogger<IdempotentAttribute>>();
         var chave = $"idempotency:{context.HttpContext.Request.Path}:{idempotencyKey}";
         var corpoHash = CalcularHashCorpo(context.ActionArguments);
 
+        IIdempotencyStore store;
         bool reservado;
         try
         {
+            // A resolução do IIdempotencyStore também precisa estar dentro do try:
+            // é aqui que o IConnectionMultiplexer singleton conecta ao Redis na
+            // primeira vez que é usado, então uma falha de conexão acontece neste
+            // GetRequiredService, não só nas chamadas ao store feitas depois dele.
+            store = context.HttpContext.RequestServices.GetRequiredService<IIdempotencyStore>();
+
             var entradaInicial = new CacheEntry(false, corpoHash, 0, null, null, null);
             reservado = await store.TentarReservarAsync(chave, JsonSerializer.Serialize(entradaInicial), Expiracao);
         }
