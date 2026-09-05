@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OficinaMecanica.Application.Common;
 using OficinaMecanica.Domain.Common;
 
@@ -7,8 +8,13 @@ namespace OficinaMecanica.Infrastructure.Events;
 public class DomainEventDispatcher : IDomainEventDispatcher
 {
     private readonly IServiceProvider _provider;
+    private readonly ILogger<DomainEventDispatcher> _logger;
 
-    public DomainEventDispatcher(IServiceProvider provider) => _provider = provider;
+    public DomainEventDispatcher(IServiceProvider provider, ILogger<DomainEventDispatcher> logger)
+    {
+        _provider = provider;
+        _logger = logger;
+    }
 
     public async Task DispatchAsync(IEnumerable<IDomainEvent> events)
     {
@@ -21,8 +27,21 @@ public class DomainEventDispatcher : IDomainEventDispatcher
                 if (handler is null) continue;
                 var method = handlerType.GetMethod("HandleAsync");
                 if (method is null) continue;
-                var task = (Task)method.Invoke(handler, new object[] { evt })!;
-                await task;
+
+                // Handlers de evento sao efeito colateral (notificacao, metrica, etc).
+                // A operacao principal ja foi persistida antes do dispatch (ver
+                // ApplicationDbContext.SaveChangesAsync); uma falha aqui (ex: SMTP
+                // fora do ar) nao pode derrubar uma requisicao que ja teve sucesso.
+                try
+                {
+                    var task = (Task)method.Invoke(handler, new object[] { evt })!;
+                    await task;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Falha ao processar {Handler} para o evento {Evento}",
+                        handler.GetType().Name, evt.GetType().Name);
+                }
             }
         }
     }
