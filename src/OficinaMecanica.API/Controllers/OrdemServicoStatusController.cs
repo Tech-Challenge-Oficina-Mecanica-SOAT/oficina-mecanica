@@ -8,6 +8,7 @@ using OficinaMecanica.Application.UseCases.OrdemServicoStatus.AprovarOS;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.EntregarOS;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.ForcarStatusOS;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.IniciarDiagnostico;
+using OficinaMecanica.Application.UseCases.OrdemServicoStatus.MarcarAguardandoAprovacao;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.NotificarConclusao;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.ObterHistoricoOS;
 using OficinaMecanica.Application.UseCases.OrdemServicoStatus.RejeitarOS;
@@ -21,6 +22,7 @@ namespace OficinaMecanica.API.Controllers;
 public class OrdemServicoStatusController : ControllerBase
 {
     private readonly IIniciarDiagnosticoUseCase _iniciar;
+    private readonly IMarcarAguardandoAprovacaoUseCase _enviarParaAprovacao;
     private readonly IAprovarOSUseCase _aprovar;
     private readonly IRejeitarOSUseCase _rejeitar;
     private readonly INotificarConclusaoUseCase _notificar;
@@ -30,6 +32,7 @@ public class OrdemServicoStatusController : ControllerBase
 
     public OrdemServicoStatusController(
         IIniciarDiagnosticoUseCase iniciar,
+        IMarcarAguardandoAprovacaoUseCase enviarParaAprovacao,
         IAprovarOSUseCase aprovar,
         IRejeitarOSUseCase rejeitar,
         INotificarConclusaoUseCase notificar,
@@ -38,6 +41,7 @@ public class OrdemServicoStatusController : ControllerBase
         IObterHistoricoOSUseCase historico)
     {
         _iniciar = iniciar;
+        _enviarParaAprovacao = enviarParaAprovacao;
         _aprovar = aprovar;
         _rejeitar = rejeitar;
         _notificar = notificar;
@@ -63,6 +67,21 @@ public class OrdemServicoStatusController : ControllerBase
     public async Task<IActionResult> IniciarDiagnostico(Guid id)
     {
         var result = await _iniciar.ExecutarAsync(new IniciarDiagnosticoRequest(id, UsuarioAtual()));
+        return result.IsSuccess ? NoContent() : this.MapError(result);
+    }
+
+    /// <summary>
+    /// Envia a OS para aprovação do cliente, avançando de EmDiagnostico para AguardandoAprovacao
+    /// </summary>
+    [HttpPatch("{id:guid}/enviar-para-aprovacao")]
+    [Idempotent]
+    [Authorize(Roles = "Admin,Mecanico")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EnviarParaAprovacao(Guid id)
+    {
+        var result = await _enviarParaAprovacao.ExecutarAsync(new MarcarAguardandoAprovacaoRequest(id, UsuarioAtual()));
         return result.IsSuccess ? NoContent() : this.MapError(result);
     }
 
