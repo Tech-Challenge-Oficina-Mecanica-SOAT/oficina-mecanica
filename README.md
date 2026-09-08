@@ -146,7 +146,7 @@ Application/
 Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbContext.SaveChangesAsync`:
 `OrcamentoEnviadoEvent` · `OrdemAprovadaEvent` · `OrdemRejeitadaEvent` · `OrdemConcluidaEvent` · `OrdemEntregueEvent`
 
-> Decisões arquiteturais detalhadas em [`docs/adr/`](./docs/adr/).
+> Decisões arquiteturais detalhadas em [`docs/adrs/`](./docs/adrs/).
 
 ---
 
