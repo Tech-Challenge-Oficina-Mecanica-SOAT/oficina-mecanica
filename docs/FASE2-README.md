@@ -1,47 +1,36 @@
 # Oficina Mecânica — API
 
-API REST desenvolvida em **ASP.NET Core (.NET 10)** como Tech Challenge da pós-graduação FIAP SOAT.
+API REST desenvolvida em **ASP.NET Core (.NET 10)** como Tech Challenge da pós-graduação FIAP SOAT.  
 Gerencia o ciclo completo de uma oficina mecânica: clientes, veículos, serviços, peças, ordens de serviço e autenticação por perfil.
-
-Este é o repositório da **aplicação principal**, um dos quatro exigidos pela Fase 3 do Tech Challenge. Ele contém o código-fonte da API e o pipeline de CI/CD que builda e publica a imagem consumida pelo cluster Kubernetes gerenciado no repositório `oficina-infra-k8s`.
 
 ---
 
 ## Índice
 
-- [Contexto: Fase 3 do Tech Challenge](#contexto-fase-3-do-tech-challenge)
+- [Descrição e objetivos da Fase 2](#descrição-e-objetivos-da-fase-2)
 - [Arquitetura](#arquitetura)
 - [Como executar](#como-executar)
 - [CI/CD — Fluxo de deploy](#cicd--fluxo-de-deploy)
-- [Autenticação](#autenticação)
 - [Collection das APIs](#collection-das-apis)
+- [Vídeo demonstrativo](#vídeo-demonstrativo)
 - [Documentação interativa (Scalar)](#documentação-interativa-scalar)
+- [Autenticação](#autenticação)
 - [Roteiros de teste](#roteiros-de-teste)
 - [Cobertura de testes](#cobertura-de-testes)
 - [Relatório de vulnerabilidades](#relatório-de-vulnerabilidades)
-- [Fase 2 (histórico)](#fase-2-histórico)
 
 ---
 
-## Contexto: Fase 3 do Tech Challenge
+## Descrição e objetivos da Fase 2
 
-A Fase 3 eleva a aplicação a um nível de operação corporativa: autenticação via API Gateway + Function Serverless (CPF → JWT), banco de dados gerenciado, cluster Kubernetes escalável na nuvem, tudo provisionado via Terraform, com observabilidade (New Relic) e quatro repositórios segregados com CI/CD e Pull Request obrigatório para a `main`. Os quatro repositórios:
+Esta fase evolui a API REST de gerenciamento de oficina mecânica para um ambiente **Kubernetes local** provisionado via **Terraform (IaC)**:
 
-1. [`oficina-infra-db`](https://github.com/Tech-Challenge-Oficina-Mecanica-SOAT/oficina-infra-db) — infraestrutura do banco de dados gerenciado (Terraform).
-2. [`oficina-infra-k8s`](https://github.com/Tech-Challenge-Oficina-Mecanica-SOAT/oficina-infra-k8s) — cluster EKS e manifestos Kubernetes (Terraform).
-3. **`oficina-mecanica`** (este repositório) — aplicação principal (API .NET), executando em Kubernetes.
-4. [`oficina-lambda-auth`](https://github.com/Tech-Challenge-Oficina-Mecanica-SOAT/oficina-lambda-auth) — Function Serverless de autenticação por CPF via API Gateway.
+- **Deploy em Kubernetes** com cluster Kind, 2 réplicas da API, HPA (escalonamento automático por CPU/memória), volume persistente para PostgreSQL e MailHog para e-mails transacionais.
+- **Infraestrutura como código** com Terraform: cluster, manifestos e metrics-server provisionados com um único `make oficina-up`.
+- **CI/CD** com GitHub Actions: pipeline de build, testes, push de imagem para GHCR e deploy automatizado em push para `main`.
+- **Escalabilidade automática** demonstrada: HPA escala de 2 a 10 réplicas sob carga, retorna ao mínimo após estabilização.
 
-Nesta fase, este repositório passou a expor um endpoint interno dedicado à integração com a Lambda de autenticação:
-
-- **`POST /internal/auth/cpf-verify`** (`InternalAuthController`) — valida o CPF do cliente, consulta sua existência/status no banco e gera o JWT devolvido pela Lambda. Protegido por API Key própria (header `X-Internal-Api-Key`), não pelo JWT normal — é chamado só pela Lambda, nunca diretamente pelo cliente.
-- Reaproveita o mesmo `ITokenGenerator` já usado no login de Admin/Mecânico, evitando duplicar lógica de autenticação em duas linguagens (a Lambda não acessa o RDS nem o `jwt-secret-key` diretamente).
-
-Nesta fase, a API deixou de rodar só localmente (Kind) e passou a ser publicada como imagem no GHCR e implantada no cluster EKS gerenciado pelo `oficina-infra-k8s` — este repositório não provisiona mais o cluster de produção, só builda/testa/publica a imagem.
-
-> Diagrama completo dos componentes AWS e do fluxo de autenticação: [`docs/arquitetura-fase3.md`](./docs/arquitetura-fase3.md)
-> Diagramas de sequência: [`docs/sequence-auth-cpf.md`](./docs/sequence-auth-cpf.md) e [`docs/sequence-abrir-os.md`](./docs/sequence-abrir-os.md)
-> ADRs relevantes da Fase 3: [`docs/adrs/`](./docs/adrs/)
+> Detalhamento completo da infraestrutura: [`docs/infra-detalhado.md`](./docs/infra-detalhado.md)
 
 ---
 
@@ -53,6 +42,58 @@ O projeto segue **Clean Architecture** com quatro camadas e regra de dependênci
 API  →  Application  →  Domain
  ↓           ↓
 Infrastructure
+```
+
+### Desenho da infraestrutura (Fase 2)
+
+```mermaid
+graph TD
+    Internet([Internet]) --> Ingress[Ingress / Port-forward]
+    Ingress --> API[API Deployment\n2-10 réplicas]
+    API --> HPA[HPA\nCPU 70% / Mem 80%]
+    API --> Postgres[(Postgres\nPVC 5Gi)]
+    API --> MailHog[MailHog\nSMTP fake]
+    API --> Webhook[Webhook Externo\nAprovação de Orçamento]
+
+    subgraph Cluster Kind / K8s
+        API
+        HPA
+        Postgres
+        MailHog
+    end
+
+    subgraph Secrets K8s
+        S1[Jwt__SecretKey]
+        S2[ConnectionStrings]
+        S3[PasswordKey]
+    end
+
+    API --> S1
+    API --> S2
+    API --> S3
+```
+
+### Fluxo de deploy
+
+```
+Desenvolvedor
+    │
+    ├─ make oficina-up
+    │       │
+    │       ├─ docker build → oficina-mecanica-api:local
+    │       │
+    │       └─ terraform apply
+    │               │
+    │               ├─ kind create cluster (1 control-plane + 1 worker)
+    │               ├─ kind load docker-image
+    │               ├─ kubectl apply: secret, configmap, postgres-pvc
+    │               ├─ kubectl apply: postgres-deployment + service
+    │               ├─ kubectl apply: mailhog-deployment
+    │               ├─ kubectl apply: api-deployment + service + hpa
+    │               └─ kubectl apply: metrics-server
+    │
+    └─ port-forward svc/oficina-mecanica-api 5000:80
+       port-forward svc/mailhog 8025:8025
 ```
 
 ### Camadas
@@ -81,7 +122,7 @@ Application/
 │   └── IAppLogger.cs           # Abstração de logging (impl. em Infrastructure)
 ├── Mappers/
 │   └── OrdemServicoMapper.cs   # Mapeamento entidade → DTO
-└── UseCases/                   # use cases, um por operação
+└── UseCases/                   # 49 use cases, um por operação
     ├── Auth/
     ├── Cliente/
     ├── OrdemServico/
@@ -105,7 +146,7 @@ Application/
 Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbContext.SaveChangesAsync`:
 `OrcamentoEnviadoEvent` · `OrdemAprovadaEvent` · `OrdemRejeitadaEvent` · `OrdemConcluidaEvent` · `OrdemEntregueEvent`
 
-> Decisões arquiteturais detalhadas em [`docs/adrs/`](./docs/adrs/).
+> Decisões arquiteturais detalhadas em [`docs/adr/`](./docs/adr/).
 
 ---
 
@@ -117,12 +158,34 @@ Disparados pelas entidades e publicados automaticamente pelo `ApplicationDbConte
 | Docker | 24+ |
 | Docker Compose | 2.x |
 | kubectl | 1.28+ (para K8s) |
+| Kind | 0.20+ (para K8s local) |
+| Terraform | 1.6+ (para IaC) |
 
 ---
 
 ## Como executar
 
-### Opção 1 — Docker Compose (execução local simples, recomendado para desenvolvimento)
+### Opção 1 — Kubernetes + Terraform (Fase 2) recomendado
+
+Requer: Docker Desktop, Kind, Terraform, kubectl e make.
+
+```bash
+make setup       # verifica pré-requisitos e gera credenciais de dev
+make oficina-up  # build + terraform apply + port-forwards
+```
+
+- API: <http://localhost:5000/scalar>
+- MailHog: <http://localhost:8025>
+
+Para encerrar: `make oficina-down`  
+Para reiniciar limpo: `make oficina-reset`
+
+> Guia completo com troubleshooting: [`docs/testing/00-infra.md`](./docs/testing/00-infra.md)  
+> Detalhamento técnico da infraestrutura: [`docs/infra-detalhado.md`](./docs/infra-detalhado.md)
+
+---
+
+### Opção 2 — Docker Compose (execução local simples)
 
 ```bash
 docker compose up -d --build
@@ -130,27 +193,13 @@ docker compose up -d --build
 
 API em `http://localhost:5000`, MailHog em `http://localhost:8025`.
 
-### Opção 2 — Kubernetes local (Kind) via Terraform
-
-O ambiente Kubernetes local (Kind) usado na Fase 2 continua disponível em [`infra/local`](./infra/README.md) para desenvolvimento/demo — não é o ambiente de produção da Fase 3, que roda no EKS provisionado pelo repositório `oficina-infra-k8s`.
-
-```bash
-make setup       # verifica pré-requisitos e gera credenciais de dev
-make oficina-up  # build + terraform apply + port-forwards
-```
-
-> Guia completo com troubleshooting: [`docs/testing/00-infra.md`](./docs/testing/00-infra.md)
-> Detalhamento técnico da infraestrutura local: [`docs/infra-detalhado.md`](./docs/infra-detalhado.md)
-
-### Opção 3 — Deploy em produção (EKS, Fase 3)
-
-A imagem publicada por este repositório é implantada no cluster EKS pelo repositório [`oficina-infra-k8s`](https://github.com/Tech-Challenge-Oficina-Mecanica-SOAT/oficina-infra-k8s) — veja o README daquele repositório para o passo a passo de deploy completo (`terraform apply` + `deploy-manifests.sh`).
-
 ---
 
 ## CI/CD — Fluxo de deploy
 
-O pipeline GitHub Actions (`.github/workflows/ci.yml`) cobre build, testes e publicação da imagem a cada push em `main`. A imagem é publicada no GitHub Container Registry (GHCR) e consumida pelo `oficina-infra-k8s` no deploy do cluster EKS.
+O pipeline GitHub Actions (`.github/workflows/ci.yml`) cobre build, testes e deploy automático a cada push em `main`. A imagem é publicada no GitHub Container Registry (GHCR) e o cluster Kind é provisionado no runner para smoke test de deploy.
+
+O pipeline está em `.github/workflows/ci.yml` e possui jobs separados por trigger:
 
 ### Em Pull Request (apenas testes)
 
@@ -158,16 +207,18 @@ O pipeline GitHub Actions (`.github/workflows/ci.yml`) cobre build, testes e pub
 build-and-test → dotnet restore + build + test
 ```
 
-### Em push para main (build + publicação da imagem)
+### Em push para main (build + deploy completo)
 
 ```
-build-and-test → build-docker
+build-and-test → build-docker → deploy-banco → deploy-api
 ```
 
 | Job | O que faz |
 |---|---|
 | `build-and-test` | Restore, build e testes automatizados |
 | `build-docker` | Build e push da imagem para o GitHub Container Registry (GHCR) |
+| `deploy-banco` | Sobe cluster Kind, aplica manifestos do Postgres |
+| `deploy-api` | Aplica ConfigMap, Secret e manifestos da API; faz smoke test |
 
 A imagem é publicada em:
 ```
@@ -175,18 +226,44 @@ ghcr.io/<seu-usuario>/oficina-mecanica-api:latest
 ghcr.io/<seu-usuario>/oficina-mecanica-api:sha-<commit>
 ```
 
-A `main` é protegida (sem commits diretos) e o merge é feito exclusivamente via Pull Request, conforme exigido pelo desafio.
+---
+
+## Documentação interativa (Scalar)
+
+Com a API no ar, acesse:
+
+```
+http://localhost:5000/scalar
+```
+
+Todas as rotas estão documentadas com descrição, parâmetros, exemplos de resposta e os perfis de acesso exigidos.
+
+### Postman Collection
+
+Importe a collection completa no Postman para testar todos os endpoints com variáveis de ambiente pré-configuradas:
+
+- **Arquivo:** [`docs/oficina-mecanica.postman_collection.json`](docs/oficina-mecanica.postman_collection.json)
+
+**Como importar:**
+1. Abra o Postman → clique em **Import**
+2. Selecione o arquivo acima
+3. Configure a variável `baseUrl` se necessário (padrão: `http://localhost:5000`)
+4. Faça **Auth → Login** primeiro — o token é salvo automaticamente nas variáveis da collection
+
+---
+
+## Collection das APIs
+
+- **Scalar (interativa):** <http://localhost:5000/scalar> (com a API no ar)
+- **Postman Collection:** [`docs/oficina-mecanica.postman_collection.json`](./docs/oficina-mecanica.postman_collection.json)
 
 ---
 
 ## Autenticação
 
-A API usa **JWT Bearer Token**. Existem dois fluxos de emissão de token:
+A API usa **JWT Bearer Token**. O token é obtido via login e deve ser enviado no header de todas as rotas protegidas.
 
-- **Admin/Mecânico** — login tradicional com e-mail e senha (`POST /Auth/login`).
-- **Cliente** — autenticado por CPF via API Gateway + Lambda (`oficina-lambda-auth`), que chama internamente `POST /internal/auth/cpf-verify` deste repositório.
-
-### Endpoint de login (Admin/Mecânico)
+### Endpoint de login
 
 ```http
 POST /Auth/login
@@ -225,17 +302,11 @@ Authorization: Bearer {token}
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `POST` | `/Auth/login` | Obter token JWT (Admin/Mecânico) |
+| `POST` | `/Auth/login` | Obter token JWT |
 | `POST` | `/Auth/registrar` | Registrar usuário |
 | `GET` | `/Publico/os/{id}/status` | Consultar status de uma OS sem autenticação |
 
-### Rota interna (Lambda → API, Fase 3)
-
-| Método | Rota | Descrição |
-|---|---|---|
-| `POST` | `/internal/auth/cpf-verify` | Valida CPF, consulta cliente e gera JWT. Protegida por `X-Internal-Api-Key`, chamada só pela Lambda `oficina-lambda-auth` |
-
-### Rotas protegidas (JWT)
+### Rotas protegidas
 
 Todas as demais rotas exigem `Authorization: Bearer {token}` com o perfil indicado:
 
@@ -247,35 +318,6 @@ Todas as demais rotas exigem `Authorization: Bearer {token}` com o perfil indica
 | Aprovar / Rejeitar orçamento | `Admin` ou `Cliente` |
 | Registrar entrega / Forçar status | `Admin` |
 | Histórico de status | `Admin`, `Mecanico` ou `Cliente` |
-
----
-
-## Documentação interativa (Scalar)
-
-Com a API no ar, acesse:
-
-```
-http://localhost:5000/scalar
-```
-
-Todas as rotas estão documentadas com descrição, parâmetros, exemplos de resposta e os perfis de acesso exigidos.
-
-### Postman Collection
-
-- **Arquivo:** [`docs/oficina-mecanica.postman_collection.json`](docs/oficina-mecanica.postman_collection.json)
-
-**Como importar:**
-1. Abra o Postman → clique em **Import**
-2. Selecione o arquivo acima
-3. Configure a variável `baseUrl` se necessário (padrão: `http://localhost:5000`)
-4. Faça **Auth → Login** primeiro — o token é salvo automaticamente nas variáveis da collection
-
----
-
-## Collection das APIs
-
-- **Scalar (interativa):** <http://localhost:5000/scalar> (com a API no ar)
-- **Postman Collection:** [`docs/oficina-mecanica.postman_collection.json`](./docs/oficina-mecanica.postman_collection.json)
 
 ---
 
@@ -304,7 +346,7 @@ reportgenerator -reports:"coverage-results/**/coverage.cobertura.xml" -targetdir
 
 ### Visualizar o relatório
 
-Abra **`coverage-report/Summary.mht`** no **Edge ou Chrome** (Firefox não suporta `.mht`).
+Abra **`coverage-report/Summary.mht`** no **Edge ou Chrome** (Firefox não suporta `.mht`).  
 O arquivo `coverage-report/Summary.txt` contém o resumo em texto puro.
 
 ### Resultado atual
@@ -344,7 +386,7 @@ O relatório cobre:
 docker compose up -d sonarqube
 ```
 
-Aguarde ~1 minuto e acesse `http://localhost:9000`.
+Aguarde ~1 minuto e acesse `http://localhost:9000`.  
 Login padrão: **admin / admin** (será solicitada troca na primeira vez).
 
 ### 2. Criar projeto e token
@@ -378,7 +420,7 @@ MSYS_NO_PATHCONV=1 dotnet sonarscanner end /d:sonar.token="SEU_TOKEN"
 
 ## EF Core / Migrations
 
-As migrations são aplicadas automaticamente no startup da API (`Database.Migrate()`).
+As migrations são aplicadas automaticamente no startup da API (`Database.Migrate()`).  
 Para gerenciar manualmente:
 
 ```bash
@@ -411,21 +453,21 @@ SELECT * FROM "__EFMigrationsHistory";       -- migrations aplicadas
 
 ## Troubleshooting
 
-**API não conecta ao banco**
+**API não conecta ao banco**  
 Verifique se o container PostgreSQL está `healthy` antes de a API iniciar:
 ```bash
 docker inspect --format '{{.State.Health.Status}}' oficina_postgres
 ```
 
-**`dotnet ef` não encontrado**
+**`dotnet ef` não encontrado**  
 Confirme que o diretório de ferramentas do .NET está no PATH:
 - Windows: `%USERPROFILE%\.dotnet\tools`
 - Linux/macOS: `~/.dotnet/tools`
 
-**`reportgenerator` não encontrado**
+**`reportgenerator` não encontrado**  
 Mesmo problema de PATH. Reinicie o terminal após instalar ou use o caminho completo.
 
-**Porta já em uso**
+**Porta já em uso**  
 A API usa a porta `5000`. Verifique e encerre processos conflitantes:
 ```bash
 # Windows
@@ -435,27 +477,11 @@ netstat -ano | findstr :5000
 lsof -i :5000
 ```
 
-**Pods não sobem no Kubernetes**
+**Pods não sobem no Kubernetes**  
 ```bash
 kubectl describe pod <nome-do-pod>
 kubectl logs <nome-do-pod>
 ```
 
-**Terraform falha ao criar cluster (Kind local)**
+**Terraform falha ao criar cluster**  
 Certifique-se que o Docker está rodando antes de executar `terraform apply`.
-
----
-
-## Fase 2 (histórico)
-
-Este repositório já existia desde a Fase 2 do Tech Challenge, quando o escopo de infraestrutura era outro: deploy em um cluster **Kubernetes local (Kind)**, provisionado via Terraform dentro deste mesmo repositório, sem API Gateway, sem Function Serverless e sem observabilidade corporativa. Resumo do que a Fase 2 entregava:
-
-- **Deploy em Kubernetes local** com cluster Kind, 2 réplicas da API, HPA (escalonamento automático por CPU/memória), volume persistente para PostgreSQL e MailHog para e-mails transacionais.
-- **Infraestrutura como código** com Terraform (`infra/local`): cluster, manifestos e metrics-server provisionados com um único `make oficina-up`.
-- **CI/CD** com GitHub Actions: pipeline de build, testes, push de imagem para GHCR e deploy automatizado num cluster Kind efêmero no próprio runner, a cada push em `main`.
-- **Escalabilidade automática** demonstrada localmente: HPA escala de 2 a 10 réplicas sob carga, retorna ao mínimo após estabilização.
-- Autenticação só por e-mail/senha (Admin/Mecânico/Cliente), sem autenticação por CPF nem integração com Lambda/API Gateway.
-
-Na Fase 3, este repositório manteve o código da API e a infraestrutura local (`infra/local`, útil para desenvolvimento), mas o **deploy de produção migrou para o EKS** provisionado pelo repositório `oficina-infra-k8s`, o pipeline de CI/CD deste repositório passou a só buildar e publicar a imagem (o deploy em si é acionado por lá), e a API ganhou o endpoint interno de autenticação por CPF consumido pela Lambda serverless. Detalhes completos do checklist de conformidade da Fase 2 estão em [`docs/FASE2_COMPLIANCE.md`](./docs/FASE2_COMPLIANCE.md).
-
-O README completo da Fase 2, tal como estava antes desta reorganização, foi preservado para consulta em [`docs/FASE2-README.md`](./docs/FASE2-README.md).
